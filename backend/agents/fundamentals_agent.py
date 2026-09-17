@@ -1,5 +1,6 @@
 import asyncio
 import json
+import os
 import yfinance as yf
 import random
 from agents.client import client
@@ -8,7 +9,7 @@ from loguru import logger
 import time
 
 
-MOCK_MODE = False
+MOCK_MODE = os.environ.get("MOCK_MODE", "true").lower() == "true"
 async def fundamentals_agent(ticker: str) -> dict:
     logger.info(f"fundamentals agent requested for {ticker}")
     agent_calls.labels(agent_name='fundamentals', ticker=ticker).inc()

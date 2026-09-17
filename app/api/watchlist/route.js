@@ -1,76 +1,58 @@
-import pool from '@/lib/db'
+const BACKEND_URL = process.env.BACKEND_URL || process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:8000';
 
-import jwt from 'jsonwebtoken'
+export async function GET(request) {
+    const auth = request.headers.get('authorization');
+    if (!auth) return Response.json({ error: 'Unauthorized' }, { status: 401 });
 
-export async function GET(request){
-    const auth = request.headers.get('authorization')
-    if (!auth) return Response.json({ error: 'Unauthorized' }, { status: 401 })
-    
-    const token = auth.replace('Bearer ', '')
-    const decoded = jwt.verify(token, process.env.JWT_SECRET)
-    const user_id = decoded.sub
-    const tickers = await pool.query(`
-        SELECT * from watchlist WHERE user_id=($1)`, [user_id])
-    //console.log("tickers", tickers)
-    return Response.json({ tickers: tickers.rows })
+    try {
+        const res = await fetch(`${BACKEND_URL}/watchlist`, {
+            headers: { 'Authorization': auth }
+        });
+        const data = await res.json();
+        return Response.json(data, { status: res.status });
+    } catch (err) {
+        return Response.json({ error: err.message || 'Failed to connect to backend' }, { status: 502 });
+    }
 }
-
 
 export async function POST(request) {
-    const auth = request.headers.get('authorization')
-    if (!auth) return Response.json({ error: 'Unauthorized' }, { status: 401 })
-    
-    const token = auth.replace('Bearer ', '')
-    const decoded = jwt.verify(token, process.env.JWT_SECRET)
-    const user_id = decoded.sub
+    const auth = request.headers.get('authorization');
+    if (!auth) return Response.json({ error: 'Unauthorized' }, { status: 401 });
 
-    console.log("user id: ",user_id)
-    const { symbol } = await request.json()
-    if (!symbol){
-        return Response.json({ error: 'Symbol is required'}, {status:400})
-    }
-
-    try{
-        
-        
-        await pool.query(
-            `INSERT INTO watchlist (ticker, user_id)
-            VALUES ($1, $2)`,
-            [symbol.toUpperCase(),  user_id]
-        )
-
-               
-        
-
-        return Response.json({
-            message: 'Ticker added to watch list successfully',
-            ticker: {
-                symbol: symbol
-            }
-        })
-    } catch(err){
-    return Response.json({ error: 'Symbol is required' }, { status: 500 })
+    try {
+        const body = await request.json();
+        const res = await fetch(`${BACKEND_URL}/watchlist`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': auth
+            },
+            body: JSON.stringify(body)
+        });
+        const data = await res.json();
+        return Response.json(data, { status: res.status });
+    } catch (err) {
+        return Response.json({ error: err.message || 'Failed to connect to backend' }, { status: 502 });
     }
 }
-
-
 
 export async function DELETE(request) {
-    const { symbol } =await request.json()
+    const auth = request.headers.get('authorization');
+    if (!auth) return Response.json({ error: 'Unauthorized' }, { status: 401 });
 
-    if (!symbol){
-        return Response.json({ erro: 'Symbol is required'}, {status:400})
+    try {
+        const body = await request.json();
+        const res = await fetch(`${BACKEND_URL}/watchlist`, {
+            method: 'DELETE',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': auth
+            },
+            body: JSON.stringify(body)
+        });
+        const data = await res.json();
+        return Response.json(data, { status: res.status });
+    } catch (err) {
+        return Response.json({ error: err.message || 'Failed to connect to backend' }, { status: 502 });
     }
-    
-    try{
-    await pool.query(`DELETE FROM watchlist WHERE ticker= $1`,[symbol.toUpperCase()])
-        return Response.json(
-            {message: "The ticker was deleted succesfully."}, {status: 200}
-        )
-}
-catch(err){
-    return Response.json({ error: 'Could not be deleted' }, { status: 500 })
-}
-
-    
 }

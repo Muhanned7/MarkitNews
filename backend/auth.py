@@ -34,4 +34,7 @@ def decode_token(token: str) -> dict:
         raise HTTPException(status_code=401, detail="Invalid token")
 
 def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(bearer_scheme)) -> dict:
-    return decode_token(credentials.credentials)
+    payload = decode_token(credentials.credentials)
+    if "sub" not in payload:
+        raise HTTPException(status_code=401, detail="Invalid token: missing subject claim")
+    return payload

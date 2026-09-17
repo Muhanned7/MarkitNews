@@ -2,6 +2,8 @@
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 
+const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:8000';
+
 export default function Register() {
     const [email, setEmail] = useState('')
     const [password, setPassword] = useState('')
@@ -13,7 +15,7 @@ export default function Register() {
         setLoading(true)
         setError(null)
         try {
-            const res = await fetch('https://charcoal-smashing-headstone.ngrok-free.dev/auth/register', {
+            const res = await fetch(`${BACKEND_URL}/auth/register`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ email, password })

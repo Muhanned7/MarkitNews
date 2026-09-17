@@ -1,5 +1,6 @@
 import asyncio
 import json
+import os
 import yfinance as yf
 import pandas as pd
 from agents.client import client
@@ -8,7 +9,7 @@ from loguru import logger
 import time
 
 
-MOCK_MODE = False
+MOCK_MODE = os.environ.get("MOCK_MODE", "true").lower() == "true"
 async def technical_agent(ticker: str) -> dict:
     logger.info(f"Technical Agent requested for {ticker}")
     agent_calls.labels(agent_name='Technical', ticker=ticker).inc()

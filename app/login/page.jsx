@@ -4,6 +4,8 @@ import { useRouter, usePathname } from 'next/navigation'
 import { useAuth } from '../context/AuthContext'
 
 
+const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:8000';
+
 export default function Login() {
     const [email, setEmail] = useState('')
     const [password, setPassword] = useState('')
@@ -14,11 +16,10 @@ export default function Login() {
  
 
     async function handleLogin() {
-        
         setLoading(true)
         setError(null)
         try {
-            const res = await fetch('https://charcoal-smashing-headstone.ngrok-free.dev/auth/login', {
+            const res = await fetch(`${BACKEND_URL}/auth/login`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ email, password })

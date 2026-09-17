@@ -1,9 +1,9 @@
 import './env.js'
 
-import pool from '../lib/db.js';
 import { index } from '../lib/pinecone.js';
 import { getEmbedding } from '../lib/embeddings.js';
 
+const BACKEND_URL = process.env.BACKEND_URL || process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:8000';
 
 async function seedTop100(){
 try {
@@ -25,9 +25,11 @@ try {
 
     let toProcess = top100;
 
-    // Filter out already existing ones
-    const existing = await pool.query('SELECT symbol FROM tickers WHERE name IS NOT NULL AND description IS NOT NULL AND sector IS NOT NULL');
-    const existingSet = new Set(existing.rows.map(r => r.symbol));
+    // Filter out already existing ones via backend
+    const existingRes = await fetch(`${BACKEND_URL}/tickers`);
+    const existingData = await existingRes.json();
+    const existingRows = (existingData.tickers || []).filter(r => r.name && r.sector);
+    const existingSet = new Set(existingRows.map(r => r.symbol));
     
     toProcess = toProcess.filter(t => !existingSet.has(t));
     console.log(`New tickers to add: ${toProcess.length}`);
@@ -56,21 +58,19 @@ try {
                 continue;
             }
             
-            await pool.query(
-                `INSERT INTO tickers (symbol, name, description, sector, industry)
-                 VALUES ($1, $2, $3, $4, $5)
-                 ON CONFLICT (symbol) DO UPDATE SET
-                 name = EXCLUDED.name,
-                 sector = EXCLUDED.sector,
-                 industry = EXCLUDED.industry`,
-                [
-                  company.ticker || ticker,
-                  company.name,
-                  null,                          // Finnhub has no description
-                  company.finnhubIndustry || null,  // use as sector
-                  company.finnhubIndustry || null   // same value for industry
-                ]
-            )
+            const symbolToStore = (company.ticker || ticker).toUpperCase();
+
+            await fetch(`${BACKEND_URL}/tickers`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    symbol: symbolToStore,
+                    name: company.name,
+                    description: null,
+                    sector: company.finnhubIndustry || null,
+                    industry: company.finnhubIndustry || null
+                })
+            });
 
             const textToEmbed = `${company.name} ${company.sector || ''} ${company.finnhubIndustry || ''} ${company.description || ''}`.trim();
 
@@ -79,10 +79,10 @@ try {
 
                 await index.namespace('tickers').upsert({
                     records: [{
-                        id: company.ticker || ticker.symbol,
+                        id: symbolToStore,
                         values: Array.from(embedding),
                         metadata: {
-                            symbol: company.ticker || ticker.symbol,
+                            symbol: symbolToStore,
                             name: company.name,
                             sector: company.finnhubIndustry || null,  // use as sector
                             industry: company.finnhubIndustry || null   // same value for industry
@@ -90,9 +90,9 @@ try {
                     }]
                 });
 
-                await pool.query('UPDATE tickers SET embedding_stored = TRUE WHERE symbol = $1', 
-                    [company.ticker || ticker]
-                );
+                await fetch(`${BACKEND_URL}/tickers/${encodeURIComponent(symbolToStore)}/embedding`, {
+                    method: 'PATCH'
+                });
             }
 
             successCount++;

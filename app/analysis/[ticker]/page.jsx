@@ -4,6 +4,9 @@ import { useAuth } from '../../context/AuthContext'
 import { useRouter, useParams } from 'next/navigation'
 import styles from './analysis.module.css'
 
+const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:8000';
+
+
 
 function NewsSection({ data }) {
     if (!data) return <p className={styles.noData}>No data available</p>
@@ -342,14 +345,26 @@ export default function AnalysisPage() {
             router.push('/login')
             return
         }
-        fetchAnalysis()
+        FetchAnalysis()
     }, [user, loading])
 
-    async function fetchAnalysis() {
-        // colab : https://charcoal-smashing-headstone.ngrok-free.dev
+    async function FetchAnalysis() {
         setPageLoading(true)
         try {
-            const res = await fetch(`https://finnwinn.onrender.com/analyse/${ticker}`, { method: 'POST' })
+            const token = localStorage.getItem('token') || user?.token;
+            const headers = { 'Content-Type': 'application/json' };
+            if (token) {
+                headers['Authorization'] = `Bearer ${token}`;
+            }
+            const res = await fetch(`${BACKEND_URL}/analyse/${ticker}`, {
+                method: 'POST',
+                headers
+            })
+            if (!res.ok) {
+                const errData = await res.json().catch(() => ({}));
+                console.error("Analysis request failed:", errData);
+                return;
+            }
             const data = await res.json()
             setReport(data.report)
             setAgents(data.agents)

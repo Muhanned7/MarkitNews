@@ -2,6 +2,7 @@ from fastapi import FastAPI, Depends, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from dotenv import load_dotenv
 from pydantic import BaseModel
+from typing import Optional, List, Union
 import asyncio
 import json
 from auth import hash_password, verify_password, create_token, get_current_user
@@ -93,11 +94,184 @@ async def me(user=Depends(get_current_user)):
     return user
 
 
+class WatchlistAddRequest(BaseModel):
+    symbol: str
+
+class WatchlistDeleteRequest(BaseModel):
+    symbol: Optional[str] = None
+
+class TickerCreateRequest(BaseModel):
+    symbol: str
+    name: Optional[str] = None
+    description: Optional[str] = None
+    sector: Optional[str] = None
+    industry: Optional[str] = None
+
+class ArticleItem(BaseModel):
+    id: str
+    headline: str
+    summary: Optional[str] = None
+    source: Optional[str] = None
+    url: Optional[str] = None
+    published: Optional[str] = None
+    score: Optional[float] = None
+    sentiment: Optional[str] = None
+    confidence: Optional[float] = None
+    rationale: Optional[str] = None
+    sectors: Optional[list] = None
+    query: Optional[list] = None
+
+class ArticlesBatchRequest(BaseModel):
+    articles: list[ArticleItem]
+
+class SearchLogRequest(BaseModel):
+    query: Union[list, str]
+    results_count: int
+
+
+@app.get("/watchlist")
+async def get_watchlist(user: dict = Depends(get_current_user)):
+    user_id = user["sub"]
+    result = await asyncio.to_thread(
+        query,
+        "SELECT * FROM watchlist WHERE user_id = %s",
+        [str(user_id)]
+    )
+    return {"tickers": result.rows}
+
+@app.post("/watchlist")
+async def add_watchlist(body: WatchlistAddRequest, user: dict = Depends(get_current_user)):
+    user_id = user["sub"]
+    symbol = body.symbol.upper().strip()
+    if not symbol:
+        raise HTTPException(status_code=400, detail="Symbol is required")
+    await asyncio.to_thread(
+        query,
+        "INSERT INTO watchlist (ticker, user_id) VALUES (%s, %s)",
+        [symbol, str(user_id)]
+    )
+    return {
+        "message": "Ticker added to watchlist successfully",
+        "ticker": {"symbol": symbol}
+    }
+
+@app.delete("/watchlist/{ticker}")
+async def delete_watchlist_path(ticker: str, user: dict = Depends(get_current_user)):
+    user_id = user["sub"]
+    await asyncio.to_thread(
+        query,
+        "DELETE FROM watchlist WHERE ticker = %s AND user_id = %s",
+        [ticker.upper().strip(), str(user_id)]
+    )
+    return {"message": "The ticker was deleted successfully."}
+
+@app.delete("/watchlist")
+async def delete_watchlist(body: Optional[WatchlistDeleteRequest] = None, symbol: Optional[str] = None, user: dict = Depends(get_current_user)):
+    target_symbol = (body.symbol if body and body.symbol else symbol)
+    if not target_symbol:
+        raise HTTPException(status_code=400, detail="Symbol is required")
+    user_id = user["sub"]
+    await asyncio.to_thread(
+        query,
+        "DELETE FROM watchlist WHERE ticker = %s AND user_id = %s",
+        [target_symbol.upper().strip(), str(user_id)]
+    )
+    return {"message": "The ticker was deleted successfully."}
+
+@app.get("/watchlist/tickers")
+async def get_all_watchlist_tickers():
+    result = await asyncio.to_thread(
+        query,
+        "SELECT DISTINCT ticker FROM watchlist"
+    )
+    return {"tickers": [row["ticker"] for row in result.rows]}
+
+@app.get("/tickers")
+async def get_tickers():
+    result = await asyncio.to_thread(
+        query,
+        "SELECT * FROM tickers ORDER BY created_at DESC"
+    )
+    return {"tickers": result.rows}
+
+@app.post("/tickers")
+async def create_ticker(body: TickerCreateRequest):
+    await asyncio.to_thread(
+        query,
+        """INSERT INTO tickers (symbol, name, description, sector, industry)
+           VALUES (%s, %s, %s, %s, %s)
+           ON CONFLICT (symbol) DO NOTHING""",
+        [body.symbol.upper().strip(), body.name, body.description, body.sector, body.industry]
+    )
+    return {"message": f"Ticker {body.symbol} processed"}
+
+@app.patch("/tickers/{symbol}/embedding")
+async def update_ticker_embedding(symbol: str):
+    await asyncio.to_thread(
+        query,
+        "UPDATE tickers SET embedding_stored = TRUE WHERE symbol = %s",
+        [symbol.upper().strip()]
+    )
+    return {"message": f"Embedding status updated for {symbol}"}
+
+@app.post("/articles")
+async def save_articles(body: ArticlesBatchRequest):
+    for art in body.articles:
+        await asyncio.to_thread(
+            query,
+            """INSERT INTO articles 
+               (id, headline, summary, source, url, published, score, sentiment, confidence, rationale, sectors, query)
+               VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+               ON CONFLICT (id) DO NOTHING""",
+            [
+                art.id, art.headline, art.summary, art.source, art.url,
+                art.published, art.score, art.sentiment, art.confidence,
+                art.rationale, art.sectors, art.query
+            ]
+        )
+    return {"message": f"Saved {len(body.articles)} articles"}
+
+@app.post("/searches")
+async def log_search(body: SearchLogRequest):
+    queries = body.query if isinstance(body.query, list) else [body.query]
+    await asyncio.to_thread(
+        query,
+        "INSERT INTO searches (query, results_count) VALUES (%s, %s)",
+        [queries, body.results_count]
+    )
+    return {"message": "Search logged"}
+
+
+
 async def synthesizer(ticker: str, news: dict, sentiment: dict, fundamentals: dict, technical: dict, equity: dict, risk: dict) -> dict:
     
     logger.info(f"Synthesizing requested for {ticker}")
     
     try:
+        if os.environ.get("MOCK_MODE", "true").lower() == "true":
+            await asyncio.sleep(0.3)
+            return {
+                "recommendation": "buy",
+                "conviction": 8,
+                "price_target": 215.0,
+                "risk_reward": "favorable",
+                "investment_horizon": "medium_term",
+                "bull_case": [
+                    f"Strong competitive positioning and brand moat for {ticker}",
+                    "Steady cash flow generation supporting ongoing innovation",
+                    "Constructive technical momentum clearing key support levels"
+                ],
+                "bear_case": [
+                    "Valuation multiples trade at a modest premium to sector medians",
+                    "Potential exposure to broader tech sector volatility",
+                    "Regulatory and supply chain considerations in global markets"
+                ],
+                "key_catalysts": ["Upcoming quarterly earnings release", "New product line adoption"],
+                "key_risks": ["Macroeconomic interest rate shifts", "Input cost inflation"],
+                "position_sizing": "medium",
+                "summary": f"{ticker.upper()} presents an attractive risk-adjusted opportunity backed by strong operational discipline and durable market demand. With consistent analyst support and a constructive chart setup, the outlook remains solid for intermediate-term investors."
+            }
+
         logger.info(f"Running agents for {ticker}")
         response = await asyncio.to_thread(
             client.chat.complete,
@@ -144,10 +318,10 @@ async def synthesizer(ticker: str, news: dict, sentiment: dict, fundamentals: di
 
 analysis_cache = {}
 @app.post("/analyse/{ticker}")
-async def analyse(ticker: str):
+async def analyse(ticker: str, user: dict = Depends(get_current_user)):
     
     
-    logger.info(f"Analysis requested for {ticker}")
+    logger.info(f"Analysis requested for {ticker} by user {user.get('email', user.get('sub'))}")
     # return cache if analysed today
     if ticker in analysis_cache:
         cached_time, cached_data = analysis_cache[ticker]
@@ -193,5 +367,5 @@ async def analyse(ticker: str):
 
 
 @app.get("/test/{ticker}")
-async def test(ticker: str):
-    return await analyse(ticker)
+async def test(ticker: str, user: dict = Depends(get_current_user)):
+    return await analyse(ticker, user)
