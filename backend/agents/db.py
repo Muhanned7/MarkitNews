@@ -18,20 +18,30 @@ if not DATABASE_URL:
     db_name = os.environ.get("DB_NAME", os.environ.get("POSTGRES_DB", "MarketPulse"))
     DATABASE_URL = f"postgresql://{db_user}:{db_pass}@{db_host}:{db_port}/{db_name}"
 
-# Single centralized connection pool for the entire system
-pool = ThreadedConnectionPool(
-    minconn=1,
-    maxconn=20,
-    dsn=DATABASE_URL
-)
+# Single centralized connection pool (lazy-initialized on first query)
+pool = None
+
+
+def _get_pool() -> ThreadedConnectionPool:
+    global pool
+    if pool is None:
+        pool = ThreadedConnectionPool(
+            minconn=1,
+            maxconn=20,
+            dsn=DATABASE_URL
+        )
+    return pool
+
 
 @contextmanager
 def get_db_connection():
-    conn = pool.getconn()
+    active_pool = _get_pool()
+    conn = active_pool.getconn()
     try:
         yield conn
     finally:
-        pool.putconn(conn)
+        active_pool.putconn(conn)
+
 
 def query(sql: str, params=None):
     with get_db_connection() as conn:
@@ -43,4 +53,4 @@ def query(sql: str, params=None):
                 return type('Result', (), {'rows': rows})()
             else:
                 conn.commit()
-                return type('Result', (), {'rows': []})()
+                return type('Result', (), {'rows': []})()

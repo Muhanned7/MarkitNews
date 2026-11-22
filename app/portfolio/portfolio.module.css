@@ -1,0 +1,545 @@
+.container {
+  max-width: 1360px;
+  margin: 0 auto;
+  padding: var(--s-5) var(--s-4);
+  font-family: var(--font-ui);
+  color: var(--ink);
+}
+
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--s-4);
+  margin-bottom: var(--s-5);
+}
+
+.headerLeft {
+  display: flex;
+  align-items: center;
+  gap: var(--s-3);
+  flex-wrap: wrap;
+}
+
+.title {
+  font-size: var(--fs-xl);
+  font-weight: 700;
+  margin: 0;
+  display: flex;
+  align-items: center;
+  gap: var(--s-2);
+}
+
+.portfolioSelect {
+  padding: var(--s-2) var(--s-3);
+  border-radius: var(--r-control);
+  border: 1px solid var(--rule);
+  background: var(--surface);
+  color: var(--ink);
+  font-size: var(--fs-sm);
+  font-weight: 600;
+  cursor: pointer;
+  outline: none;
+}
+
+.portfolioSelect:focus {
+  box-shadow: var(--focus);
+}
+
+.demoBadge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 8px;
+  border-radius: var(--r-chip);
+  background: var(--brand-tint);
+  color: var(--brand-ink);
+  font-size: var(--fs-xs);
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+.headerActions {
+  display: flex;
+  align-items: center;
+  gap: var(--s-2);
+}
+
+.btnPrimary {
+  padding: var(--s-2) var(--s-4);
+  border-radius: var(--r-control);
+  background: var(--brand);
+  color: #064E3B;
+  font-size: var(--fs-sm);
+  font-weight: 700;
+  border: none;
+  cursor: pointer;
+  transition: opacity 0.15s ease;
+}
+
+.btnPrimary:hover {
+  opacity: 0.9;
+}
+
+.btnSecondary {
+  padding: var(--s-2) var(--s-3);
+  border-radius: var(--r-control);
+  background: var(--surface);
+  color: var(--ink-2);
+  border: 1px solid var(--rule);
+  font-size: var(--fs-sm);
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s ease, border-color 0.15s ease;
+}
+
+.btnSecondary:hover {
+  background: var(--surface-2);
+  border-color: var(--ink-3);
+}
+
+/* Metrics Strip: 4x2 grid at 1366px desktop without orphan cards */
+.metricsGrid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: var(--s-3);
+  margin-bottom: var(--s-5);
+}
+
+@media (max-width: 960px) {
+  .metricsGrid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 480px) {
+  .metricsGrid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.metricCard {
+  background: var(--surface);
+  border: 1px solid var(--rule);
+  border-radius: var(--r-panel);
+  padding: var(--s-3) var(--s-4);
+  box-shadow: var(--shadow-panel);
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.metricLabel {
+  font-size: var(--fs-xs);
+  color: var(--ink-3);
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.metricValue {
+  font-size: var(--fs-lg);
+  font-weight: 700;
+  font-family: var(--font-figure);
+  color: var(--ink);
+}
+
+.metricSubtext {
+  font-size: var(--fs-xs);
+  color: var(--ink-2);
+}
+
+.posChange {
+  color: var(--bull);
+}
+
+.negChange {
+  color: var(--bear);
+}
+
+/* Tab Navigation */
+.tabsBar {
+  display: flex;
+  gap: var(--s-2);
+  border-bottom: 1px solid var(--rule);
+  margin-bottom: var(--s-4);
+  overflow-x: auto;            /* 4 tabs (incl. Limits) scroll instead of widening the page on phones */
+  scrollbar-width: thin;
+}
+
+.tabBtn {
+  flex: 0 0 auto;
+  white-space: nowrap;
+  padding: var(--s-2) var(--s-4);
+  background: transparent;
+  border: none;
+  border-bottom: 2px solid transparent;
+  color: var(--ink-3);
+  font-size: var(--fs-sm);
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.tabBtn:hover {
+  color: var(--ink);
+}
+
+.tabBtnActive {
+  color: var(--brand-ink);
+  border-bottom-color: var(--brand);
+  font-weight: 700;
+}
+
+/* Panel Containers */
+.panel {
+  background: var(--surface);
+  border: 1px solid var(--rule);
+  border-radius: var(--r-panel);
+  box-shadow: var(--shadow-panel);
+  overflow: hidden;
+}
+
+/* Table */
+.tableWrapper {
+  overflow-x: auto;
+  width: 100%;
+}
+
+.table {
+  width: 100%;
+  border-collapse: collapse;
+  text-align: left;
+  font-size: var(--fs-sm);
+}
+
+.table th {
+  padding: var(--s-3) var(--s-4);
+  background: var(--surface-2);
+  color: var(--ink-3);
+  font-size: var(--fs-xs);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  border-bottom: 1px solid var(--rule);
+  white-space: nowrap;
+}
+
+.table td {
+  padding: var(--s-3) var(--s-4);
+  border-bottom: 1px solid var(--rule);
+  vertical-align: middle;
+  white-space: nowrap;
+}
+
+.table tr:hover td {
+  background: var(--surface-2);
+}
+
+.tickerCell {
+  display: flex;
+  align-items: center;
+  gap: var(--s-2);
+}
+
+.tickerLink {
+  font-family: var(--font-figure);
+  font-weight: 700;
+  font-size: var(--fs-md);
+  color: var(--brand-ink);
+  text-decoration: none;
+}
+
+.tickerLink:hover {
+  text-decoration: underline;
+}
+
+.subText {
+  font-size: var(--fs-xs);
+  color: var(--ink-3);
+}
+
+.figure {
+  font-family: var(--font-figure);
+  font-weight: 600;
+}
+
+.pill {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: var(--r-chip);
+  font-size: var(--fs-xs);
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+.pillBuy {
+  background: var(--bull-tint);
+  color: var(--bull);
+}
+
+.pillHold {
+  background: var(--caution-tint);
+  color: var(--caution);
+}
+
+.pillSell {
+  background: var(--bear-tint);
+  color: var(--bear);
+}
+
+.cashRow {
+  background: var(--surface-2);
+  font-weight: 700;
+}
+
+.actionBtn {
+  padding: 4px 8px;
+  border-radius: var(--r-control);
+  font-size: var(--fs-xs);
+  border: 1px solid var(--rule);
+  background: var(--surface);
+  color: var(--bear);
+  cursor: pointer;
+  transition: background 0.15s ease;
+}
+
+.actionBtn:hover {
+  background: var(--bear-tint);
+}
+
+/* Risk Section */
+.riskGrid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--s-4);
+  padding: var(--s-4);
+}
+
+@media (max-width: 900px) {
+  .riskGrid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.cardSection {
+  background: var(--surface-2);
+  border: 1px solid var(--rule);
+  border-radius: var(--r-control);
+  padding: var(--s-4);
+}
+
+.sectionHeading {
+  font-size: var(--fs-md);
+  font-weight: 700;
+  margin-top: 0;
+  margin-bottom: var(--s-3);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.rcList {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-3);
+}
+
+.rcItem {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.rcHeader {
+  display: flex;
+  justify-content: space-between;
+  font-size: var(--fs-xs);
+  font-weight: 600;
+}
+
+.barTrack {
+  height: 8px;
+  background: var(--rule);
+  border-radius: var(--r-chip);
+  overflow: hidden;
+  display: flex;
+}
+
+.barCapital {
+  height: 100%;
+  background: var(--ink);
+  border-radius: var(--r-chip) 0 0 var(--r-chip);
+}
+
+.barRisk {
+  height: 100%;
+  background: var(--brand);
+  border-radius: 0 var(--r-chip) var(--r-chip) 0;
+}
+
+/* Sticky Symbol Column for Holdings Table */
+.stickyCol {
+  position: sticky;
+  left: 0;
+  background: var(--surface);
+  z-index: 2;
+  box-shadow: 2px 0 4px rgba(0, 0, 0, 0.05);
+}
+
+/* Heatmap */
+.heatmapWrapper {
+  overflow-x: auto;
+  margin-top: var(--s-3);
+}
+
+.heatmapTable {
+  border-collapse: collapse;
+  font-size: var(--fs-xs);
+  font-family: var(--font-figure);
+}
+
+.heatmapHeader {
+  padding: 6px;
+  font-weight: 700;
+  color: var(--ink);
+  text-align: center;
+}
+
+.heatmapCell {
+  width: 50px;
+  height: 40px;
+  text-align: center;
+  font-weight: 600;
+  border: 1px solid var(--surface);
+  transition: transform 0.15s ease;
+}
+
+.heatmapCell:hover {
+  transform: scale(1.08);
+  z-index: 2;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+}
+
+/* Segmented Buy / Sell Toggle */
+.segmentedToggle {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  background: var(--surface-2);
+  border: 1px solid var(--rule);
+  border-radius: var(--r-control);
+  padding: 2px;
+  gap: 2px;
+}
+
+.segmentBtn {
+  padding: var(--s-2) var(--s-3);
+  border-radius: calc(var(--r-control) - 2px);
+  border: none;
+  background: transparent;
+  color: var(--ink-3);
+  font-size: var(--fs-xs);
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.segmentBtnBuyActive {
+  background: var(--bull);
+  color: #FFFFFF;
+}
+
+.segmentBtnSellActive {
+  background: var(--bear);
+  color: #FFFFFF;
+}
+
+/* Modals */
+.modalOverlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(10, 16, 23, 0.75);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  padding: var(--s-3);
+  overflow-y: auto;
+}
+
+.modalContent {
+  background: var(--surface);
+  border-radius: var(--r-panel);
+  width: 100%;
+  max-width: 480px;
+  box-sizing: border-box;
+  border: 1px solid var(--rule);
+  box-shadow: 0 16px 40px rgba(0,0,0,0.3);
+  padding: var(--s-4);
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-4);
+  margin: auto;
+}
+
+.modalTitle {
+  font-size: var(--fs-lg);
+  font-weight: 700;
+  margin: 0;
+}
+
+.formGroup {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.formGrid2 {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: var(--s-3);
+  width: 100%;
+  box-sizing: border-box;
+}
+
+@media (max-width: 480px) {
+  .formGrid2 {
+    grid-template-columns: 1fr;
+  }
+}
+
+.formLabel {
+  font-size: var(--fs-xs);
+  font-weight: 600;
+  color: var(--ink-2);
+}
+
+.formInput, .formTextarea {
+  width: 100%;
+  box-sizing: border-box;
+  min-width: 0;
+  padding: var(--s-2) var(--s-3);
+  border-radius: var(--r-control);
+  border: 1px solid var(--rule);
+  background: var(--surface);
+  color: var(--ink);
+  font-size: var(--fs-sm);
+  outline: none;
+}
+
+.formInput:focus, .formTextarea:focus {
+  box-shadow: var(--focus);
+}
+
+.modalActions {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--s-2);
+  margin-top: var(--s-2);
+}

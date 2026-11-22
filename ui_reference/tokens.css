@@ -1,0 +1,72 @@
+/* FinnWinn design tokens — drop into app/globals.css (replaces the current :root / @theme block).
+   Direction: "analyst's ledger" — cool paper canvas, slate ink, brand teal used as a FILL only,
+   condensed ticker-board type for symbols and big numbers, tabular figures everywhere numbers live. */
+
+@import url('https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=Manrope:wght@400;500;600;700&display=swap');
+
+:root {
+  /* Surfaces */
+  --canvas:      #EDF1F3;   /* page background (cool paper) */
+  --surface:     #FFFFFF;   /* panels */
+  --surface-2:   #F6F8F9;   /* inset rows, table stripes */
+  --rule:        #D5DCE2;   /* hairlines & dividers */
+
+  /* Ink */
+  --ink:         #14212B;   /* primary text  (16.4:1 on white) */
+  --ink-2:       #3E4C57;   /* secondary text (8.8:1) */
+  --ink-3:       #5F6C76;   /* muted / captions (5.4:1) */
+
+  /* Brand */
+  --brand:       #00D4AA;   /* FILLS ONLY: buttons, active bars, focus ring — never text on white */
+  --brand-ink:   #0B6E5C;   /* brand-coloured text/links (6.2:1) */
+  --brand-tint:  #DDF7F1;
+
+  /* Signal colours (text-safe on white and on their tint) */
+  --bull:        #137638;  --bull-tint: #E3F4E8;
+  --bear:        #B42318;  --bear-tint: #FCE8E6;
+  --caution:     #A15C07;  --caution-tint: #FDF0DC;
+  --neutral:     #4B5563;  --neutral-tint: #ECEFF2;
+
+  /* Type */
+  --font-ui:     'Manrope', system-ui, sans-serif;
+  --font-figure: 'Barlow Condensed', 'Manrope', sans-serif;  /* tickers, prices, big numbers */
+  --fs-xs: 0.75rem; --fs-sm: 0.875rem; --fs-md: 1rem; --fs-lg: 1.25rem;
+  --fs-xl: 1.75rem; --fs-2xl: 2.5rem; --fs-3xl: 3.5rem;
+
+  /* Shape & space (radius encodes hierarchy: page panels 14, controls 10, chips 999) */
+  --r-panel: 14px; --r-control: 10px; --r-chip: 999px;
+  --s-1: 4px; --s-2: 8px; --s-3: 12px; --s-4: 16px; --s-5: 24px; --s-6: 32px; --s-7: 48px;
+  --shadow-panel: 0 1px 0 var(--rule), 0 8px 24px -16px rgba(20, 33, 43, .25);
+  --focus: 0 0 0 3px color-mix(in srgb, var(--brand) 55%, transparent);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --canvas: #0F1820; --surface: #16212B; --surface-2: #1C2934; --rule: #2B3A46;
+    --ink: #E6EDF2; --ink-2: #B9C6D0; --ink-3: #8D9BA6;
+    --brand-ink: #3FE3C1; --brand-tint: #123A33;
+    --bull: #4ADE80; --bull-tint: #12301E;  --bear: #F87171; --bear-tint: #3A1715;
+    --caution: #F5B54A; --caution-tint: #3A2A10; --neutral: #A9B4BD; --neutral-tint: #22303B;
+    --shadow-panel: 0 1px 0 var(--rule);
+  }
+}
+:root[data-theme="dark"] {
+  --canvas: #0F1820; --surface: #16212B; --surface-2: #1C2934; --rule: #2B3A46;
+  --ink: #E6EDF2; --ink-2: #B9C6D0; --ink-3: #8D9BA6;
+  --brand-ink: #3FE3C1; --brand-tint: #123A33;
+  --bull: #4ADE80; --bull-tint: #12301E;  --bear: #F87171; --bear-tint: #3A1715;
+  --caution: #F5B54A; --caution-tint: #3A2A10; --neutral: #A9B4BD; --neutral-tint: #22303B;
+  --shadow-panel: 0 1px 0 var(--rule);
+}
+
+body {
+  background: var(--canvas);
+  color: var(--ink);
+  font-family: var(--font-ui);
+  font-size: var(--fs-md);
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+}
+.num, td, .figure { font-variant-numeric: tabular-nums; }
+:focus-visible { outline: none; box-shadow: var(--focus); border-radius: var(--r-control); }
+@media (prefers-reduced-motion: reduce) { * { transition: none !important; animation: none !important; } }

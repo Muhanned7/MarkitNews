@@ -1,0 +1,66 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    
+    {
+      "name": "1. Debug Footprint Agent (footprint_agent.py)",
+      "type": "debugpy",
+      "request": "launch",
+      "python": "${workspaceFolder}/backend/venv/Scripts/python.exe",
+      "program": "${workspaceFolder}/backend/ingestion/footprint_agent.py",
+      "cwd": "${workspaceFolder}/backend",
+      "envFile": "${workspaceFolder}/backend/.env",
+      "env": {
+        "PYTHONPATH": "${workspaceFolder}/backend"
+      },
+      "console": "integratedTerminal",
+      "justMyCode": true
+    },
+    {
+      "name": "2. Debug Guardrails (guardrails.py)",
+      "type": "debugpy",
+      "request": "launch",
+      "python": "${workspaceFolder}/backend/venv/Scripts/python.exe",
+      "program": "${workspaceFolder}/backend/ingestion/guardrails.py",
+      "cwd": "${workspaceFolder}/backend",
+      "envFile": "${workspaceFolder}/backend/.env",
+      "env": {
+        "PYTHONPATH": "${workspaceFolder}/backend"
+      },
+      "console": "integratedTerminal",
+      "justMyCode": true
+    },
+    {
+      "name": "2. Debug FastAPI Backend (Uvicorn)",
+      "type": "debugpy",
+      "request": "launch",
+      "python": "${workspaceFolder}/backend/venv/Scripts/python.exe",
+      "module": "uvicorn",
+      "cwd": "${workspaceFolder}/backend",
+      "envFile": "${workspaceFolder}/backend/.env",
+      "args": [
+        "main:app",
+        "--host",
+        "0.0.0.0",
+        "--port",
+        "8000"
+      ],
+      "console": "integratedTerminal",
+      "justMyCode": true
+    },
+    {
+      "name": "3. Debug Current Python File",
+      "type": "debugpy",
+      "request": "launch",
+      "python": "${workspaceFolder}/backend/venv/Scripts/python.exe",
+      "program": "${file}",
+      "cwd": "${workspaceFolder}/backend",
+      "envFile": "${workspaceFolder}/backend/.env",
+      "env": {
+        "PYTHONPATH": "${workspaceFolder}/backend"
+      },
+      "console": "integratedTerminal",
+      "justMyCode": true
+    }
+  ]
+}

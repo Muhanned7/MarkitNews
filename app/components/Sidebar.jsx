@@ -11,68 +11,130 @@ export default function Sidebar() {
     const [watchlist, setWatchlist] = useState([])
 
     useEffect(() => {
-        if (user) loadWatchlist()
+        if (user) {
+            loadWatchlist()
+            const handler = () => loadWatchlist()
+            window.addEventListener('watchlist-updated', handler)
+            return () => window.removeEventListener('watchlist-updated', handler)
+        }
     }, [user])
 
     async function loadWatchlist() {
-        const token = localStorage.getItem('token')
-        const res = await fetch('/api/watchlist', {
-            headers: { 'Authorization': `Bearer ${token}` }
-        })
-        const data = await res.json()
-        setWatchlist(data.tickers?.map(t => t.ticker) || [])
+        try {
+            const token = localStorage.getItem('token') || user?.token
+            if (!token) return
+            const res = await fetch('/api/watchlist', {
+                headers: { 'Authorization': `Bearer ${token}` }
+            })
+            if (!res.ok) return
+            const data = await res.json()
+            const rawList = data.tickers || []
+            const parsed = rawList.map(t => {
+                const sym = (typeof t === 'string' ? t : t.ticker)?.toUpperCase()
+                return {
+                    symbol: sym,
+                    price: t.price || null,
+                    change_pct: t.change_pct ?? null
+                }
+            })
+            setWatchlist(parsed)
+        } catch (err) {
+            console.error("Failed to load watchlist in sidebar:", err)
+        }
+    }
+
+    const navigate = (path) => {
+        document.body.classList.remove('nav-open')
+        router.push(path)
     }
 
     if (!user) return null
 
     return (
-        <aside className={styles.sidebar}>
-            {/* Navigation */}
-            <div className={styles.section}>
-                <p className={styles.sectionLabel}>Navigation</p>
+        <aside className={styles.sidebar} aria-label="Main navigation">
+            <div className={styles.sideGroup}>
+                <div className={styles.sideTitle}>Explore</div>
                 <button
-                    className={`${styles.navItem} ${pathname === '/' ? styles.active : ''}`}
-                    onClick={() => router.push('/')}
+                    className={styles.navItem}
+                    aria-current={pathname === '/' ? 'page' : undefined}
+                    onClick={() => navigate('/')}
                 >
-                    📰 News Feed
+                    <span aria-hidden="true">📰</span> News feed
                 </button>
                 <button
-                    className={`${styles.navItem} ${pathname === '/analysis' ? styles.active : ''}`}
-                    onClick={() => router.push('/analysis')}
+                    className={styles.navItem}
+                    aria-current={pathname?.startsWith('/analysis') ? 'page' : undefined}
+                    onClick={() => navigate('/analysis')}
                 >
-                    🤖 AI Analysis
+                    <span aria-hidden="true">🤖</span> AI analysis
                 </button>
                 <button
-                    className={`${styles.navItem} ${pathname === '/profile' ? styles.active : ''}`}
-                    onClick={() => router.push('/profile')}
+                    className={styles.navItem}
+                    aria-current={pathname === '/contradictions' ? 'page' : undefined}
+                    onClick={() => navigate('/contradictions')}
                 >
-                    👤 Profile
+                    <span aria-hidden="true">⚡</span> Contradiction Radar
+                </button>
+                <button
+                    className={styles.navItem}
+                    aria-current={pathname === '/portfolio' ? 'page' : undefined}
+                    onClick={() => navigate('/portfolio')}
+                >
+                    <span aria-hidden="true">💼</span> Portfolio
+                </button>
+                <button
+                    className={styles.navItem}
+                    aria-current={pathname?.startsWith('/research') ? 'page' : undefined}
+                    onClick={() => navigate('/research')}
+                >
+                    <span aria-hidden="true">🔬</span> Quant Research
+                </button>
+                <button
+                    className={styles.navItem}
+                    aria-current={pathname === '/billing' ? 'page' : undefined}
+                    onClick={() => navigate('/billing')}
+                >
+                    <span aria-hidden="true">💳</span> Pro Package
+                </button>
+                <button
+                    className={styles.navItem}
+                    aria-current={pathname === '/profile' ? 'page' : undefined}
+                    onClick={() => navigate('/profile')}
+                >
+                    <span aria-hidden="true">👤</span> Profile
                 </button>
             </div>
 
-            {/* Watchlist */}
-            <div className={styles.section}>
-                <p className={styles.sectionLabel}>Watchlist</p>
+            <div className={styles.sideGroup}>
+                <div className={styles.sideTitle}>Watchlist</div>
                 {watchlist.length === 0 ? (
                     <p className={styles.empty}>No tickers yet</p>
                 ) : (
-                    watchlist.map(ticker => (
-                        <button
-                            key={ticker}
-                            className={`${styles.tickerItem} ${pathname === `/analysis/${ticker}` ? styles.active : ''}`}
-                            onClick={() => router.push(`/analysis/${ticker}`)}
-                        >
-                            <span className={styles.tickerSymbol}>{ticker}</span>
-                            <span className={styles.tickerArrow}>→</span>
-                        </button>
-                    ))
-                )}
-            </div>
+                    watchlist.map(({ symbol, price, change_pct }) => {
+                        const isCurrent = pathname === `/analysis/${symbol}`
+                        const hasChange = change_pct !== null && change_pct !== undefined
+                        const isUp = hasChange ? change_pct >= 0 : true
+                        const chgText = hasChange 
+                            ? `${isUp ? '+' : '−'}${Math.abs(change_pct).toFixed(2)}%`
+                            : '—'
+                        const pxText = price ? `$${price.toFixed(2)}` : 'View report'
 
-            {/* Notes — coming soon */}
-            <div className={styles.section}>
-                <p className={styles.sectionLabel}>Notes</p>
-                <p className={styles.empty}>Coming soon</p>
+                        return (
+                            <button
+                                key={symbol}
+                                className={styles.wlRow}
+                                aria-current={isCurrent ? 'page' : undefined}
+                                onClick={() => navigate(`/analysis/${symbol}`)}
+                            >
+                                <span className={styles.wlSym}>{symbol}</span>
+                                <span className={`${styles.wlChg} ${isUp ? styles.up : styles.down} num`}>
+                                    {chgText}
+                                </span>
+                                <span className={`${styles.wlPx} num`}>{pxText}</span>
+                            </button>
+                        )
+                    })
+                )}
             </div>
         </aside>
     )

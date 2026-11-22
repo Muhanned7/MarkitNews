@@ -1,0 +1,6 @@
+{
+  "ticker": "ZZZZ",
+  "status": 404,
+  "error": "Ticker 'ZZZZ' not found. Please verify the symbol.",
+  "detail": "Symbol failed validation against known database tickers and exchange historical data (0 bars found)."
+}

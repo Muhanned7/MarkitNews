@@ -4,6 +4,7 @@ import { index } from '../lib/pinecone.js';
 import { getEmbedding } from '../lib/embeddings.js';
 
 const BACKEND_URL = process.env.BACKEND_URL || process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:8000';
+const INTERNAL_SERVICE_KEY = process.env.INTERNAL_SERVICE_KEY;
 
 async function seedTop100(){
 try {
@@ -60,9 +61,12 @@ try {
             
             const symbolToStore = (company.ticker || ticker).toUpperCase();
 
-            await fetch(`${BACKEND_URL}/tickers`, {
+            const tRes = await fetch(`${BACKEND_URL}/tickers`, {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                headers: { 
+                    'Content-Type': 'application/json',
+                    'X-Service-Key': INTERNAL_SERVICE_KEY
+                },
                 body: JSON.stringify({
                     symbol: symbolToStore,
                     name: company.name,
@@ -71,6 +75,7 @@ try {
                     industry: company.finnhubIndustry || null
                 })
             });
+            if (!tRes.ok) console.warn(`Ticker save warning for ${ticker}: status ${tRes.status}`);
 
             const textToEmbed = `${company.name} ${company.sector || ''} ${company.finnhubIndustry || ''} ${company.description || ''}`.trim();
 
@@ -90,9 +95,11 @@ try {
                     }]
                 });
 
-                await fetch(`${BACKEND_URL}/tickers/${encodeURIComponent(symbolToStore)}/embedding`, {
-                    method: 'PATCH'
+                const embRes = await fetch(`${BACKEND_URL}/tickers/${encodeURIComponent(symbolToStore)}/embedding`, {
+                    method: 'PATCH',
+                    headers: { 'X-Service-Key': INTERNAL_SERVICE_KEY }
                 });
+                if (!embRes.ok) console.warn(`Embedding status warning for ${ticker}: status ${embRes.status}`);
             }
 
             successCount++;

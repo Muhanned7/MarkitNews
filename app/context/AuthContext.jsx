@@ -2,39 +2,62 @@
 import { createContext, useContext, useEffect, useState } from 'react'
 
 const AuthContext = createContext(null)
-console.log("1. AuthContext.js: File is being evaluated");
-    
+
 export function AuthProvider({ children }) {
-    const [user, setUser] = useState(null)
-    const [loading, setLoading] = useState(true)
-    console.log("2. AuthProvider: Component is rendering");
-    useEffect(() => {
+  const [user, setUser] = useState(null)
+  const [authReady, setAuthReady] = useState(false)
+
+  useEffect(() => {
+    async function initSession() {
+      try {
         const token = localStorage.getItem('token')
         const email = localStorage.getItem('email')
         if (token && email) {
-            setUser({ token, email })
+          // Verify stored token against backend so expired/rotated JWTs don't leave a dead session
+          try {
+            const res = await fetch('/api/billing/wallet', {
+              headers: { Authorization: `Bearer ${token}` },
+            })
+            if (res.status === 401) {
+              localStorage.removeItem('token')
+              localStorage.removeItem('email')
+              setUser(null)
+              setAuthReady(true)
+              return
+            }
+          } catch (netErr) {
+            // Keep session if backend is temporarily unreachable
+          }
+          setUser({ token, email })
         }
-        setLoading(false)
-    }, [])
-
-    function logout() {
-        localStorage.removeItem('token')
-        localStorage.removeItem('email')
-        setUser(null)
+      } catch (e) {
+        // localStorage may fail in restricted browser contexts
+      } finally {
+        setAuthReady(true)
+      }
     }
+    initSession()
+  }, [])
 
-    return (
-        <AuthContext.Provider value={{ user, loading, logout, setUser }}>
-            {children}
-        </AuthContext.Provider>
-    )
+  function logout() {
+    try {
+      localStorage.removeItem('token')
+      localStorage.removeItem('email')
+    } catch (e) {}
+    setUser(null)
+  }
+
+  return (
+    <AuthContext.Provider value={{ user, loading: !authReady, authReady, logout, setUser }}>
+      {children}
+    </AuthContext.Provider>
+  )
 }
 
 export function useAuth() {
-    console.log("3. useAuth: Hook is being called by a component");
-    const context = useContext(AuthContext);
-    if (context === null) {
-        throw new Error('useAuth must be used within an AuthProvider');
-    }
-    return context;
+  const context = useContext(AuthContext)
+  if (context === null) {
+    throw new Error('useAuth must be used within an AuthProvider')
+  }
+  return context
 }

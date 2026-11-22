@@ -1,0 +1,444 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>FinnWinn UI reference</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=Manrope:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+/* ===== Tokens (identical to ui_reference/tokens.css) ===== */
+:root{
+  --canvas:#EDF1F3;--surface:#FFFFFF;--surface-2:#F6F8F9;--rule:#D5DCE2;
+  --ink:#14212B;--ink-2:#3E4C57;--ink-3:#5F6C76;
+  --brand:#00D4AA;--brand-ink:#0B6E5C;--brand-tint:#DDF7F1;
+  --bull:#137638;--bull-tint:#E3F4E8;--bear:#B42318;--bear-tint:#FCE8E6;
+  --caution:#A15C07;--caution-tint:#FDF0DC;--neutral:#4B5563;--neutral-tint:#ECEFF2;
+  --font-ui:'Manrope',system-ui,sans-serif;--font-figure:'Barlow Condensed','Manrope',sans-serif;
+  --fs-xs:.75rem;--fs-sm:.875rem;--fs-md:1rem;--fs-lg:1.25rem;--fs-xl:1.75rem;--fs-2xl:2.5rem;--fs-3xl:3.5rem;
+  --r-panel:14px;--r-control:10px;--r-chip:999px;
+  --shadow-panel:0 1px 0 var(--rule),0 8px 24px -16px rgba(20,33,43,.25);
+  --focus:0 0 0 3px color-mix(in srgb,var(--brand) 55%,transparent);
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --canvas:#0F1820;--surface:#16212B;--surface-2:#1C2934;--rule:#2B3A46;
+  --ink:#E6EDF2;--ink-2:#B9C6D0;--ink-3:#8D9BA6;--brand-ink:#3FE3C1;--brand-tint:#123A33;
+  --bull:#4ADE80;--bull-tint:#12301E;--bear:#F87171;--bear-tint:#3A1715;--caution:#F5B54A;--caution-tint:#3A2A10;
+  --neutral:#A9B4BD;--neutral-tint:#22303B;--shadow-panel:0 1px 0 var(--rule);}}
+:root[data-theme="dark"]{
+  --canvas:#0F1820;--surface:#16212B;--surface-2:#1C2934;--rule:#2B3A46;
+  --ink:#E6EDF2;--ink-2:#B9C6D0;--ink-3:#8D9BA6;--brand-ink:#3FE3C1;--brand-tint:#123A33;
+  --bull:#4ADE80;--bull-tint:#12301E;--bear:#F87171;--bear-tint:#3A1715;--caution:#F5B54A;--caution-tint:#3A2A10;
+  --neutral:#A9B4BD;--neutral-tint:#22303B;--shadow-panel:0 1px 0 var(--rule);}
+
+*{box-sizing:border-box}
+html,body{margin:0}
+body{background:var(--canvas);color:var(--ink);font-family:var(--font-ui);font-size:var(--fs-md);line-height:1.5;-webkit-font-smoothing:antialiased}
+.num{font-variant-numeric:tabular-nums}
+button,input{font:inherit;color:inherit}
+:focus-visible{outline:none;box-shadow:var(--focus);border-radius:var(--r-control)}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+
+/* ===== App shell ===== */
+.topbar{position:sticky;top:0;z-index:20;display:flex;align-items:center;gap:16px;height:60px;padding:0 20px;background:var(--surface);border-bottom:1px solid var(--rule)}
+.menu-btn{display:none;border:1px solid var(--rule);background:var(--surface);border-radius:var(--r-control);width:38px;height:38px;cursor:pointer}
+.logo{display:flex;align-items:center;gap:8px;font-family:var(--font-figure);font-weight:700;font-size:1.6rem;letter-spacing:.01em;color:var(--ink);text-decoration:none}
+.logo-mark{width:14px;height:14px;border-radius:4px;background:var(--brand);transform:rotate(45deg)}
+.search{flex:1;min-width:0;max-width:520px;display:flex;align-items:center;gap:10px;height:40px;padding:0 12px;border:1px solid var(--rule);border-radius:var(--r-control);background:var(--surface-2);color:var(--ink-3);font-size:var(--fs-sm);cursor:text}
+.search input{flex:1;min-width:0;width:100%;border:0;background:transparent;outline:none;color:var(--ink)}
+.kbd{font-size:var(--fs-xs);border:1px solid var(--rule);border-radius:6px;padding:1px 6px;color:var(--ink-3);background:var(--surface)}
+.topbar-right{margin-left:auto;display:flex;align-items:center;gap:10px}
+.ghost{height:38px;padding:0 14px;border:1px solid var(--rule);border-radius:var(--r-control);background:var(--surface);cursor:pointer;font-size:var(--fs-sm);font-weight:600;color:var(--ink-2)}
+.ghost:hover{border-color:var(--ink-3)}
+.avatar{width:36px;height:36px;border-radius:50%;background:var(--ink);color:var(--surface);display:grid;place-items:center;font-weight:700;font-size:var(--fs-sm);border:0;cursor:pointer}
+
+.layout{display:grid;grid-template-columns:232px minmax(0,1fr);min-height:calc(100vh - 60px);background:linear-gradient(90deg,var(--surface) 231px,var(--rule) 231px 232px,transparent 232px)}
+.sidebar{position:sticky;top:60px;height:calc(100vh - 60px);overflow:auto;padding:20px 12px;background:var(--surface);border-right:1px solid var(--rule)}
+.side-group+.side-group{margin-top:24px}
+.side-title{font-size:var(--fs-xs);font-weight:700;color:var(--ink-3);padding:0 10px 6px}
+.nav-item{display:flex;align-items:center;gap:10px;width:100%;padding:9px 10px;border:0;background:none;border-radius:var(--r-control);color:var(--ink-2);font-size:var(--fs-sm);font-weight:600;text-align:left;cursor:pointer;position:relative}
+.nav-item:hover{background:var(--surface-2);color:var(--ink)}
+.nav-item[aria-current="page"]{background:var(--brand-tint);color:var(--brand-ink)}
+.nav-item[aria-current="page"]::before{content:"";position:absolute;left:-12px;top:8px;bottom:8px;width:3px;border-radius:0 3px 3px 0;background:var(--brand)}
+.wl-row{display:grid;grid-template-columns:1fr auto;align-items:baseline;padding:8px 10px;border-radius:var(--r-control);cursor:pointer;font-size:var(--fs-sm)}
+.wl-row:hover{background:var(--surface-2)}
+.wl-sym{font-family:var(--font-figure);font-weight:600;font-size:1.05rem;letter-spacing:.02em}
+.wl-px{grid-column:1;color:var(--ink-3);font-size:var(--fs-xs)}
+.wl-chg{grid-row:1 / span 2;grid-column:2;align-self:center;font-weight:700;font-size:var(--fs-xs);padding:2px 8px;border-radius:var(--r-chip)}
+.up{color:var(--bull);background:var(--bull-tint)} .down{color:var(--bear);background:var(--bear-tint)}
+
+main{padding:28px clamp(16px,3vw,40px) 64px;max-width:1180px;width:100%;margin:0 auto}
+
+/* ===== Header ===== */
+.crumbs{font-size:var(--fs-sm);color:var(--ink-3);margin-bottom:14px}
+.crumbs a{color:var(--brand-ink);text-decoration:none;font-weight:600}
+.head{display:flex;flex-wrap:wrap;align-items:flex-end;justify-content:space-between;gap:16px 24px}
+.ident{display:flex;align-items:baseline;gap:14px;flex-wrap:wrap}
+.ticker{font-family:var(--font-figure);font-weight:700;font-size:var(--fs-3xl);line-height:.9;letter-spacing:.01em;margin:0}
+.company{color:var(--ink-2);font-weight:600}
+.exchange{font-size:var(--fs-xs);font-weight:700;color:var(--ink-3);border:1px solid var(--rule);border-radius:6px;padding:1px 6px;margin-left:6px}
+.price-line{display:flex;align-items:baseline;gap:12px;margin-top:10px;flex-wrap:wrap}
+.price{font-family:var(--font-figure);font-weight:600;font-size:var(--fs-2xl);line-height:1}
+.chg{font-weight:700;font-size:var(--fs-sm)}
+.asof{color:var(--ink-3);font-size:var(--fs-xs)}
+.demo{display:inline-flex;align-items:center;gap:6px;font-size:var(--fs-xs);font-weight:700;color:var(--caution);background:var(--caution-tint);border-radius:var(--r-chip);padding:3px 10px}
+.demo::before{content:"";width:6px;height:6px;border-radius:50%;background:currentColor}
+.head-actions{display:flex;gap:8px}
+.primary{height:40px;padding:0 16px;border:0;border-radius:var(--r-control);background:var(--brand);color:#06231D;font-weight:700;cursor:pointer}
+.primary:hover{filter:brightness(.96)}
+.star[aria-pressed="true"]{border-color:var(--brand);color:var(--brand-ink);background:var(--brand-tint)}
+
+/* ===== Verdict band (the one bold element) ===== */
+.verdict{margin-top:24px;display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:0;background:var(--surface);border-radius:var(--r-panel);box-shadow:var(--shadow-panel);overflow:hidden}
+.v-cell{padding:20px 24px}
+.v-cell+.v-cell{border-left:1px solid var(--rule)}
+.v-label{font-size:var(--fs-xs);font-weight:600;color:var(--ink-3);margin-bottom:6px}
+.rec{display:flex;align-items:center;gap:14px}
+.rec-pill{font-family:var(--font-figure);font-weight:700;font-size:1.9rem;letter-spacing:.03em;line-height:1;padding:8px 16px;border-radius:var(--r-control);color:var(--bull);background:var(--bull-tint)}
+.meter{display:flex;gap:3px;margin-top:8px}
+.meter i{width:9px;height:16px;border-radius:2px;background:var(--rule)}
+.meter i.on{background:var(--ink)}
+.meter-cap{font-size:var(--fs-xs);color:var(--ink-3);margin-top:4px}
+
+.range{position:relative;margin:30px 6px 8px;height:10px;border-radius:var(--r-chip);background:linear-gradient(90deg,var(--bear-tint),var(--neutral-tint) 45%,var(--bull-tint))}
+.range-band{position:absolute;top:0;bottom:0;border-radius:var(--r-chip);background:color-mix(in srgb,var(--brand) 35%,transparent);outline:1px solid color-mix(in srgb,var(--brand) 70%,transparent)}
+.pin{position:absolute;top:50%;transform:translate(-50%,-50%)}
+.pin-now{width:4px;height:26px;border-radius:2px;background:var(--ink)}
+.pin-tgt{width:16px;height:16px;border-radius:50%;background:var(--surface);border:3px solid var(--brand-ink)}
+.pin-tag{position:absolute;transform:translateX(-50%);white-space:nowrap;font-size:var(--fs-xs);font-weight:700}
+.pin-tag.top{bottom:20px}.pin-tag.bot{top:18px;color:var(--ink-3);font-weight:600}
+.range-ends{display:flex;justify-content:space-between;font-size:var(--fs-xs);color:var(--ink-3);margin-top:30px}
+.upside{font-family:var(--font-figure);font-size:var(--fs-xl);font-weight:600;color:var(--bull);line-height:1}
+.facts{display:grid;gap:12px;min-width:180px}
+.fact{display:flex;justify-content:space-between;gap:16px;font-size:var(--fs-sm)}
+.fact b{font-weight:700}
+.chip{display:inline-flex;align-items:center;gap:6px;font-size:var(--fs-xs);font-weight:700;padding:2px 9px;border-radius:var(--r-chip)}
+.c-bull{color:var(--bull);background:var(--bull-tint)}.c-bear{color:var(--bear);background:var(--bear-tint)}
+.c-caution{color:var(--caution);background:var(--caution-tint)}.c-neutral{color:var(--neutral);background:var(--neutral-tint)}
+
+/* ===== Scorecard strip ===== */
+.scores{margin-top:16px;display:grid;grid-template-columns:repeat(6,minmax(0,1fr));background:var(--surface);border-radius:var(--r-panel);box-shadow:var(--shadow-panel);overflow:hidden}
+.score{padding:14px 16px;border:0;background:none;text-align:left;cursor:pointer;border-top:3px solid transparent}
+.score+.score{border-left:1px solid var(--rule)}
+.score:hover{background:var(--surface-2)}
+.score[aria-selected="true"]{border-top-color:var(--brand);background:var(--surface-2)}
+.score-top{display:flex;justify-content:space-between;align-items:center;gap:8px;font-size:var(--fs-xs);font-weight:700;color:var(--ink-3)}
+.score-val{display:block;margin-top:6px;font-weight:700;font-size:var(--fs-md)}
+.score-sub{display:block;font-size:var(--fs-xs);color:var(--ink-3);margin-top:2px}
+.grade{font-size:var(--fs-xs);font-weight:700;border:1px solid var(--rule);border-radius:6px;padding:0 6px;color:var(--ink-2)}
+
+/* ===== Tabs ===== */
+.tabs{position:sticky;top:60px;z-index:10;margin-top:28px;display:flex;gap:4px;overflow-x:auto;scrollbar-width:none;background:var(--canvas);border-bottom:1px solid var(--rule);padding-top:6px}
+.tabs::-webkit-scrollbar{display:none}
+.tab{flex:none;border:0;background:none;padding:10px 14px;font-weight:600;font-size:var(--fs-sm);color:var(--ink-3);cursor:pointer;border-bottom:2px solid transparent;margin-bottom:-1px}
+.tab:hover{color:var(--ink)}
+.tab[aria-selected="true"]{color:var(--ink);border-bottom-color:var(--ink)}
+.panel{padding-top:24px}
+.panel[hidden]{display:none}
+.panel-lede{max-width:72ch;color:var(--ink-2);font-size:1.05rem;margin:0 0 24px}
+
+.two{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+.box{background:var(--surface);border-radius:var(--r-panel);box-shadow:var(--shadow-panel);padding:20px 22px}
+.box h3{margin:0 0 12px;font-size:var(--fs-md)}
+.box.bull h3{color:var(--bull)}.box.bear h3{color:var(--bear)}
+.list{margin:0;padding:0;list-style:none}
+.list li{padding:9px 0 9px 18px;position:relative;color:var(--ink-2);border-top:1px solid var(--rule)}
+.list li:first-child{border-top:0}
+.list li::before{content:"";position:absolute;left:0;top:18px;width:8px;height:2px;background:var(--ink-3)}
+.box.bull .list li::before{background:var(--bull)}.box.bear .list li::before{background:var(--bear)}
+
+/* metric table */
+.mtable{width:100%;border-collapse:collapse;font-size:var(--fs-sm)}
+.mtable th{text-align:left;font-weight:600;color:var(--ink-3);padding:10px 0;border-bottom:1px solid var(--rule)}
+.mtable td{padding:10px 0;border-bottom:1px solid var(--rule);font-variant-numeric:tabular-nums}
+.mtable td:last-child,.mtable th:last-child{text-align:right}
+.mtable .hint{display:block;color:var(--ink-3);font-size:var(--fs-xs)}
+.big{font-family:var(--font-figure);font-weight:600;font-size:1.25rem}
+
+/* chart */
+.chart{width:100%;height:auto;display:block}
+.legend{display:flex;gap:16px;flex-wrap:wrap;font-size:var(--fs-xs);color:var(--ink-3);margin-top:8px}
+.legend span::before{content:"";display:inline-block;width:14px;height:2px;vertical-align:middle;margin-right:6px;background:currentColor}
+
+/* news */
+.news{display:grid;gap:0;background:var(--surface);border-radius:var(--r-panel);box-shadow:var(--shadow-panel)}
+.news a{display:grid;grid-template-columns:1fr auto;gap:4px 16px;padding:16px 22px;color:inherit;text-decoration:none;border-top:1px solid var(--rule)}
+.news a:first-child{border-top:0}
+.news a:hover .n-title{text-decoration:underline}
+.n-title{font-weight:700}
+.n-meta{font-size:var(--fs-xs);color:var(--ink-3)}
+.n-side{grid-row:1 / span 2;grid-column:2;align-self:center}
+
+/* sentiment gauge */
+.gauge{position:relative;height:12px;border-radius:var(--r-chip);background:linear-gradient(90deg,var(--bear),var(--neutral-tint) 50%,var(--bull));margin:28px 0 8px}
+.gauge .pin-now{height:24px}
+
+footer.note{margin-top:40px;padding-top:16px;border-top:1px solid var(--rule);font-size:var(--fs-xs);color:var(--ink-3);display:grid;gap:4px;max-width:90ch}
+
+/* ===== Responsive ===== */
+@media (max-width:1024px){
+  .layout{grid-template-columns:minmax(0,1fr);background:none}
+  .sidebar{position:fixed;top:60px;left:0;width:264px;z-index:30;transform:translateX(-100%);transition:transform .2s ease;box-shadow:0 0 0 100vmax transparent}
+  body.nav-open .sidebar{transform:none;box-shadow:0 0 0 100vmax rgba(15,24,32,.35)}
+  .menu-btn{display:inline-grid;place-items:center}
+  .scores{grid-template-columns:repeat(3,minmax(0,1fr))}
+  .score:nth-child(4){border-left:0}
+  .score:nth-child(n+4){border-top:1px solid var(--rule)}
+  .score[aria-selected="true"]{border-top:3px solid var(--brand)}
+}
+@media (max-width:720px){
+  .search .kbd,.radar-label{display:none}
+  .verdict{grid-template-columns:1fr}
+  .v-cell+.v-cell{border-left:0;border-top:1px solid var(--rule)}
+  .two{grid-template-columns:1fr}
+  .scores{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .score:nth-child(odd){border-left:0}
+  .score:nth-child(4){border-left:1px solid var(--rule)}
+  .score:nth-child(n+3){border-top:1px solid var(--rule)}
+  .ticker{font-size:2.75rem}
+  .head-actions{width:100%}
+  .head-actions button{flex:1}
+}
+@media (max-width:480px){
+  .topbar{gap:10px;padding:0 12px}
+  .logo span:last-child{display:none}
+  .theme-btn{display:none}
+}
+</style>
+</head>
+<body>
+
+<header class="topbar">
+  <button class="menu-btn" aria-label="Open navigation" onclick="document.body.classList.toggle('nav-open')">☰</button>
+  <a class="logo" href="#" aria-label="FinnWinn home"><span class="logo-mark"></span><span>FinnWinn</span></a>
+  <label class="search">
+    <span aria-hidden="true">⌕</span>
+    <input type="search" placeholder="Search a ticker or company" aria-label="Search a ticker or company">
+    <span class="kbd">Ctrl K</span>
+  </label>
+  <div class="topbar-right">
+    <button class="ghost"><span aria-hidden="true">⚡</span> <span class="radar-label">Contradiction Radar</span></button>
+    <button class="ghost theme-btn" id="themeBtn" aria-label="Toggle dark mode">Dark</button>
+    <button class="avatar" aria-label="Account menu">D</button>
+  </div>
+</header>
+
+<div class="layout">
+  <aside class="sidebar" aria-label="Main navigation">
+    <div class="side-group">
+      <div class="side-title">Explore</div>
+      <button class="nav-item">News feed</button>
+      <button class="nav-item" aria-current="page">AI analysis</button>
+      <button class="nav-item">Contradiction Radar</button>
+      <button class="nav-item">Profile</button>
+    </div>
+    <div class="side-group">
+      <div class="side-title">Watchlist</div>
+      <div class="wl-row"><span class="wl-sym">AAPL</span><span class="wl-chg up num">+0.65%</span><span class="wl-px num">$192.25</span></div>
+      <div class="wl-row"><span class="wl-sym">NVDA</span><span class="wl-chg down num">−1.12%</span><span class="wl-px num">$228.52</span></div>
+      <div class="wl-row"><span class="wl-sym">JPM</span><span class="wl-chg up num">+0.21%</span><span class="wl-px num">$331.43</span></div>
+    </div>
+  </aside>
+
+  <main>
+    <div class="crumbs"><a href="#">AI analysis</a> / AAPL</div>
+
+    <section class="head" aria-label="Company">
+      <div>
+        <div class="ident">
+          <h1 class="ticker">AAPL</h1>
+          <span class="company">Apple Inc.<span class="exchange">NASDAQ</span></span>
+          <span class="demo" title="MOCK_MODE is on: values are placeholders">Demo data</span>
+        </div>
+        <div class="price-line">
+          <span class="price num">$192.25</span>
+          <span class="chg num" style="color:var(--bull)">+1.24 (+0.65%) today</span>
+          <span class="asof">Data as of 14:05 IST, cached 2h ago</span>
+        </div>
+      </div>
+      <div class="head-actions">
+        <button class="ghost star" id="starBtn" aria-pressed="false">☆ Add to watchlist</button>
+        <button class="primary">Refresh analysis</button>
+      </div>
+    </section>
+
+    <section class="verdict" aria-label="Verdict">
+      <div class="v-cell">
+        <div class="v-label">Recommendation</div>
+        <div class="rec">
+          <span class="rec-pill">BUY</span>
+          <div>
+            <div class="meter" aria-label="Conviction 8 of 10"><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i></i><i></i></div>
+            <div class="meter-cap">Conviction 8/10, medium-term</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="v-cell">
+        <div class="v-label">Price vs. target (street range $170–$250)</div>
+        <div class="range" role="img" aria-label="Current price 192.25, target 225.50, street range 170 to 250">
+          <div class="range-band" style="left:calc((205 - 170) / 80 * 100%);right:calc((250 - 245) / 80 * 100%)"></div>
+          <div class="pin pin-now" style="left:calc((192.25 - 170) / 80 * 100%)"></div>
+          <div class="pin-tag top" style="left:calc((192.25 - 170) / 80 * 100%)">Now $192.25</div>
+          <div class="pin pin-tgt" style="left:calc((225.5 - 170) / 80 * 100%)"></div>
+          <div class="pin-tag bot" style="left:calc((225.5 - 170) / 80 * 100%)">Target $225.50</div>
+        </div>
+        <div class="range-ends num"><span>Street low $170</span><span class="upside num">+17.3% upside</span><span>Street high $250</span></div>
+      </div>
+
+      <div class="v-cell facts">
+        <div class="fact"><span>Risk</span><span class="chip c-caution">Medium</span></div>
+        <div class="fact"><span>Risk / reward</span><b>Favorable</b></div>
+        <div class="fact"><span>Position size</span><b>Medium</b></div>
+        <div class="fact"><span>Report quality</span><span class="chip c-bull" title="Faithfulness 0.95, consistency 0.90, completeness 0.92">Grade A (0.92)</span></div>
+      </div>
+    </section>
+
+    <div class="scores" role="tablist" aria-label="Agent scorecard">
+      <button class="score" role="tab" aria-selected="false" data-tab="news"><span class="score-top">News <span class="grade">A</span></span><span class="score-val">Positive</span><span class="score-sub">4 relevant stories</span></button>
+      <button class="score" role="tab" aria-selected="false" data-tab="sentiment"><span class="score-top">Sentiment <span class="grade">A</span></span><span class="score-val" style="color:var(--bull)">Bullish 9/10</span><span class="score-sub">Analysts: buy</span></button>
+      <button class="score" role="tab" aria-selected="false" data-tab="fundamentals"><span class="score-top">Fundamentals <span class="grade">A</span></span><span class="score-val">Fairly valued</span><span class="score-sub">Strong balance sheet</span></button>
+      <button class="score" role="tab" aria-selected="false" data-tab="technical"><span class="score-top">Technical <span class="grade">A</span></span><span class="score-val" style="color:var(--bull)">Uptrend</span><span class="score-sub">Above 200-day avg</span></button>
+      <button class="score" role="tab" aria-selected="false" data-tab="risk"><span class="score-top">Risk <span class="grade">A</span></span><span class="score-val" style="color:var(--caution)">Medium</span><span class="score-sub">β 1.05, vol 22%</span></button>
+      <button class="score" role="tab" aria-selected="false" data-tab="radar"><span class="score-top">Contradictions <span class="grade">B</span></span><span class="score-val">1 conflict</span><span class="score-sub">Supply-chain claims</span></button>
+    </div>
+
+    <nav class="tabs" role="tablist" aria-label="Report sections">
+      <button class="tab" role="tab" data-tab="overview" aria-selected="true">Overview</button>
+      <button class="tab" role="tab" data-tab="news">News</button>
+      <button class="tab" role="tab" data-tab="sentiment">Sentiment</button>
+      <button class="tab" role="tab" data-tab="fundamentals">Fundamentals</button>
+      <button class="tab" role="tab" data-tab="technical">Technical</button>
+      <button class="tab" role="tab" data-tab="risk">Risk</button>
+      <button class="tab" role="tab" data-tab="radar">Contradictions</button>
+    </nav>
+
+    <section class="panel" id="p-overview">
+      <p class="panel-lede">Apple combines a wide moat and steady cash generation with a constructive chart. Valuation is slightly above the sector median, so the upside case rests on services growth continuing.</p>
+      <div class="two">
+        <div class="box bull"><h3>Bull case</h3><ul class="list"><li>Ecosystem lock-in keeps switching costs high</li><li>Services margin keeps lifting overall profitability</li><li>Price is holding above its 50- and 200-day averages</li></ul></div>
+        <div class="box bear"><h3>Bear case</h3><ul class="list"><li>Trades at a premium to sector P/E</li><li>Assembly concentrated in a few regions</li><li>App Store regulation could cut fee income</li></ul></div>
+        <div class="box"><h3>Upcoming catalysts</h3><ul class="list"><li>Quarterly earnings, 30 Oct</li><li>Next product launch cycle</li></ul></div>
+        <div class="box"><h3>Key risks</h3><ul class="list"><li>Interest-rate moves compress tech multiples</li><li>Component cost inflation</li></ul></div>
+      </div>
+    </section>
+
+    <section class="panel" id="p-news" hidden>
+      <div class="news">
+        <a href="#"><span class="n-title">Apple widens India assembly as supplier base diversifies</span><span class="n-meta">Reuters, 2h ago — reduces single-region dependency</span><span class="n-side chip c-bull">Positive</span></a>
+        <a href="#"><span class="n-title">EU regulators open new review of App Store fees</span><span class="n-meta">Financial Times, 5h ago — could pressure services revenue</span><span class="n-side chip c-bear">Negative</span></a>
+        <a href="#"><span class="n-title">Analysts lift targets ahead of earnings</span><span class="n-meta">Bloomberg, yesterday — three upgrades this week</span><span class="n-side chip c-bull">Positive</span></a>
+        <a href="#"><span class="n-title">Smartphone shipments flat for the quarter</span><span class="n-meta">MarketWatch, 2 days ago — industry backdrop</span><span class="n-side chip c-neutral">Neutral</span></a>
+      </div>
+    </section>
+
+    <section class="panel" id="p-sentiment" hidden>
+      <div class="box">
+        <h3>Overall sentiment: bullish, 9 out of 10</h3>
+        <div class="gauge" role="img" aria-label="Sentiment 9 of 10"><div class="pin pin-now" style="left:88.9%"></div></div>
+        <div class="range-ends"><span>Bearish</span><span>Neutral</span><span>Bullish</span></div>
+        <table class="mtable" style="margin-top:20px">
+          <tr><th>Audience</th><th>Reading</th></tr>
+          <tr><td>Retail</td><td><span class="chip c-bull">Bullish</span></td></tr>
+          <tr><td>Institutional</td><td><span class="chip c-bull">Bullish</span></td></tr>
+          <tr><td>Analyst consensus</td><td><span class="chip c-bull">Buy</span></td></tr>
+        </table>
+      </div>
+    </section>
+
+    <section class="panel" id="p-fundamentals" hidden>
+      <div class="two">
+        <div class="box">
+          <h3>Valuation</h3>
+          <table class="mtable">
+            <tr><td>P/E (trailing)<span class="hint">Sector median 24.1×</span></td><td class="big">27.4×</td></tr>
+            <tr><td>P/E (forward)</td><td class="big">24.6×</td></tr>
+            <tr><td>Verdict</td><td><span class="chip c-caution">Fairly valued</span></td></tr>
+          </table>
+        </div>
+        <div class="box">
+          <h3>Quality &amp; growth</h3>
+          <table class="mtable">
+            <tr><td>Revenue growth (YoY)</td><td class="big" style="color:var(--bull)">+8.5%</td></tr>
+            <tr><td>Profit margin</td><td class="big">25.0%</td></tr>
+            <tr><td>Return on equity</td><td class="big">40.2%</td></tr>
+            <tr><td>Debt / equity<span class="hint">1.05× total debt to equity</span></td><td class="big">1.05×</td></tr>
+            <tr><td>Free cash flow (TTM)</td><td class="big">$95.0B</td></tr>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <section class="panel" id="p-technical" hidden>
+      <div class="box">
+        <h3>Price, 6 months</h3>
+        <svg class="chart" viewBox="0 0 720 220" role="img" aria-label="Six-month price chart with 50-day average, support at 182.64 and resistance at 201.86">
+          <line x1="0" x2="720" y1="40" y2="40" stroke="var(--bear)" stroke-dasharray="5 5" stroke-width="1.5"/>
+          <line x1="0" x2="720" y1="168" y2="168" stroke="var(--bull)" stroke-dasharray="5 5" stroke-width="1.5"/>
+          <polyline fill="none" stroke="var(--ink-3)" stroke-width="1.5" points="0,170 60,165 120,160 180,152 240,146 300,140 360,132 420,126 480,120 540,112 600,106 660,100 720,96"/>
+          <polyline fill="none" stroke="var(--ink)" stroke-width="2.5" stroke-linejoin="round" points="0,180 30,172 60,176 90,160 120,166 150,150 180,156 210,138 240,146 270,128 300,136 330,118 360,126 390,108 420,116 450,98 480,110 510,92 540,104 570,86 600,94 630,78 660,90 690,82 720,88"/>
+          <text x="714" y="34" text-anchor="end" font-size="12" fill="var(--bear)">Resistance $201.86</text>
+          <text x="714" y="186" text-anchor="end" font-size="12" fill="var(--bull)">Support $182.64</text>
+        </svg>
+        <div class="legend"><span style="color:var(--ink)">Price</span><span style="color:var(--ink-3)">50-day average</span><span style="color:var(--bull)">Support</span><span style="color:var(--bear)">Resistance</span></div>
+        <table class="mtable" style="margin-top:16px">
+          <tr><td>RSI (14)<span class="hint">Neutral zone is 30–70</span></td><td class="big">54.2</td></tr>
+          <tr><td>MACD</td><td><span class="chip c-bull">Bullish crossover</span></td></tr>
+          <tr><td>Volume vs. 20-day average</td><td><span class="chip c-neutral">Above average</span></td></tr>
+        </table>
+      </div>
+    </section>
+
+    <section class="panel" id="p-risk" hidden>
+      <div class="two">
+        <div class="box">
+          <h3>Risk metrics, last 12 months</h3>
+          <table class="mtable">
+            <tr><td>Beta vs. S&amp;P 500<span class="hint">Moves with the market</span></td><td class="big">1.05</td></tr>
+            <tr><td>Annualised volatility</td><td class="big">22.0%</td></tr>
+            <tr><td>Sharpe ratio</td><td class="big">1.40</td></tr>
+            <tr><td>Max drawdown</td><td class="big" style="color:var(--bear)">−14.0%</td></tr>
+            <tr><td>1-day VaR (95%)<span class="hint">≈ $200 on a $10,000 position</span></td><td class="big" style="color:var(--bear)">−2.0%</td></tr>
+          </table>
+        </div>
+        <div class="box">
+          <h3>What could go wrong</h3>
+          <ul class="list"><li>Broad market sell-off (beta above 1)</li><li>Regulatory action on services</li><li>Concentration in one hardware line</li></ul>
+          <h3 style="margin-top:18px">What cushions it</h3>
+          <ul class="list"><li>Diversified revenue streams</li><li>Large net cash position</li></ul>
+        </div>
+      </div>
+    </section>
+
+    <section class="panel" id="p-radar" hidden>
+      <div class="box">
+        <h3>One conflict between sources</h3>
+        <p style="color:var(--ink-2);max-width:70ch">Wire reports describe a major assembly disruption; local press and company statements describe a short dispute resolved within 36 hours. Treat the larger output-cut figure as unconfirmed.</p>
+        <span class="chip c-caution">Illustrative demo scenario</span>
+      </div>
+    </section>
+
+    <footer class="note">
+      <span>For education and research only. Not investment advice.</span>
+      <span>Sources: yfinance, NewsAPI, company filings. Generated by 6 agents and a synthesizer, 14:05 IST.</span>
+    </footer>
+  </main>
+</div>
+
+<script>
+  const tabs=[...document.querySelectorAll('.tab')], scores=[...document.querySelectorAll('.score')];
+  function show(id){
+    tabs.forEach(t=>t.setAttribute('aria-selected',t.dataset.tab===id));
+    scores.forEach(s=>s.setAttribute('aria-selected',s.dataset.tab===id));
+    document.querySelectorAll('.panel').forEach(p=>p.hidden=p.id!=='p-'+id);
+  }
+  tabs.forEach(t=>t.onclick=()=>show(t.dataset.tab));
+  scores.forEach(s=>s.onclick=()=>{show(s.dataset.tab);document.querySelector('.tabs').scrollIntoView({behavior:'smooth',block:'start'})});
+  const star=document.getElementById('starBtn');
+  star.onclick=()=>{const on=star.getAttribute('aria-pressed')!=='true';star.setAttribute('aria-pressed',on);star.textContent=on?'★ In watchlist':'☆ Add to watchlist'};
+  document.getElementById('themeBtn').onclick=()=>{const r=document.documentElement;const dark=r.dataset.theme==='dark'||(!r.dataset.theme&&matchMedia('(prefers-color-scheme: dark)').matches);r.dataset.theme=dark?'light':'dark';document.getElementById('themeBtn').textContent=dark?'Dark':'Light'};
+  (()=>{const r=document.documentElement;const dark=r.dataset.theme==='dark'||(!r.dataset.theme&&matchMedia('(prefers-color-scheme: dark)').matches);document.getElementById('themeBtn').textContent=dark?'Light':'Dark'})();
+  document.addEventListener('keydown',e=>{if((e.ctrlKey||e.metaKey)&&e.key.toLowerCase()==='k'){e.preventDefault();document.querySelector('.search input').focus()}});
+</script>
+</body>
+</html>

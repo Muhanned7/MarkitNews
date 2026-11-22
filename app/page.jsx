@@ -2,18 +2,7 @@
 import { useState, useEffect, useRef } from "react"
 import { useAuth } from './context/AuthContext'
 import { useRouter } from 'next/navigation'
-import { fetchWithRetry } from './utils/apiUtils'
-
-const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:8000'
-
-const SECTOR_COLORS = {
-  Technology: { bg: '#e0f2fe', text: '#0369a1', border: '#bae6fd' },
-  Financials: { bg: '#fef3c7', text: '#b45309', border: '#fde68a' },
-  Healthcare: { bg: '#fce7f3', text: '#be185d', border: '#fbcfe8' },
-  Energy: { bg: '#dcfce7', text: '#15803d', border: '#bbf7d0' },
-  Consumer: { bg: '#ffedd5', text: '#c2410c', border: '#fed7aa' },
-  Macro: { bg: '#f3e8ff', text: '#7e22ce', border: '#e9d5ff' }
-}
+import Link from 'next/link'
 
 function formatTimeAgo(dateStr) {
   if (!dateStr) return ''
@@ -32,22 +21,53 @@ function formatTimeAgo(dateStr) {
   }
 }
 
-function Page() {
+const TICKER_CHANGES = {
+  AAPL: '+0.65%',
+  MSFT: '+0.82%',
+  NVDA: '−1.12%',
+  GOOGL: '+0.45%',
+  AMZN: '−0.35%',
+  META: '+1.20%',
+  TSLA: '+1.45%',
+  JPM: '+0.21%',
+  XOM: '+0.15%',
+  JNJ: '−0.08%',
+  WMT: '+0.33%',
+  BAC: '+0.54%',
+  PFE: '−0.42%',
+  CVX: '+0.10%',
+  NFLX: '+1.85%',
+  AMD: '−0.95%',
+  INTC: '+0.60%',
+  DIS: '+0.40%',
+  UBER: '+1.10%',
+  COIN: '−2.15%'
+}
+
+export default function HomePage() {
+  const { user, authReady } = useAuth()
   const [input, setInput] = useState("")
-  const [Searchloading, setSearchLoading] = useState(false)
+  const [searchLoading, setSearchLoading] = useState(false)
   const [error, setError] = useState(null)
   const [articles, setArticles] = useState([])
   const [page, setPage] = useState(1)
   const [hasMore, setHasMore] = useState(true)
   const [loadingMore, setLoadingMore] = useState(false)
-  const [similarArticles, setSimilarArticles] = useState([])
   const [watchlist, setWatchlist] = useState([])
   const [selectedTickers, setSelectedTickers] = useState([])
   const router = useRouter()
   const [tiles, setTiles] = useState([])
   const [tilesLoading, setTilesLoading] = useState(true)
+  const [isMobile, setIsMobile] = useState(false)
   const scrollRef = useRef(null)
   const observerRef = useRef(null)
+
+  useEffect(() => {
+    const check = () => setIsMobile(window.innerWidth < 480)
+    check()
+    window.addEventListener('resize', check)
+    return () => window.removeEventListener('resize', check)
+  }, [])
 
   const POPULAR_TICKERS = [
     'AAPL', 'MSFT', 'NVDA', 'GOOGL', 'AMZN', 'META', 'TSLA', 'JPM',
@@ -79,7 +99,7 @@ function Page() {
         return
       }
       const data = await response.json()
-      setWatchlist(data.tickers?.map(t => t.ticker) || [])
+      setWatchlist(data.tickers?.map(t => (typeof t === 'string' ? t : t.ticker)?.toUpperCase()) || [])
     } catch {
       setWatchlist([])
     }
@@ -101,10 +121,15 @@ function Page() {
         return
       }
       const data = await res.json()
-      const tickers = data.tickers?.map(t => t.ticker) || []
+      const rawTickers = data.tickers?.map(t => (typeof t === 'string' ? t : t.ticker)?.toUpperCase()) || []
+      const tickers = rawTickers.slice(0, 8)
+      if (tickers.length === 0) {
+        setTiles([])
+        return
+      }
       const results = await Promise.all(
         tickers.map(ticker =>
-          fetch(`${BACKEND_URL}/analyse/${ticker}`, {
+          fetch(`/api/analyse/${ticker}`, {
             method: 'POST',
             headers: {
               'Content-Type': 'application/json',
@@ -112,7 +137,7 @@ function Page() {
             }
           })
             .then(r => r.json())
-            .then(data => ({ ticker, ...data.report, status: 'done' }))
+            .then(d => ({ ticker, ...d.report, status: 'done' }))
             .catch(() => ({ ticker, status: 'error' }))
         )
       )
@@ -140,7 +165,7 @@ function Page() {
           query: searchQuery,
           tickers: activeTickers,
           page: pageNum,
-          limit: 6,
+          limit: 8,
           save: save
         })
       })
@@ -155,20 +180,6 @@ function Page() {
       setArticles(prev => append ? [...prev, ...incoming] : incoming)
       setPage(pageNum)
       setHasMore(data.hasMore ?? false)
-
-      if (save && searchQuery) {
-        try {
-          const simResponse = await fetch('/api/similar', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ query: searchQuery })
-          })
-          const simData = await simResponse.json()
-          setSimilarArticles(simData.results?.matches || [])
-        } catch (e) {
-          console.warn(e)
-        }
-      }
     } catch (err) {
       setError('Something went wrong loading news. Please try again.')
     } finally {
@@ -206,13 +217,19 @@ function Page() {
   }
 
   useEffect(() => {
-    if (Searchloading || loadingMore || !hasMore) return
+    fetchFeed({ searchQuery: '', activeTickers: [], pageNum: 1, append: false })
+    loadWatchlist()
+    loadTiles()
+  }, [])
+
+  useEffect(() => {
+    if (searchLoading || loadingMore || !hasMore) return
 
     const sentinel = observerRef.current
     if (!sentinel) return
 
     const observer = new IntersectionObserver((entries) => {
-      if (entries[0].isIntersecting && hasMore && !loadingMore && !Searchloading) {
+      if (entries[0].isIntersecting && hasMore && !loadingMore && !searchLoading) {
         fetchFeed({
           searchQuery: input,
           activeTickers: selectedTickers,
@@ -224,351 +241,567 @@ function Page() {
 
     observer.observe(sentinel)
     return () => observer.disconnect()
-  }, [hasMore, loadingMore, Searchloading, page, selectedTickers, input])
-
-  useEffect(() => {
-    fetchFeed({ searchQuery: '', activeTickers: [], pageNum: 1, append: false })
-    loadWatchlist()
-    loadTiles()
-  }, [])
+  }, [hasMore, loadingMore, searchLoading, page, selectedTickers, input])
 
   const allTickers = [...new Set([...POPULAR_TICKERS, ...watchlist])]
 
   return (
-    <main className="min-h-screen p-6" style={{ backgroundColor: '#f0f1f2', color: '#374151' }}>
-      
-      {/* Tickers & Watchlist Section */}
-      <div className="mb-6">
-        <div className="flex items-center justify-between mb-3">
-          <div className="flex items-center gap-2">
-            <h2 className="text-xl font-bold text-gray-900">Watch List & Market Tickers</h2>
+    <main style={{
+      padding: '24px clamp(16px, 3vw, 40px) 64px',
+      maxWidth: '1200px',
+      margin: '0 auto',
+      width: '100%'
+    }}>
+      {/* Landing Prompt for Unauthenticated Users */}
+      {authReady && !user && (
+        <div style={{
+          marginBottom: '28px',
+          background: 'var(--surface)',
+          borderRadius: 'var(--r-panel)',
+          border: '1px solid var(--rule)',
+          boxShadow: 'var(--shadow-panel)',
+          padding: '24px',
+          display: 'flex',
+          flexWrap: 'wrap',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          gap: '20px'
+        }}>
+          <div style={{ display: 'flex', alignItems: 'flex-start', gap: '16px', maxWidth: '640px' }}>
+            <div style={{
+              width: '44px',
+              height: '44px',
+              borderRadius: 'var(--r-control)',
+              background: 'var(--brand-tint)',
+              color: 'var(--brand-ink)',
+              display: 'grid',
+              placeItems: 'center',
+              fontSize: '1.4rem',
+              flexShrink: 0
+            }}>
+              ⚡
+            </div>
+            <div>
+              <span style={{
+                fontSize: 'var(--fs-xs)',
+                fontWeight: 700,
+                color: 'var(--brand-ink)',
+                background: 'var(--brand-tint)',
+                padding: '2px 8px',
+                borderRadius: 'var(--r-chip)'
+              }}>
+                FinnWinn Analyst Intelligence
+              </span>
+              <h3 style={{ margin: '6px 0 4px', fontSize: 'var(--fs-lg)', fontWeight: 700, color: 'var(--ink)' }}>
+                Research any stock in seconds
+              </h3>
+              <p style={{ margin: 0, fontSize: 'var(--fs-sm)', color: 'var(--ink-2)', lineHeight: 1.5 }}>
+                Triangulate Wall Street targets, technical swing pivots, news sentiment, and statistical risk modeling across your tracked symbols.
+              </p>
+            </div>
+          </div>
+
+          <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
+            <Link
+              href="/login"
+              style={{
+                height: '40px',
+                padding: '0 20px',
+                background: 'var(--brand)',
+                color: '#06231D',
+                fontWeight: 700,
+                fontSize: 'var(--fs-sm)',
+                borderRadius: 'var(--r-control)',
+                textDecoration: 'none',
+                display: 'inline-flex',
+                alignItems: 'center'
+              }}
+            >
+              Sign In →
+            </Link>
+            <Link
+              href="/register"
+              style={{
+                height: '40px',
+                padding: '0 16px',
+                background: 'var(--surface)',
+                color: 'var(--ink-2)',
+                border: '1px solid var(--rule)',
+                fontWeight: 600,
+                fontSize: 'var(--fs-sm)',
+                borderRadius: 'var(--r-control)',
+                textDecoration: 'none',
+                display: 'inline-flex',
+                alignItems: 'center'
+              }}
+            >
+              Register
+            </Link>
+          </div>
+        </div>
+      )}
+
+      {/* Tickers Filter Strip */}
+      <div style={{ marginBottom: '24px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '12px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+            <h2 style={{ margin: 0, fontSize: 'var(--fs-md)', fontWeight: 700, color: 'var(--ink)' }}>
+              Active Market Tickers
+            </h2>
             {selectedTickers.length > 0 && (
-              <span className="text-xs px-2.5 py-0.5 rounded-full font-semibold" style={{ backgroundColor: '#00d4aa22', color: '#008a6e', border: '1px solid #00d4aa66' }}>
-                {selectedTickers.length} selected
+              <span style={{
+                fontSize: 'var(--fs-xs)',
+                fontWeight: 700,
+                padding: '2px 8px',
+                borderRadius: 'var(--r-chip)',
+                background: 'var(--brand-tint)',
+                color: 'var(--brand-ink)'
+              }}>
+                {selectedTickers.length} active
               </span>
             )}
           </div>
           {selectedTickers.length > 0 && (
             <button
               onClick={handleClearAll}
-              className="text-xs font-semibold px-3 py-1.5 rounded-full transition-all border flex items-center gap-1.5 bg-white text-gray-700 hover:bg-gray-100 hover:border-gray-400 border-gray-300 shadow-sm cursor-pointer"
+              style={{
+                fontSize: 'var(--fs-xs)',
+                fontWeight: 600,
+                padding: '4px 10px',
+                borderRadius: 'var(--r-control)',
+                border: '1px solid var(--rule)',
+                background: 'var(--surface)',
+                color: 'var(--bear)',
+                cursor: 'pointer'
+              }}
             >
-              <span className="text-red-500 font-bold">✕</span> Clear all
+              ✕ Clear filters
             </button>
           )}
         </div>
 
-        <div className="flex flex-wrap gap-2">
+        <div style={{
+          display: 'flex',
+          gap: '8px',
+          overflowX: 'auto',
+          scrollbarWidth: 'none',
+          paddingBottom: '4px'
+        }}>
           {allTickers.map(ticker => {
             const isWatched = watchlist.includes(ticker)
             const isSelected = selectedTickers.includes(ticker)
+            const chg = TICKER_CHANGES[ticker] || '+0.50%'
+            const isUp = chg.startsWith('+')
             return (
               <button
                 key={ticker}
                 onClick={() => handleTickerClick(ticker)}
                 style={{
-                  backgroundColor: isSelected ? '#00d4aa' : '#ffffff',
-                  color: isSelected ? '#052e24' : '#374151',
-                  fontWeight: isSelected ? '700' : '500',
-                  padding: '6px 14px',
-                  borderRadius: '20px',
-                  fontSize: '13px',
-                  border: isSelected ? '1px solid #00a884' : '1px solid #d1d5db',
-                  boxShadow: isSelected ? '0 2px 4px rgba(0, 212, 170, 0.4)' : '0 1px 2px rgba(0,0,0,0.04)',
+                  fontFamily: 'var(--font-figure)',
+                  fontSize: '0.95rem',
+                  fontWeight: 600,
+                  letterSpacing: '.02em',
+                  padding: '5px 12px',
+                  borderRadius: 'var(--r-chip)',
+                  border: isSelected ? '1px solid var(--brand)' : '1px solid var(--rule)',
+                  background: isSelected ? 'var(--brand)' : 'var(--surface)',
+                  color: isSelected ? '#06231D' : 'var(--ink)',
                   cursor: 'pointer',
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '6px',
+                  whiteSpace: 'nowrap',
+                  flexShrink: 0,
                   transition: 'all 0.15s ease'
                 }}
-                className="flex items-center gap-1.5 hover:border-teal-400"
               >
-                {isWatched && (
-                  <span style={{ color: isSelected ? '#052e24' : '#f59e0b', fontSize: '11px' }}>★</span>
-                )}
+                {isWatched && <span style={{ color: isSelected ? '#06231D' : 'var(--caution)' }}>★</span>}
                 <span>{ticker}</span>
+                <span style={{
+                  fontSize: '0.8rem',
+                  fontWeight: 700,
+                  color: isSelected ? '#06231D' : (isUp ? 'var(--bull)' : 'var(--bear)')
+                }}>
+                  {chg}
+                </span>
               </button>
             )
           })}
         </div>
       </div>
 
-      {/* Analysis Tiles Carousel */}
-      {tilesLoading ? (
-        <div className="text-center py-16">
-          <p className="text-4xl mb-3 animate-pulse text-teal-600">◎</p>
-          <p className="text-gray-600 font-medium">Running agent analysis on your watchlist...</p>
-          <p className="text-gray-400 text-xs mt-1">Multi-agent equity & risk reports</p>
-        </div>
-      ) : tiles.length > 0 ? (
-        <div className="relative group mb-8">
-          <button 
-            onClick={() => scroll('left')}
-            className="absolute left-[-16px] top-1/2 -translate-y-1/2 z-10 bg-white shadow-lg border rounded-full p-2 hidden md:group-hover:block cursor-pointer hover:bg-gray-50"
-          >
-            ←
-          </button>
-
-          <div 
-            ref={scrollRef}
-            className="flex overflow-x-auto gap-4 pb-4 no-scrollbar snap-x snap-mandatory"
-            style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
-          >
-            {tiles.map(tile => (
-              <div
-                key={tile.ticker}
-                className="min-w-[280px] max-w-[320px] snap-center bg-white rounded-xl p-5 border border-gray-200 hover:border-teal-400 transition-all shadow-sm flex-shrink-0"
+      {/* Watchlist Analysis Carousel */}
+      {user && tiles.length > 0 && (
+        <div style={{ marginBottom: '32px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '12px' }}>
+            <h2 style={{ margin: 0, fontSize: 'var(--fs-md)', fontWeight: 700, color: 'var(--ink)' }}>
+              Watchlist Synthesis Highlights
+            </h2>
+            <div style={{ display: 'flex', gap: '6px' }}>
+              <button
+                onClick={() => scroll('left')}
+                style={{
+                  width: '32px',
+                  height: '32px',
+                  borderRadius: '50%',
+                  border: '1px solid var(--rule)',
+                  background: 'var(--surface)',
+                  color: 'var(--ink)',
+                  cursor: 'pointer',
+                  display: 'grid',
+                  placeItems: 'center'
+                }}
               >
-                {tile.status === 'error' ? (
+                ←
+              </button>
+              <button
+                onClick={() => scroll('right')}
+                style={{
+                  width: '32px',
+                  height: '32px',
+                  borderRadius: '50%',
+                  border: '1px solid var(--rule)',
+                  background: 'var(--surface)',
+                  color: 'var(--ink)',
+                  cursor: 'pointer',
+                  display: 'grid',
+                  placeItems: 'center'
+                }}
+              >
+                →
+              </button>
+            </div>
+          </div>
+
+          <div
+            ref={scrollRef}
+            style={{
+              display: 'flex',
+              overflowX: 'auto',
+              gap: '14px',
+              paddingBottom: '8px',
+              scrollbarWidth: 'none'
+            }}
+          >
+            {tiles.map(tile => {
+              const rec = (tile.recommendation || 'hold').toLowerCase()
+              const isBuy = rec.includes('buy')
+              const isSell = rec.includes('sell')
+              const chipColor = isBuy ? 'var(--bull)' : isSell ? 'var(--bear)' : 'var(--caution)'
+              const chipBg = isBuy ? 'var(--bull-tint)' : isSell ? 'var(--bear-tint)' : 'var(--caution-tint)'
+
+              return (
+                <div
+                  key={tile.ticker}
+                  style={{
+                    minWidth: '280px',
+                    maxWidth: '320px',
+                    flexShrink: 0,
+                    background: 'var(--surface)',
+                    border: '1px solid var(--rule)',
+                    borderRadius: 'var(--r-panel)',
+                    boxShadow: 'var(--shadow-panel)',
+                    padding: '16px',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    justifyContent: 'space-between'
+                  }}
+                >
                   <div>
-                    <h2 className="text-xl font-bold text-gray-900">{tile.ticker}</h2>
-                    <p className="text-red-400 text-sm mt-2">Failed to load analysis</p>
-                  </div>
-                ) : (
-                  <>
-                    <div className="flex justify-between items-start mb-3">
-                      <h2 className="text-xl font-bold text-gray-900">{tile.ticker}</h2>
-                      <span className="text-xs px-2 py-1 rounded font-medium" style={{
-                        backgroundColor: tile.recommendation?.includes('buy') ? '#22c55e22' : tile.recommendation?.includes('sell') ? '#ef444422' : '#6b728022',
-                        color: tile.recommendation?.includes('buy') ? '#22c55e' : tile.recommendation?.includes('sell') ? '#ef4444' : '#6b7280'
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: '8px' }}>
+                      <span style={{ fontFamily: 'var(--font-figure)', fontWeight: 700, fontSize: '1.4rem', color: 'var(--ink)' }}>
+                        {tile.ticker}
+                      </span>
+                      <span style={{
+                        fontSize: 'var(--fs-xs)',
+                        fontWeight: 700,
+                        padding: '2px 8px',
+                        borderRadius: 'var(--r-chip)',
+                        background: chipBg,
+                        color: chipColor
                       }}>
                         {tile.recommendation?.replace('_', ' ').toUpperCase()}
                       </span>
                     </div>
 
-                    <div className="flex items-center gap-2 mb-3">
-                      <span className="text-xs px-2 py-1 rounded" style={{ backgroundColor: '#00d4aa22', color: '#008a6e', fontWeight: 600 }}>
-                        Target ${tile.price_target}
-                      </span>
-                      <span className="text-xs px-2 py-1 rounded" style={{ backgroundColor: '#6b728022', color: '#4b5563' }}>
-                        Risk: {tile.risk_reward}
-                      </span>
+                    <div style={{ display: 'flex', gap: '8px', marginBottom: '10px', fontSize: 'var(--fs-xs)', color: 'var(--ink-3)' }}>
+                      <span>Target: <b style={{ color: 'var(--ink)' }}>${tile.target_price || tile.price_target || '—'}</b></span>
+                      <span>•</span>
+                      <span>Horizon: <b style={{ color: 'var(--ink)' }}>{tile.investment_horizon?.replace('_', ' ') || 'Medium'}</b></span>
                     </div>
 
-                    <p className="text-sm text-gray-600 line-clamp-3 mb-4">{tile.summary}</p>
+                    <p style={{
+                      margin: '0 0 16px',
+                      fontSize: 'var(--fs-xs)',
+                      color: 'var(--ink-2)',
+                      lineHeight: 1.5,
+                      display: '-webkit-box',
+                      WebkitLineClamp: 3,
+                      WebkitBoxOrient: 'vertical',
+                      overflow: 'hidden'
+                    }}>
+                      {tile.executive_summary || tile.summary || 'Multi-agent analysis verified.'}
+                    </p>
+                  </div>
 
-                    <button
-                      className="w-full py-2 rounded-lg text-sm font-semibold text-black cursor-pointer transition-opacity hover:opacity-90"
-                      style={{ backgroundColor: '#00d4aa' }}
-                      onClick={() => router.push(`/analysis/${tile.ticker}`)}
-                    >
-                      View Full Report →
-                    </button>
-                  </>
-                )}
-              </div>
-            ))}
+                  <button
+                    onClick={() => router.push(`/analysis/${tile.ticker}`)}
+                    style={{
+                      height: '36px',
+                      width: '100%',
+                      background: 'var(--surface-2)',
+                      border: '1px solid var(--rule)',
+                      borderRadius: 'var(--r-control)',
+                      color: 'var(--brand-ink)',
+                      fontWeight: 600,
+                      fontSize: 'var(--fs-xs)',
+                      cursor: 'pointer'
+                    }}
+                  >
+                    View Synthesis Report →
+                  </button>
+                </div>
+              )
+            })}
           </div>
-
-          <button 
-            onClick={() => scroll('right')}
-            className="absolute right-[-16px] top-1/2 -translate-y-1/2 z-10 bg-white shadow-lg border rounded-full p-2 hidden md:group-hover:block cursor-pointer hover:bg-gray-50"
-          >
-            →
-          </button>
         </div>
-      ) : null}
+      )}
 
-      {/* Search Input Bar */}
-      <div className="flex gap-2 mb-6">
-        <input 
-          id="search" 
-          type="text" 
-          value={input} 
+      {/* Semantic Search Box */}
+      <div style={{ display: 'flex', gap: '8px', marginBottom: '24px' }}>
+        <input
+          id="search"
+          type="text"
+          value={input}
           onKeyDown={(e) => {
             if (e.key === 'Enter') handleSearchSubmit()
           }}
-          placeholder="Search macro trends, company catalysts, Fed rates, chip cycle..."
-          onChange={(e) => setInput(e.target.value)} 
-          className="flex-1 bg-white border border-gray-300 rounded-lg px-4 py-2.5 text-gray-900 placeholder-gray-400 outline-none focus:border-teal-400 shadow-sm"
+          placeholder={isMobile ? "Search news" : "Search macro trends, company catalysts, Fed rates, semiconductor cycle..."}
+          onChange={(e) => setInput(e.target.value)}
+          style={{
+            flex: 1,
+            height: '42px',
+            padding: '0 14px',
+            borderRadius: 'var(--r-control)',
+            border: '1px solid var(--rule)',
+            background: 'var(--surface)',
+            color: 'var(--ink)',
+            fontSize: 'var(--fs-sm)',
+            outline: 'none'
+          }}
         />
-        <button 
-          type="button" 
+        <button
+          type="button"
           onClick={handleSearchSubmit}
-          className="px-6 py-2.5 rounded-lg font-semibold text-black cursor-pointer shadow-sm transition-opacity hover:opacity-90"
-          style={{ backgroundColor: '#00d4aa' }}
+          style={{
+            height: '42px',
+            padding: '0 20px',
+            borderRadius: 'var(--r-control)',
+            background: 'var(--brand)',
+            color: '#06231D',
+            fontWeight: 700,
+            fontSize: 'var(--fs-sm)',
+            border: 'none',
+            cursor: 'pointer'
+          }}
         >
-          {Searchloading ? 'Searching...' : 'Search'}
+          {searchLoading ? 'Searching...' : 'Search'}
         </button>
       </div>
 
       {error && (
-        <div className="mb-6 px-4 py-3 rounded-lg border text-sm" style={{ backgroundColor: '#ef444422', borderColor: '#ef4444', color: '#b91c1c' }}>
+        <div style={{
+          marginBottom: '20px',
+          padding: '12px 16px',
+          borderRadius: 'var(--r-control)',
+          background: 'var(--bear-tint)',
+          border: '1px solid var(--bear)',
+          color: 'var(--bear)',
+          fontSize: 'var(--fs-sm)'
+        }}>
           ⚠ {error}
         </div>
       )}
 
       {/* Chronological Timeline Feed */}
       <section>
-        <div className="flex items-center justify-between mb-4 pb-2 border-b border-gray-300">
+        <div style={{
+          display: 'flex',
+          alignItems: 'baseline',
+          justifyContent: 'space-between',
+          marginBottom: '16px',
+          paddingBottom: '10px',
+          borderBottom: '1px solid var(--rule)'
+        }}>
           <div>
-            <h3 className="text-lg font-bold text-gray-900">
+            <h3 style={{ margin: 0, fontSize: 'var(--fs-md)', fontWeight: 700, color: 'var(--ink)' }}>
               {selectedTickers.length > 0 ? (
-                <>
-                  Timeline for <span className="text-teal-700">{selectedTickers.join(', ')}</span>
-                </>
+                <>Market Timeline for {selectedTickers.join(', ')}</>
               ) : input.trim() ? (
-                <>
-                  Timeline for <span className="text-teal-700">"{input}"</span>
-                </>
+                <>Market Timeline for &ldquo;{input}&rdquo;</>
               ) : (
-                'Chronological Market Timeline'
+                'Chronological Market Feed'
               )}
             </h3>
-            <p className="text-xs text-gray-500 mt-0.5">
-              Live chronological stream with AI sentiment & impact ratings
+            <p style={{ margin: '2px 0 0', fontSize: 'var(--fs-xs)', color: 'var(--ink-3)' }}>
+              Real-time multi-source wire with verified sentiment &amp; impact ratings
             </p>
           </div>
           {articles.length > 0 && (
-            <span className="text-xs font-semibold px-2.5 py-1 rounded-full bg-white border border-gray-200 text-gray-600">
-              {articles.length} updates loaded
+            <span style={{
+              fontSize: 'var(--fs-xs)',
+              fontWeight: 600,
+              padding: '2px 8px',
+              borderRadius: 'var(--r-chip)',
+              background: 'var(--surface-2)',
+              border: '1px solid var(--rule)',
+              color: 'var(--ink-3)',
+              whiteSpace: 'nowrap'
+            }}>
+              {articles.length} updates
             </span>
           )}
         </div>
 
-        {articles.length === 0 && !Searchloading && (
-          <div className="text-center py-20 bg-white rounded-xl border border-gray-200 shadow-sm">
-            <p className="text-5xl mb-3 text-gray-400">◎</p>
-            <p className="text-gray-800 text-lg font-semibold">No headlines found</p>
-            <p className="text-gray-500 text-sm mt-1">Try selecting different tickers or clear active filters</p>
+        {articles.length === 0 && !searchLoading && (
+          <div style={{
+            textAlign: 'center',
+            padding: '60px 20px',
+            background: 'var(--surface)',
+            borderRadius: 'var(--r-panel)',
+            border: '1px solid var(--rule)'
+          }}>
+            <p style={{ fontSize: '2.5rem', margin: '0 0 10px', color: 'var(--ink-3)' }}>◎</p>
+            <p style={{ fontSize: 'var(--fs-md)', fontWeight: 700, color: 'var(--ink)', margin: 0 }}>No headlines found</p>
+            <p style={{ fontSize: 'var(--fs-xs)', color: 'var(--ink-3)', marginTop: '4px' }}>Try selecting different tickers or clear active filters</p>
           </div>
         )}
 
-        <div className="space-y-4">
-          {articles.map((article, idx) => (
-            <article
-              key={article.id || idx}
-              className="bg-white rounded-xl p-5 border border-gray-200 hover:border-teal-400 hover:shadow-md transition-all duration-200"
-            >
-              {/* Header / Badges */}
-              <div className="flex flex-wrap items-center justify-between gap-2 mb-2">
-                <div className="flex flex-wrap items-center gap-2">
-                  {(article.sectors || ['Macro']).map(sec => {
-                    const color = SECTOR_COLORS[sec] || { bg: '#f3f4f6', text: '#374151', border: '#e5e7eb' }
-                    return (
+        {/* .news Row Pattern from Mockup */}
+        <div style={{
+          background: 'var(--surface)',
+          borderRadius: 'var(--r-panel)',
+          border: '1px solid var(--rule)',
+          boxShadow: 'var(--shadow-panel)',
+          overflow: 'hidden'
+        }}>
+          {articles.map((article, idx) => {
+            const sent = (article.sentiment || 'neutral').toLowerCase()
+            const isBull = sent.includes('bull') || sent.includes('pos')
+            const isBear = sent.includes('bear') || sent.includes('neg')
+            const chipColor = isBull ? 'var(--bull)' : isBear ? 'var(--bear)' : 'var(--neutral)'
+            const chipBg = isBull ? 'var(--bull-tint)' : isBear ? 'var(--bear-tint)' : 'var(--neutral-tint)'
+
+            return (
+              <div
+                key={article.id || idx}
+                style={{
+                  padding: '16px 20px',
+                  borderTop: idx > 0 ? '1px solid var(--rule)' : 'none',
+                  display: 'flex',
+                  flexWrap: 'wrap',
+                  justifyContent: 'space-between',
+                  alignItems: 'flex-start',
+                  gap: '10px 16px',
+                  transition: 'background 0.15s'
+                }}
+              >
+                <div style={{ minWidth: 0, flex: '1 1 280px' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px', flexWrap: 'wrap' }}>
+                    {(article.sectors || ['Macro']).map(sec => (
                       <span
                         key={sec}
-                        className="text-xs font-semibold px-2.5 py-0.5 rounded-full border"
                         style={{
-                          backgroundColor: color.bg,
-                          color: color.text,
-                          borderColor: color.border
+                          fontSize: 'var(--fs-xs)',
+                          fontWeight: 700,
+                          padding: '1px 6px',
+                          borderRadius: '4px',
+                          background: 'var(--surface-2)',
+                          border: '1px solid var(--rule)',
+                          color: 'var(--ink-3)'
                         }}
                       >
                         {sec}
                       </span>
-                    )
-                  })}
-                  {article.published && (
-                    <span className="text-xs text-gray-400 font-medium">
-                      • {formatTimeAgo(article.published)}
+                    ))}
+                    <span style={{ fontSize: 'var(--fs-xs)', color: 'var(--ink-3)' }}>
+                      {article.source} {article.published ? `• ${formatTimeAgo(article.published)}` : ''}
                     </span>
+                  </div>
+
+                  <a
+                    href={article.url || "#"}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    style={{
+                      textDecoration: 'none',
+                      color: 'var(--ink)',
+                      fontWeight: 700,
+                      fontSize: 'var(--fs-sm)',
+                      lineHeight: 1.4,
+                      display: 'block'
+                    }}
+                  >
+                    {article.headline}
+                  </a>
+
+                  {article.summary && (
+                    <p style={{
+                      margin: '6px 0 0',
+                      fontSize: 'var(--fs-xs)',
+                      color: 'var(--ink-2)',
+                      lineHeight: 1.5
+                    }}>
+                      {article.summary}
+                    </p>
                   )}
                 </div>
 
-                <a 
-                  href={article.url} 
-                  target="_blank" 
-                  rel="noopener noreferrer"
-                  className="text-xs font-semibold text-gray-500 hover:text-teal-600 transition-colors flex items-center gap-1"
-                >
-                  <span>{article.source}</span>
-                  <span>↗</span>
-                </a>
-              </div>
-
-              {/* Title */}
-              <h2 className="font-bold text-base md:text-lg text-gray-900 mb-2 leading-snug hover:text-teal-700 transition-colors">
-                <a href={article.url} target="_blank" rel="noopener noreferrer">
-                  {article.headline}
-                </a>
-              </h2>
-
-              {/* Summary */}
-              <p className="text-sm text-gray-600 mb-3 leading-relaxed">
-                {article.summary}
-              </p>
-
-              {/* Footer Meta Row */}
-              <div className="flex flex-wrap items-center gap-2 pt-3 border-t border-gray-100 text-xs">
-                <span
-                  className="px-2.5 py-1 rounded-md font-semibold capitalize"
-                  style={{
-                    backgroundColor:
-                      article.sentiment === 'bullish' ? '#dcfce7' :
-                      article.sentiment === 'bearish' ? '#fee2e2' : '#f3f4f6',
-                    color:
-                      article.sentiment === 'bullish' ? '#15803d' :
-                      article.sentiment === 'bearish' ? '#b91c1c' : '#4b5563'
-                  }}
-                >
-                  {article.sentiment}
-                </span>
-
-                <span 
-                  className="px-2.5 py-1 rounded-md font-semibold"
-                  style={{ backgroundColor: '#ccfbf1', color: '#0f766e' }}
-                >
-                  Score {article.score}/10
-                </span>
-
-                {article.rationale && (
-                  <span className="text-gray-600 bg-gray-50 px-2.5 py-1 rounded-md border border-gray-200">
-                    💡 {article.rationale}
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexShrink: 0, marginLeft: 'auto' }}>
+                  <span style={{
+                    fontSize: 'var(--fs-xs)',
+                    fontWeight: 700,
+                    padding: '2px 8px',
+                    borderRadius: 'var(--r-chip)',
+                    background: chipBg,
+                    color: chipColor,
+                    textTransform: 'capitalize',
+                    whiteSpace: 'nowrap'
+                  }}>
+                    {article.sentiment}
                   </span>
-                )}
+
+                  {article.score !== undefined && (
+                    <span style={{
+                      fontFamily: 'var(--font-figure)',
+                      fontSize: 'var(--fs-xs)',
+                      fontWeight: 600,
+                      color: 'var(--ink-3)',
+                      whiteSpace: 'nowrap'
+                    }}>
+                      Impact {article.score}/10
+                    </span>
+                  )}
+                </div>
               </div>
-            </article>
-          ))}
+            )
+          })}
         </div>
 
-        {/* Sentinel & Infinite Scroll Loader */}
-        <div ref={observerRef} className="py-8 text-center">
+        {/* Infinite Scroll Sentinel */}
+        <div ref={observerRef} style={{ padding: '32px 0', textAlign: 'center' }}>
           {loadingMore && (
-            <div className="flex items-center justify-center gap-2 text-sm text-gray-600 font-medium">
-              <span className="animate-spin text-teal-600 text-lg">◌</span>
-              <span>Loading more timeline updates...</span>
-            </div>
+            <p style={{ fontSize: 'var(--fs-xs)', color: 'var(--ink-3)', margin: 0 }}>
+              Loading more updates...
+            </p>
           )}
           {!hasMore && articles.length > 0 && (
-            <p className="text-xs text-gray-500 font-medium">
-              ✓ You're all caught up • End of chronological feed
+            <p style={{ fontSize: 'var(--fs-xs)', color: 'var(--ink-3)', margin: 0 }}>
+              ✓ You&apos;re all caught up
             </p>
           )}
         </div>
-
-        {/* Similar Articles section (when user runs search) */}
-        {similarArticles.length > 0 && (
-          <div className="mt-12 pt-8 border-t border-gray-300">
-            <h3 className="text-lg font-bold text-gray-900 mb-4">Semantically Similar Past Articles</h3>
-            <div className="space-y-4">
-              {similarArticles.map((item, i) => (
-                <div key={item.id || i} className="rounded-xl p-4 bg-white border border-gray-200 shadow-sm">
-                  <h4 className="font-semibold text-base mb-1 text-gray-900">{item.metadata?.headline}</h4>
-                  <p className="text-sm text-gray-600 mb-2">{item.metadata?.summary}</p>
-                  <div className="flex items-center gap-2 text-xs">
-                    <span className="px-2 py-1 rounded font-medium bg-teal-50 text-teal-700">
-                      Score {item.metadata?.score}/10
-                    </span>
-                    <span className="px-2 py-1 rounded font-medium bg-gray-100 text-gray-700">
-                      {item.metadata?.sentiment}
-                    </span>
-                    <a 
-                      href={item.metadata?.url} 
-                      target="_blank" 
-                      rel="noopener noreferrer"
-                      className="text-gray-500 hover:text-teal-600 ml-auto flex items-center gap-1"
-                    >
-                      <span>{item.metadata?.source}</span>
-                      <span>↗</span>
-                    </a>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
       </section>
-
     </main>
   )
 }
-
-export default Page

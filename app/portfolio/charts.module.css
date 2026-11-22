@@ -1,0 +1,26 @@
+.figure { margin: 0 0 var(--s-4); }
+.title { font-size: var(--fs-sm); font-weight: 700; color: var(--ink); margin-bottom: 4px; }
+.legend { display: flex; flex-wrap: wrap; gap: 4px 14px; font-size: var(--fs-xs); color: var(--ink-2); margin-bottom: 4px; }
+.legendItem { display: inline-flex; align-items: center; gap: 6px; }
+.swatch { display: inline-block; width: 16px; height: 0; border-top: 2px solid var(--c); }
+.swatchDashed { border-top-style: dashed; }
+.swatchBlock { height: 10px; border: 0; background: var(--c); opacity: .6; border-radius: 2px; width: 10px; }
+.markerSwatch { width: 10px; height: 10px; border-radius: 50%; border: 2px solid var(--bear); background: var(--surface); }
+.bandSwatch { width: 12px; height: 10px; background: var(--caution-tint); border: 1px solid var(--caution); border-radius: 2px; }
+.plotWrap { position: relative; }
+.svg { width: 100%; height: auto; display: block; overflow: visible; }
+.svg:focus-visible { outline: none; box-shadow: var(--focus); border-radius: 6px; }
+.grid { stroke: var(--rule); stroke-width: 1; }
+.zero { stroke: var(--ink-3); stroke-width: 1; }
+.yTick, .xTick { fill: var(--ink-3); font-size: 11px; font-family: var(--font-ui); }
+.band { fill: var(--caution-tint); opacity: .7; }
+.crosshair { stroke: var(--ink-2); stroke-width: 1; stroke-dasharray: 3 3; }
+.hoverDot { stroke: var(--surface); stroke-width: 2; }
+.marker { fill: var(--surface); stroke: var(--bear); stroke-width: 2; }
+.tooltip { position: absolute; top: 6px; min-width: 170px; pointer-events: none; background: var(--surface); border: 1px solid var(--rule); border-radius: var(--r-control); box-shadow: var(--shadow-panel); padding: 8px 10px; font-size: var(--fs-xs); color: var(--ink); z-index: 2; }
+.tipDate { font-weight: 700; margin-bottom: 4px; }
+.tipRow { display: flex; align-items: center; gap: 6px; }
+.tipLabel { color: var(--ink-2); flex: 1; }
+.tipVal { font-family: var(--font-figure); font-weight: 700; font-size: var(--fs-sm); }
+.tipFlag { margin-top: 4px; color: var(--bear); font-weight: 700; }
+.empty { padding: 24px; color: var(--ink-3); font-size: var(--fs-sm); }

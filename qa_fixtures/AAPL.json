@@ -1,0 +1,274 @@
+{
+  "ticker": "AAPL",
+  "mode": "live",
+  "report": {
+    "recommendation": "hold",
+    "conviction": 5,
+    "price_target": 340.0,
+    "risk_reward": "neutral",
+    "investment_horizon": "medium_term",
+    "bull_case": [
+      "Exceptional free cash flow generation of over $107 billion supports aggressive buybacks and dividend growth.",
+      "AI integration across the ecosystem is poised to trigger a significant hardware refresh cycle in the near term.",
+      "Robust financial health with high profit margins and a fortress balance sheet mitigates the high debt-to-equity ratio."
+    ],
+    "bear_case": [
+      "Valuation is stretched with a P/E of 39.14 and PEG of 2.73, leaving little margin for error given moderate revenue growth.",
+      "Significant supply chain risk persists due to 70% of advanced chip production remaining\u96c6\u4e2d\u5728 in Taiwan, exposing the company to geopolitical instability.",
+      "Technical indicators show a MACD bearish crossover at 52-week highs, suggesting short-term momentum cooling and potential pullback to support levels."
+    ],
+    "key_catalysts": [
+      "Launch of next-generation iPhone with advanced AI features",
+      "Expansion of high-margin services revenue"
+    ],
+    "key_risks": [
+      "Geopolitical instability affecting TSMC operations in Taiwan",
+      "Regulatory scrutiny in core markets such as China and the EU"
+    ],
+    "position_sizing": "medium",
+    "summary": "Apple presents a balanced investment case where strong fundamental fundamentals and brand moat offset elevated valuation concerns. While the stock attracts institutional buy ratings, current pricing at $341.27 aligns closely with consensus targets, limiting near-term upside potential. Supply chain concentration in Taiwan remains a primary structural risk that weighs on sentiment despite TSMC's US expansion. Technicals suggest a consolidation phase after reaching 52-week highs, with potential for slight upside to $345 if AI catalysts materialize. Investors should maintain a medium position size, monitoring geopolitical developments and earnings execution closely.",
+    "_evaluation": {
+      "agent_name": "portfolio_manager",
+      "ticker": "AAPL",
+      "faithfulness_score": 1.0,
+      "consistency_score": 1.0,
+      "completeness_score": 1.0,
+      "overall_quality_score": 1.0,
+      "grade": "A",
+      "guardrails_passed": true,
+      "hallucinations_detected": 0,
+      "warnings": []
+    },
+    "current_price": 341.27,
+    "upside_downside": "0.37% downside from current price"
+  },
+  "agents": {
+    "news": {
+      "overall_sentiment": "bearish",
+      "summary": "TSMC has confirmed that it will locate approximately 30% of its most advanced chipmaking capacity in Arizona as part of a $265 billion investment. The company maintains that 70% of its capacity and core R&D will remain in Taiwan, describing this as a \"silicon shield.\" This geographic concentration of critical supply chain assets persists despite the significant U.S. expansion.",
+      "key_themes": [
+        "Geopolitical diversification",
+        "Supply chain concentration",
+        "Semiconductor capacity allocation"
+      ],
+      "supply_chain_risks": [
+        "Reliance on Taiwan for 70% of most advanced chip production",
+        "Potential geopolitical instability affecting the primary manufacturing hub",
+        "Limited U.S. domestic capacity for cutting-edge semiconductor fabrication"
+      ],
+      "articles": [
+        {
+          "title": "TSMC Will Put 30% of Its Most Advanced Chipmaking in Arizona. Taiwan Is Keeping the Other 70%, and the Lab.",
+          "source": "Techpinions.com",
+          "url": "https://techpinions.com/tsmc-arizona-30-percent-taiwan-keeps-rd/",
+          "relevance": "This article highlights that despite massive investment in the U.S., Apple's primary chip supplier continues to concentrate the majority of its most advanced production and R&D in Taiwan, sustaining a high-level geopolitical and logistics risk in Apple's core supply chain."
+        }
+      ],
+      "_evaluation": {
+        "agent_name": "news",
+        "ticker": "AAPL",
+        "faithfulness_score": 0.6,
+        "consistency_score": 1.0,
+        "completeness_score": 1.0,
+        "overall_quality_score": 0.84,
+        "grade": "B",
+        "guardrails_passed": true,
+        "hallucinations_detected": 0,
+        "warnings": [
+          "Low entity relevance: none of the 1 fetched news items explicitly mention 'AAPL' or its company aliases."
+        ]
+      }
+    },
+    "sentiment": {
+      "overall_sentiment": "bearish",
+      "retail_sentiment": "neutral",
+      "institutional_sentiment": "bearish",
+      "sentiment_score": 4,
+      "analyst_consensus": "hold",
+      "key_sentiment_drivers": [
+        "Supply chain concentration in Taiwan",
+        "Geopolitical risks affecting semiconductor production"
+      ],
+      "summary": "Sentiment is bearish due to news emphasizing supply chain risks and geopolitical diversification challenges. Institutional sentiment reflects concern over reliance on foreign semiconductor capacity, while retail sentiment remains neutral with no specific data provided.",
+      "_evaluation": {
+        "agent_name": "sentiment",
+        "ticker": "AAPL",
+        "faithfulness_score": 1.0,
+        "consistency_score": 1.0,
+        "completeness_score": 1.0,
+        "overall_quality_score": 1.0,
+        "grade": "A",
+        "guardrails_passed": true,
+        "hallucinations_detected": 0,
+        "warnings": []
+      }
+    },
+    "fundamentals": {
+      "valuation": "overvalued",
+      "valuation_reasoning": "The P/E ratio of 39.14 and PEG ratio of 2.73 indicate that the stock is trading at a significant premium relative to its historical earnings growth. While forward P/E is slightly lower, the current multiple remains high for the broader market.",
+      "financial_health": "strong",
+      "health_reasoning": "Apple generates substantial free cash flow of over $107 billion and maintains very high profit margins. The high debt-to-equity ratio is largely offset by its massive cash reserves and strong operating leverage.",
+      "growth_outlook": "moderate",
+      "growth_reasoning": "Earnings are growing at 28.7%, significantly outpacing revenue growth of 16.4%, suggesting improved efficiency and margin expansion. However, the slowing revenue growth compared to previous highs indicates a maturation phase for the core hardware business.",
+      "key_strengths": [
+        "Dominant brand loyalty and high gross margins (48.6%)",
+        "Excellent free cash flow generation of $107.7 billion"
+      ],
+      "key_weaknesses": [
+        "High valuation multiples relative to current growth rates",
+        "Reliance on a single market for a significant portion of revenue (China)"
+      ],
+      "metrics": {
+        "pe_ratio": 39.136467,
+        "forward_pe": 35.5838,
+        "revenue_growth": 0.164,
+        "profit_margins": 0.27618998,
+        "debt_to_equity": 78.445,
+        "return_on_equity": 1.4875101,
+        "free_cashflow": 107721875456
+      },
+      "summary": "Apple Inc. combines robust financial health with strong earnings growth, supported by high margins and massive cash flow. However, the stock is currently priced at a premium valuation that does not fully align with its moderate revenue expansion pace. Investors should note the high debt-to-equity ratio, though it is mitigated by the company's fortress balance sheet.",
+      "_evaluation": {
+        "agent_name": "fundamentals",
+        "ticker": "AAPL",
+        "faithfulness_score": 1.0,
+        "consistency_score": 1.0,
+        "completeness_score": 1.0,
+        "overall_quality_score": 1.0,
+        "grade": "A",
+        "guardrails_passed": true,
+        "hallucinations_detected": 0,
+        "warnings": []
+      }
+    },
+    "technical": {
+      "trend": "bullish",
+      "trend_strength": "strong",
+      "rsi_signal": "neutral",
+      "macd_signal": "bearish",
+      "support_level": 329.4,
+      "resistance_level": 341.27,
+      "short_term_outlook": "neutral",
+      "key_levels": [
+        "341.27",
+        "329.4",
+        "323.77"
+      ],
+      "signals": [
+        "Price at 52-week high",
+        "MACD bearish crossover",
+        "Price above 50 and 200-day moving averages"
+      ],
+      "summary": "AAPL is in a strong bullish trend, trading significantly above both its 50-day and 200-day moving averages and sitting at its 52-week high. However, the MACD has issued a bearish crossover, suggesting potential short-term momentum cooling despite overall bullish positioning. The short-term outlook is neutral as the stock pivots between its new resistance level and the immediate swing support near 329.40.",
+      "raw": {
+        "current_price": 341.27,
+        "ma50": 323.77,
+        "ma200": 291.09,
+        "price_vs_ma50": "above",
+        "price_vs_ma200": "above",
+        "swing_support_20d": 329.4,
+        "swing_resistance_20d": 341.27,
+        "rsi": 60.5,
+        "macd": 3.792,
+        "macd_signal": 3.8269,
+        "macd_crossover": "bearish",
+        "avg_volume_20d": 37465300,
+        "current_volume": 38946900,
+        "volume_vs_average": "above",
+        "52_week_high": 341.27,
+        "52_week_low": 246.03
+      },
+      "_evaluation": {
+        "agent_name": "technical",
+        "ticker": "AAPL",
+        "faithfulness_score": 1.0,
+        "consistency_score": 1.0,
+        "completeness_score": 1.0,
+        "overall_quality_score": 1.0,
+        "grade": "A",
+        "guardrails_passed": true,
+        "hallucinations_detected": 0,
+        "warnings": []
+      }
+    },
+    "equity": {
+      "recommendation": "buy",
+      "conviction": 6,
+      "analyst_consensus": "buy",
+      "price_target": 340.0,
+      "upside_downside": "0.4% upside/downside from current price",
+      "competitive_position": "leader",
+      "moat": "wide",
+      "moat_sources": [
+        "brand_recognition",
+        "ecosystem_lock_in",
+        "supply_chain_efficiency"
+      ],
+      "growth_catalysts": [
+        "renewed_iPhone_innovation_cycle",
+        "AI_integration_across_products",
+        "expansion_in_services_revenue"
+      ],
+      "key_risks": [
+        "regulatory_scrutiny_in_core_markets",
+        "intense_competition_from_android_vendors",
+        "macroeconomic_uncertainty_affecting_discretionary_spend"
+      ],
+      "sector_outlook": "neutral",
+      "investment_thesis": "Apple is a dominant force in consumer electronics with exceptional brand loyalty and a high-margin services business that provides recurring revenue. Despite near-term valuation pressures and competitive threats, recent growth estimates showing EPS and revenue recovery in 2024 and 2025 suggest an upward trajectory. The integration of AI features across its ecosystem is poised to be a significant catalyst for hardware refresh cycles, supporting long-term valuation.",
+      "summary": "The current stock price of $341.27 is aligned almost perfectly with the analyst median and average price targets, indicating a point of balance in the market despite some bullish outliers. Overall analyst sentiment has shifted from 'buy' to a strong 'buy' bias as recent estimates reflect solid growth returning for both the fiscal year 2024 and beyond. For conviction investors, the presence of 19 'buy' and 6 'strong buy' ratings against low sell ratings confirms Apple remains the preferred stock of choice in the consumer electronics sector.",
+      "_evaluation": {
+        "agent_name": "equity_research",
+        "ticker": "AAPL",
+        "faithfulness_score": 1.0,
+        "consistency_score": 0.6,
+        "completeness_score": 1.0,
+        "overall_quality_score": 0.86,
+        "grade": "B",
+        "guardrails_passed": false,
+        "hallucinations_detected": 1,
+        "warnings": [
+          "Semantic contradiction: recommendation 'BUY' conflicts with upside/downside assessment '0.4% upside/downside from current price'."
+        ]
+      }
+    },
+    "risk": {
+      "overall_risk": "medium",
+      "volatility_assessment": "medium",
+      "beta_assessment": "market-neutral",
+      "sharpe_assessment": "good",
+      "short_squeeze_risk": "low",
+      "key_risks": [
+        "Elevated volatility compared to traditional defensive benchmarks",
+        "Potential for 13.8% asset loss during peak market drawdowns",
+        "Moderate transaction costs due to Average True Range of $6.09"
+      ],
+      "risk_mitigants": [
+        "Strong risk-adjusted return profile indicated by Sharpe ratio of 1.25",
+        "Low short squeeze risk due to only 0.83% of float being shorted"
+      ],
+      "max_drawdown_assessment": "moderate",
+      "var_interpretation": "1-day 95% historical VaR: -0.02% (approx. -$201 per $10,000 portfolio).",
+      "metrics": {
+        "beta": 1.07,
+        "volatility": 0.2448,
+        "sharpe_ratio": 1.25,
+        "max_drawdown": -0.138,
+        "var_95": -0.0201
+      },
+      "summary": "AAPL presents a balanced risk profile with a beta slightly above market average and moderate annualized volatility. The risk-adjusted performance is strong, supported by a good Sharpe ratio, while the maximum drawdown of 13.8% is within acceptable limits for a large-cap tech stock. Short interest is negligible, minimizing the risk of sudden price spikes from short squeezes.",
+      "_evaluation": {
+        "agent_name": "risk",
+        "ticker": "AAPL",
+        "faithfulness_score": 1.0,
+        "consistency_score": 1.0,
+        "completeness_score": 1.0,
+        "overall_quality_score": 1.0,
+        "grade": "A",
+        "guardrails_passed": true,
+        "hallucinations_detected": 0,
+        "warnings": []
+      }
+    }
+  }
+}

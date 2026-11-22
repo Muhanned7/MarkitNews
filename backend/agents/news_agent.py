@@ -5,6 +5,8 @@ from mistralai.client import Mistral
 import os
 from agents.client import client
 from agents.metrics import agent_calls, agent_latency, mistral_errors
+from agents.guardrails import guardrail_news_agent
+from agents.evaluator import evaluate_agent_output
 from loguru import logger
 import time
 
@@ -71,27 +73,30 @@ async def news_agent(ticker: str) -> dict:
         logger.info(f"Running News agent for {ticker}")
         
         if MOCK_MODE:
-            await asyncio.sleep(0.8) # News takes longer as it "searches"
-            return {
+            await asyncio.sleep(0.4)
+            mock_res = {
                 "overall_sentiment": "bullish",
                 "summary": f"{ticker.upper()} is seeing strong positive momentum following reports of diversified supply chain logistics. Market analysts are focusing on the reduced dependency on single-region suppliers. Increased institutional interest is noted ahead of the upcoming product cycle.",
                 "key_themes": ["Supply Chain Resilience", "Next-Gen AI Integration", "Market Share Expansion"],
                 "supply_chain_risks": ["Potential export restrictions in Asia", "Rising costs of raw silicon"],
                 "articles": [
                     {
-                        "title": f"Why {ticker} is leads the sector in 2026",
+                        "title": f"Why {ticker} leads the sector in 2026",
                         "source": "MarketWatch",
-                        "url": "https://example.com/article1",
+                        "url": "https://finance.yahoo.com",
                         "relevance": "Highlights the company's competitive advantage in supply chain management."
                     },
                     {
                         "title": f"New Policy Impacts for {ticker} Suppliers",
                         "source": "Reuters",
-                        "url": "https://example.com/article2",
+                        "url": "https://finance.yahoo.com",
                         "relevance": "Discusses potential cost increases for raw materials."
                     }
                 ]
             }
+            clean_res, stats = guardrail_news_agent(mock_res, mock_res["articles"])
+            clean_res["_evaluation"] = evaluate_agent_output("news", ticker, clean_res, stats)
+            return clean_res
 
         research = await research_agent(ticker)
         queries = research.get("search_queries", [ticker])
@@ -151,7 +156,10 @@ async def news_agent(ticker: str) -> dict:
         )
         logger.info(f"News Agent complete for {ticker}")
         raw = response.choices[0].message.content.replace("```json", "").replace("```", "").strip()
-        return json.loads(raw)
+        parsed = json.loads(raw)
+        clean_res, stats = guardrail_news_agent(parsed, all_articles)
+        clean_res["_evaluation"] = evaluate_agent_output("news", ticker, clean_res, stats)
+        return clean_res
     except Exception as e:
         mistral_errors.labels(agent_name='news').inc()
         logger.error(f"News agent failed for {ticker}: {e}")

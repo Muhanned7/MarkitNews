@@ -5,6 +5,8 @@ import yfinance as yf
 import random
 from agents.client import client
 from agents.metrics import agent_calls, agent_latency, mistral_errors
+from agents.guardrails import guardrail_fundamentals_agent
+from agents.evaluator import evaluate_agent_output
 from loguru import logger
 import time
 
@@ -18,34 +20,35 @@ async def fundamentals_agent(ticker: str) -> dict:
     try:
         logger.info(f"Running fundamentals agents for {ticker}")
         if MOCK_MODE:
-            await asyncio.sleep(0.5) 
-            seed = sum(ord(c) for c in ticker)
-            random.seed(seed)
-            
-            # Consistent mock values
-            pe = round(random.uniform(20.0, 35.0), 2)
-            roe = round(random.uniform(0.30, 0.60), 4)
+            await asyncio.sleep(0.3) 
+            from agents.mock_market_data import get_deterministic_mock_profile
+            prof = get_deterministic_mock_profile(ticker)
+            pe = prof["pe_ratio"]
+            roe = prof["return_on_equity"]
 
-            return {
-                "valuation": "overvalued" if pe > 30 else "fairly_valued",
-                "valuation_reasoning": f"The current P/E ratio of {pe} is slightly above the sector average. However, it is justified by strong premium brand positioning.",
+            mock_res = {
+                "valuation": "overvalued" if pe > 30 else ("undervalued" if pe < 16 else "fairly_valued"),
+                "valuation_reasoning": f"The current P/E ratio of {pe} reflects market expectations for {prof['sector']}. With an ROE of {round(roe*100, 1)}%, its valuation aligns with capital efficiency.",
                 "financial_health": "strong",
-                "health_reasoning": f"Maintains a robust balance sheet with an ROE of {round(roe*100, 2)}%. Debt levels are well-managed relative to equity.",
-                "growth_outlook": "moderate",
-                "growth_reasoning": "Revenue growth remains steady in core segments, though emerging markets show higher potential volatility.",
+                "health_reasoning": f"Maintains a robust balance sheet with an ROE of {round(roe*100, 1)}%. Debt levels are well-managed relative to equity ({prof['debt_to_equity']}%).",
+                "growth_outlook": "moderate" if prof["revenue_growth"] < 0.15 else "strong",
+                "growth_reasoning": f"Revenue growth is tracking at {round(prof['revenue_growth']*100, 1)}% annualized, driven by momentum in core {prof['industry']} operations.",
                 "key_strengths": ["High return on equity", "Consistent free cash flow generation"],
-                "key_weaknesses": ["Premium valuation limits upside", "Regulatory headwind risks"],
+                "key_weaknesses": ["Valuation multiple compression risks", "Macroeconomic rate sensitivity"],
                 "metrics": {
                     "pe_ratio": pe,
-                    "forward_pe": round(pe * 0.9, 2),
-                    "revenue_growth": 0.085,
-                    "profit_margins": 0.25,
-                    "debt_to_equity": 105.2,
+                    "forward_pe": prof["forward_pe"],
+                    "revenue_growth": prof["revenue_growth"],
+                    "profit_margins": prof["profit_margins"],
+                    "debt_to_equity": prof["debt_to_equity"],
                     "return_on_equity": roe,
-                    "free_cashflow": 95000000000
+                    "free_cashflow": prof["free_cashflow"]
                 },
-                "summary": f"{ticker.upper()} shows strong financial discipline. While the stock isn't cheap, its ability to generate cash and maintain high margins makes it a core tech holding. Outlook remains stable."
+                "summary": f"{ticker.upper()} shows strong financial discipline. With an ROE of {round(roe*100, 1)}% and steady cash flow, its fundamentals in {prof['sector']} remain sound."
             }
+            clean_res, stats = guardrail_fundamentals_agent(mock_res)
+            clean_res["_evaluation"] = evaluate_agent_output("fundamentals", ticker, clean_res, stats)
+            return clean_res
         def fetch_fundamentals():
             stock = yf.Ticker(ticker)
             info = stock.info
@@ -112,11 +115,13 @@ async def fundamentals_agent(ticker: str) -> dict:
                 }
             ]
         )
-        logger.info(f"fundamentals Agent complete for {ticker}")
         raw = response.choices[0].message.content.replace("```json", "").replace("```", "").strip()
-        return json.loads(raw)
+        parsed = json.loads(raw)
+        clean_res, stats = guardrail_fundamentals_agent(parsed, raw_data)
+        clean_res["_evaluation"] = evaluate_agent_output("fundamentals", ticker, clean_res, stats)
+        return clean_res
     except Exception as e:
-        mistral_errors.labels(agent_name='news').inc()
+        mistral_errors.labels(agent_name='fundamentals').inc()
         logger.error(f"fundamentals agent failed for {ticker}: {e}")
         raise
     finally:

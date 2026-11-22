@@ -5,42 +5,50 @@ import yfinance as yf
 import random
 from agents.client import client
 from agents.metrics import agent_calls, agent_latency, mistral_errors
+from agents.guardrails import guardrail_equity_agent
+from agents.evaluator import evaluate_agent_output
 from loguru import logger
 import time
 
 MOCK_MODE = os.environ.get("MOCK_MODE", "true").lower() == "true"
-async def equity_research_agent(ticker: str) -> dict:
+async def equity_research_agent(ticker: str, consensus: str = None, street_targets: dict = None) -> dict:
 
-    logger.info(f"fundamentals agent requested for {ticker}")
-    agent_calls.labels(agent_name='fundamentals', ticker=ticker).inc()
+    logger.info(f"equity research agent requested for {ticker}")
+    agent_calls.labels(agent_name='equity_research', ticker=ticker).inc()
     
     start = time.time()
     try:
         if MOCK_MODE:
-            await asyncio.sleep(0.5)  # Simulate network latency
+            await asyncio.sleep(0.3)  # Simulate network latency
+            from agents.mock_market_data import get_deterministic_mock_profile
+            prof = get_deterministic_mock_profile(ticker)
             
-            # Consistent seeding based on ticker
-            seed = sum(ord(c) for c in ticker)
-            random.seed(seed)
-            
-            # Logic to make the mock feel dynamic
-            target_price = 225.50
-            current_price = 192.25
+            target_price = prof["target_price"]
+            current_price = prof["current_price"]
             upside = round(((target_price / current_price) - 1) * 100, 2)
 
-            return {
-                "analyst_consensus": "strong_buy",
+            mock_res = {
+                "recommendation": prof["recommendation"],
+                "conviction": prof["conviction"],
+                "analyst_consensus": consensus or prof["recommendation"],
                 "price_target": target_price,
-                "upside_downside": f"{upside}% upside from current price",
-                "competitive_position": "leader",
-                "moat": "wide",
+                "upside_downside": f"{'+' if upside >= 0 else ''}{upside}% {'upside' if upside >= 0 else 'downside'} from current price",
+                "competitive_position": "leader" if prof["conviction"] >= 7 else "challenger",
+                "moat": "wide" if prof["conviction"] >= 8 else ("narrow" if prof["conviction"] >= 6 else "none"),
                 "moat_sources": ["High switching costs", "Brand ecosystem", "Proprietary technology"],
                 "growth_catalysts": ["Expansion into AI services", "Increased enterprise adoption"],
-                "key_risks": ["Regulatory scrutiny on app store", "Supply chain concentration in Asia"],
+                "key_risks": ["Valuation multiple compression", "Macro headwinds"],
                 "sector_outlook": "positive",
-                "investment_thesis": f"{ticker.upper()} maintains a dominant position in its core markets with industry-leading margins. The shift toward high-margin services provides a significant runway for earnings growth. We believe the current valuation does not fully account for its AI integration potential.",
-                "summary": f"Analysts are overwhelmingly positive on {ticker}, citing a wide economic moat and strong cash flow generation. The consensus price target suggests double-digit upside. Overall, the stock remains a top pick for long-term growth-oriented portfolios."
+                "investment_thesis": f"{ticker.upper()} maintains a strong position in {prof['sector']} with an expected return of {prof['expected_return']}%. Target price is ${target_price:.2f} based on 63-day horizon scenarios.",
+                "summary": f"Our analysis yields a {prof['recommendation'].upper()} rating for {ticker.upper()} (conviction {prof['conviction']}/10) with an expected 63-day target of ${target_price:.2f}."
             }
+            clean_res, stats = guardrail_equity_agent(mock_res, {})
+            if consensus:
+                clean_res["analyst_consensus"] = consensus
+            if street_targets:
+                clean_res["analyst_price_targets"] = street_targets
+            clean_res["_evaluation"] = evaluate_agent_output("equity_research", ticker, clean_res, stats)
+            return clean_res
 
         def fetch_equity_data():
             stock = yf.Ticker(ticker)
@@ -84,6 +92,8 @@ async def equity_research_agent(ticker: str) -> dict:
                     "content": """You are a senior equity research analyst. Given company data, analyst ratings and estimates,
                     produce a thorough equity research analysis. Return JSON with exactly these keys:
                     {
+                        "recommendation": "strong_buy/buy/hold/sell/strong_sell",
+                        "conviction": 1-10,
                         "analyst_consensus": "strong_buy/buy/hold/sell/strong_sell",
                         "price_target": 0.0,
                         "upside_downside": "X% upside/downside from current price",
@@ -104,9 +114,15 @@ async def equity_research_agent(ticker: str) -> dict:
                 }
             ]
         )
-        logger.info(f"fundamentals Agent complete for {ticker}")
         raw = response.choices[0].message.content.replace("```json", "").replace("```", "").strip()
-        return json.loads(raw)
+        parsed = json.loads(raw)
+        clean_res, stats = guardrail_equity_agent(parsed, raw_data)
+        if consensus:
+            clean_res["analyst_consensus"] = consensus
+        if street_targets:
+            clean_res["analyst_price_targets"] = street_targets
+        clean_res["_evaluation"] = evaluate_agent_output("equity_research", ticker, clean_res, stats)
+        return clean_res
     except Exception as e:
         mistral_errors.labels(agent_name='equity_research').inc()
         logger.error(f"equity research agent failed for {ticker}: {e}")

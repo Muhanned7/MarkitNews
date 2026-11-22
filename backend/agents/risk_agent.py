@@ -6,6 +6,8 @@ import numpy as np
 import random
 from agents.client import client
 from agents.metrics import agent_calls, agent_latency, mistral_errors
+from agents.guardrails import guardrail_risk_agent
+from agents.evaluator import evaluate_agent_output
 from loguru import logger
 import time
 
@@ -18,26 +20,50 @@ async def risk_agent(ticker: str) -> dict:
     try:
         logger.info(f"Running Risk agent for {ticker}")
         if MOCK_MODE:
-            await asyncio.sleep(0.5)
-            return {
-                "overall_risk": "medium",
-                "volatility_assessment": "medium",
-                "beta_assessment": "aggressive",
-                "sharpe_assessment": "good",
+            await asyncio.sleep(0.3)
+            from agents.mock_market_data import get_deterministic_mock_profile
+            prof = get_deterministic_mock_profile(ticker)
+            var_pct = abs(round(prof["var_95_1d"] * 100, 2))
+            vol_pct = round(prof["annualized_volatility"] * 100, 1)
+            beta_val = round(prof["beta"], 2)
+            mock_res = {
+                "overall_risk": "high" if prof["annualized_volatility"] > 0.35 else ("low" if prof["annualized_volatility"] < 0.20 else "medium"),
+                "volatility_assessment": "high" if prof["annualized_volatility"] > 0.35 else ("low" if prof["annualized_volatility"] < 0.20 else "medium"),
+                "beta_assessment": "Aggressive (moves more than market)" if prof["beta"] > 1.2 else ("Defensive (moves less than market)" if prof["beta"] < 0.8 else "≈ Market"),
+                "sharpe_assessment": "strong" if prof["sharpe_ratio"] > 1.2 else ("weak" if prof["sharpe_ratio"] < 0.5 else "good"),
                 "short_squeeze_risk": "low",
-                "key_risks": ["Market volatility exposure", "Regulatory risks", "Concentration in tech sector"],
-                "risk_mitigants": ["Diversified revenue streams", "Strong cash position"],
-                "max_drawdown_assessment": "mild",
-                "var_interpretation": f"There is a 5% chance of losing more than 2% in a single day for {ticker}.",
+                "key_risks": [
+                    f"Market volatility exposure (annualized vol: {vol_pct:.1f}%)",
+                    f"Systematic market risk (beta: {beta_val:.2f} vs benchmark)",
+                    f"Max 1-year drawdown: {prof['max_drawdown'] * 100:.1f}%"
+                ],
+                "risk_mitigants": ["Diversified operating revenue", "Adequate liquidity buffers"],
+                "max_drawdown_assessment": "severe" if prof["max_drawdown"] < -0.25 else ("moderate" if prof["max_drawdown"] < -0.15 else "mild"),
+                "var_interpretation": f"There is a 5% historical probability of a 1-day decline exceeding {var_pct:.2f}% for {ticker.upper()}.",
                 "metrics": {
-                    "beta": 1.05,
-                    "volatility": 0.22,
-                    "sharpe_ratio": 1.4,
-                    "max_drawdown": -0.14,
-                    "var_95": -0.02
+                    "beta": prof["beta"],
+                    "volatility": prof["annualized_volatility"],
+                    "annualized_volatility": prof["annualized_volatility"],
+                    "ewma_volatility": prof["ewma_volatility"],
+                    "sharpe_ratio": prof["sharpe_ratio"],
+                    "sortino_ratio": prof["sortino_ratio"],
+                    "max_drawdown": prof["max_drawdown"],
+                    "max_drawdown_peak_date": prof.get("max_drawdown_peak_date", "2024-01-18"),
+                    "max_drawdown_trough_date": prof.get("max_drawdown_trough_date", "2024-04-19"),
+                    "days_to_recover": prof.get("days_to_recover", "not recovered"),
+                    "var_95": prof["var_95_1d"],
+                    "var_95_parametric": prof.get("var_95_parametric", round(prof["var_95_1d"] * 0.95, 4)),
+                    "var_99": prof["var_99_1d"],
+                    "cvar_975": prof["cvar_975_1d"],
+                    "r_squared": prof["r_squared"],
+                    "adv_20d_dollars": prof["adv_20d_dollars"],
+                    "bid_ask_spread_bps": prof["bid_ask_spread_bps"]
                 },
-                "summary": f"{ticker} exhibits moderate overall risk with a beta slightly above 1. The stock has a good Sharpe ratio suggesting efficient risk-adjusted returns. Low short squeeze risk and diversified revenue streams help balance the risk profile."
+                "summary": f"{ticker.upper()} exhibits an annualized volatility of {vol_pct:.1f}% and a beta of {beta_val:.2f} vs SPY. Daily 95% historical VaR stands at {var_pct:.2f}%, with a Sharpe ratio of {prof['sharpe_ratio']}."
             }
+            clean_res, stats = guardrail_risk_agent(mock_res, ticker=ticker)
+            clean_res["_evaluation"] = evaluate_agent_output("risk", ticker, clean_res, stats)
+            return clean_res
         def fetch_risk_data():
             stock = yf.Ticker(ticker)
             info = stock.info
@@ -126,9 +152,11 @@ async def risk_agent(ticker: str) -> dict:
                 }
             ]
         )
-        logger.info(f"risk Agent complete for {ticker}")
         raw = response.choices[0].message.content.replace("```json", "").replace("```", "").strip()
-        return json.loads(raw)
+        parsed = json.loads(raw)
+        clean_res, stats = guardrail_risk_agent(parsed, raw_data, ticker=ticker)
+        clean_res["_evaluation"] = evaluate_agent_output("risk", ticker, clean_res, stats)
+        return clean_res
     except Exception as e:
         mistral_errors.labels(agent_name='risk').inc()
         logger.error(f"risk agent failed for {ticker}: {e}")

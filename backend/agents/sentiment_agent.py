@@ -6,11 +6,13 @@ from mistralai.client import Mistral
 import os
 from agents.client import client
 from agents.metrics import agent_calls, agent_latency, mistral_errors
+from agents.guardrails import guardrail_sentiment_agent
+from agents.evaluator import evaluate_agent_output
 from loguru import logger
 import time
 
 MOCK_MODE = os.environ.get("MOCK_MODE", "true").lower() == "true"
-async def sentiment_agent(ticker: str, news_data: dict) -> dict:
+async def sentiment_agent(ticker: str, news_data: dict, consensus: str = None) -> dict:
     logger.info(f"Sentiment Agent requested for {ticker}")
     agent_calls.labels(agent_name='Sentiment', ticker=ticker).inc()
 
@@ -18,7 +20,7 @@ async def sentiment_agent(ticker: str, news_data: dict) -> dict:
     try:
         logger.info(f"Running sentiment agent for {ticker}")
         if MOCK_MODE:
-            await asyncio.sleep(0.5)  # Simulate network latency
+            await asyncio.sleep(0.3)  # Simulate network latency
             
             # Seed based on ticker and current news sentiment to stay "consistent"
             seed_val = sum(ord(c) for c in ticker)
@@ -27,12 +29,12 @@ async def sentiment_agent(ticker: str, news_data: dict) -> dict:
             # Logic to make the mock feel reactive to the news_data passed in
             news_sent = news_data.get('overall_sentiment', 'neutral')
             
-            return {
+            mock_res = {
                 "overall_sentiment": news_sent,
                 "retail_sentiment": "bullish" if news_sent == "bullish" else "neutral",
                 "institutional_sentiment": "bullish",
                 "sentiment_score": random.randint(6, 9) if news_sent == "bullish" else 5,
-                "analyst_consensus": "buy",
+                "analyst_consensus": consensus or "buy",
                 "key_sentiment_drivers": [
                     f"Positive news coverage regarding {ticker}'s latest earnings",
                     "Strong institutional accumulation over the last 30 days",
@@ -40,6 +42,11 @@ async def sentiment_agent(ticker: str, news_data: dict) -> dict:
                 ],
                 "summary": f"Market sentiment for {ticker} is currently {news_sent}, driven by strong institutional backing. Retail interest remains high with a focus on long-term growth catalysts."
             }
+            clean_res, stats = guardrail_sentiment_agent(mock_res)
+            if consensus:
+                clean_res["analyst_consensus"] = consensus
+            clean_res["_evaluation"] = evaluate_agent_output("sentiment", ticker, clean_res, stats)
+            return clean_res
         def fetch_finviz():
             resp = requests.get(
                 f"https://finviz.com/quote.ashx?t={ticker}",
@@ -78,9 +85,11 @@ async def sentiment_agent(ticker: str, news_data: dict) -> dict:
                 }
             ]
         )
-        logger.info(f"Sentiment Agent complete for {ticker}")
         raw = response.choices[0].message.content.replace("```json", "").replace("```", "").strip()
-        return json.loads(raw)
+        parsed = json.loads(raw)
+        clean_res, stats = guardrail_sentiment_agent(parsed)
+        clean_res["_evaluation"] = evaluate_agent_output("sentiment", ticker, clean_res, stats)
+        return clean_res
     except Exception as e:
         mistral_errors.labels(agent_name='Sentiment').inc()
         logger.error(f"Sentiment agent failed for {ticker}: {e}")

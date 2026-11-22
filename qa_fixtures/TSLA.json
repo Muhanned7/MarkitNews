@@ -1,0 +1,283 @@
+{
+  "ticker": "TSLA",
+  "mode": "live",
+  "report": {
+    "recommendation": "hold",
+    "conviction": 6,
+    "price_target": 399.0,
+    "risk_reward": "neutral",
+    "investment_horizon": "long_term",
+    "bull_case": [
+      "Robust 25.5% revenue growth driven by volume expansion and Market Leadership in EVs.",
+      "Strong free cash flow generation of approximately $4.8 billion supports ongoing R&D and Megafactory expansion.",
+      "Compelling long-term narrative around autonomous driving (FSD) and AI infrastructure provides significant upside potential if execution improves."
+    ],
+    "bear_case": [
+      "Extreme valuation with a trailing P/E of 347x and forward P/E of 172x indicates pricing for perfection with limited downside protection.",
+      "Compressed operating margins and negative earnings growth (-3%) reflect significant pressure from cost structures and intense competition.",
+      "Escalating US-China geopolitical tensions and export controls pose systemic risks to the AI chip supply chain and semiconductor capacity."
+    ],
+    "key_catalysts": [
+      "Full rollout of the driver monitoring system and FSD adoption rates in the next two fiscal quarters.",
+      "Successful production ramp-up of the R200 Cybertruck to diversify the product portfolio."
+    ],
+    "key_risks": [
+      "High volatility (44.87%) and aggressive beta (1.92) amplifying portfolio losses during market downturns.",
+      "Potential valuation compression due to high multiples and slowing global EV demand growth."
+    ],
+    "position_sizing": "small",
+    "summary": "Tesla presents a complex investment profile where strong top-line growth and market leadership are heavily capitalized into an extreme valuation multiple. The stock is currently trading below the analyst consensus, offering modest near-term upside but significant downside risk due to its 'priced for perfection' status. Short-term technicals suggest neutral-to-bullish momentum, but the overall high-risk profile with a negative Sharpe ratio warrants cautious position sizing. Long-term holders should monitor margin trends and autonomous vehicle milestones for earnings realization. Ultimately, the geopolitical headwinds affecting the AI supply chain add a layer of macroeconomic uncertainty that supports a hold recommendation over aggressive buying.",
+    "_evaluation": {
+      "agent_name": "portfolio_manager",
+      "ticker": "TSLA",
+      "faithfulness_score": 1.0,
+      "consistency_score": 1.0,
+      "completeness_score": 1.0,
+      "overall_quality_score": 1.0,
+      "grade": "A",
+      "guardrails_passed": true,
+      "hallucinations_detected": 0,
+      "warnings": []
+    },
+    "current_price": 375.23,
+    "upside_downside": "+6.33% upside from current price"
+  },
+  "agents": {
+    "news": {
+      "overall_sentiment": "bearish",
+      "summary": "Tesla's direct exposure to cybersecurity threats remains low, as recent high-severity vulnerabilities are unrelated to the company's stack. However, the broader AI and semiconductor ecosystem faces headwinds from escalating US-China geopolitical tensions and export controls. These macro risks threaten supply chain stability and limit the expansion opportunities currently driving the AI chip sector.",
+      "key_themes": [
+        "US-China geopolitical tensions",
+        "AI chip supply chain expansion",
+        "Cybersecurity and export controls"
+      ],
+      "supply_chain_risks": [
+        "Export controls restricting access to advanced AI technology",
+        "Systemic vulnerabilities in third-party software components",
+        "Geopolitical friction impacting semiconductor capacity expansion"
+      ],
+      "articles": [
+        {
+          "title": "Vulnerability Summary for the Week of September 14, 2026",
+          "source": "Cisa.gov",
+          "url": "https://www.cisa.gov/news-events/bulletins/sb26-264",
+          "relevance": "Provides context on the general cybersecurity landscape, though no specific Tesla vulnerabilities are identified, serving as a baseline risk indicator."
+        },
+        {
+          "title": "Weekly news roundup: Musk looms large as AI chip boom drives capacity expansion and geopolitical risks",
+          "source": "Digitimes",
+          "url": "https://www.digitimes.com/news/a20261005VL200/capacity-tsmc-demand-financing-anthropic.html",
+          "relevance": "Highly relevant as it directly ties Musk and AI chip demand to capacity strategies, highlighting the intersection of Tesla's leadership with systemic supply chain and geopolitical risks."
+        },
+        {
+          "title": "\u2018Silent Cold War\u2019: Why calls to slow AI have sparked new US\u2013China frontier",
+          "source": "Al Jazeera English",
+          "url": "https://www.aljazeera.com/news/2026/9/14/silent-cold-war-why-calls-to-slow-ai-have-sparked-new-us-china",
+          "relevance": "Contextualizes the regulatory and geopolitical barriers that could restrict the flow of advanced AI hardware and software, impacting Tesla's long-term autonomous driving and AI infrastructure."
+        }
+      ],
+      "_evaluation": {
+        "agent_name": "news",
+        "ticker": "TSLA",
+        "faithfulness_score": 0.6,
+        "consistency_score": 1.0,
+        "completeness_score": 1.0,
+        "overall_quality_score": 0.84,
+        "grade": "B",
+        "guardrails_passed": true,
+        "hallucinations_detected": 0,
+        "warnings": [
+          "Low entity relevance: none of the 3 fetched news items explicitly mention 'TSLA' or its company aliases."
+        ]
+      }
+    },
+    "sentiment": {
+      "overall_sentiment": "bearish",
+      "retail_sentiment": "neutral",
+      "institutional_sentiment": "bearish",
+      "sentiment_score": 3,
+      "analyst_consensus": "hold",
+      "key_sentiment_drivers": [
+        "US-China geopolitical tensions",
+        "Export controls restricting access to advanced AI technology"
+      ],
+      "summary": "Sentiment is bearish due to rising geopolitical risks and supply chain constraints affecting AI chip access. Institutional views reflect caution regarding systemic vulnerabilities in the semiconductor sector.",
+      "_evaluation": {
+        "agent_name": "sentiment",
+        "ticker": "TSLA",
+        "faithfulness_score": 1.0,
+        "consistency_score": 1.0,
+        "completeness_score": 1.0,
+        "overall_quality_score": 1.0,
+        "grade": "A",
+        "guardrails_passed": true,
+        "hallucinations_detected": 0,
+        "warnings": []
+      }
+    },
+    "fundamentals": {
+      "valuation": "overvalued",
+      "valuation_reasoning": "The trailing P/E ratio of 347 significantly exceeds the industry average, reflecting extreme market optimism relative to current earnings. With a PEG ratio of 3.85, the stock price encodes growth expectations that are not fully supported by the decelerating earnings growth rate.",
+      "financial_health": "moderate",
+      "health_reasoning": "Tesla maintains a solid liquidity position with a current ratio of 1.94 and generates positive free cash flow of approximately $4.8 billion. However, the debt-to-equity ratio is elevated, and profit margins are thin, which exposes the business to higher financial leverage risks.",
+      "growth_outlook": "moderate",
+      "growth_reasoning": "While revenue is growing at a robust 25.5%, this is driven by volume increases that have compressed margins, leading to negative earnings growth of -3%. The expansion suggests ongoing scale benefits, but immediate profitability is struggling to keep pace with cost structures.",
+      "key_strengths": [
+        "Strong revenue growth rate of 25.5%",
+        "Positive and significant free cash flow generation"
+      ],
+      "key_weaknesses": [
+        "Extremely high valuation multiples compared to earnings",
+        "Compressed operating margins and negative earnings growth"
+      ],
+      "metrics": {
+        "pe_ratio": 347.43518,
+        "forward_pe": 172.13412,
+        "revenue_growth": 0.255,
+        "profit_margins": 0.03671,
+        "debt_to_equity": 18.373,
+        "return_on_equity": 0.046669997,
+        "free_cashflow": 4835999744
+      },
+      "summary": "Tesla demonstrates a strong revenue engine with 25.5% growth, yet faces headwinds from tightening margins and a high valuation. The financial position is supported by strong liquidity and cash flow, though high leverage remains a risk factor. Investors are currently pricing in substantial future growth that has yet to materialize in bottom-line earnings.",
+      "_evaluation": {
+        "agent_name": "fundamentals",
+        "ticker": "TSLA",
+        "faithfulness_score": 1.0,
+        "consistency_score": 1.0,
+        "completeness_score": 1.0,
+        "overall_quality_score": 1.0,
+        "grade": "A",
+        "guardrails_passed": true,
+        "hallucinations_detected": 0,
+        "warnings": []
+      }
+    },
+    "technical": {
+      "trend": "neutral",
+      "trend_strength": "moderate",
+      "rsi_signal": "neutral",
+      "macd_signal": "bullish",
+      "support_level": 352.84,
+      "resistance_level": 382.7,
+      "short_term_outlook": "bullish",
+      "key_levels": [
+        "352.84",
+        "382.7"
+      ],
+      "signals": [
+        "Price above 50-day MA indicates short-term bullish momentum",
+        "Price below 200-day MA suggests long-term bearish pressure",
+        "MACD bullish crossover signals improving momentum",
+        "Volume is below average, suggesting cautious participation"
+      ],
+      "summary": "TSLA is trading above its 50-day moving average but remains below the 200-day moving average, indicating a mixed trend with short-term strength offset by long-term weakness. The MACD has recently generated a bullish crossover, suggesting potential for continued upward momentum in the short term. However, trading volume is below average, which may limit the sustainability of the current price move.",
+      "raw": {
+        "current_price": 375.23,
+        "ma50": 357.14,
+        "ma200": 389.52,
+        "price_vs_ma50": "above",
+        "price_vs_ma200": "below",
+        "swing_support_20d": 352.84,
+        "swing_resistance_20d": 382.7,
+        "rsi": 54.51,
+        "macd": 4.9182,
+        "macd_signal": 4.3671,
+        "macd_crossover": "bullish",
+        "avg_volume_20d": 34631850,
+        "current_volume": 18349700,
+        "volume_vs_average": "below",
+        "52_week_high": 489.88,
+        "52_week_low": 298.32
+      },
+      "_evaluation": {
+        "agent_name": "technical",
+        "ticker": "TSLA",
+        "faithfulness_score": 1.0,
+        "consistency_score": 1.0,
+        "completeness_score": 1.0,
+        "overall_quality_score": 1.0,
+        "grade": "A",
+        "guardrails_passed": true,
+        "hallucinations_detected": 0,
+        "warnings": []
+      }
+    },
+    "equity": {
+      "recommendation": "hold",
+      "conviction": 5,
+      "analyst_consensus": "buy",
+      "price_target": 399.0,
+      "upside_downside": "6% upside from current price",
+      "competitive_position": "leader",
+      "moat": "wide",
+      "moat_sources": [
+        "Brand equity",
+        "Energy storage and autonomy technology network effects"
+      ],
+      "growth_catalysts": [
+        "Full driver monitoring system rollout",
+        "R200 Cybertruck production ramp-up",
+        "Domestic expansion of Megafactories"
+      ],
+      "key_risks": [
+        "Valuation compression due to high P/E multiple",
+        "Intense competition from Chinese EV manufacturers",
+        "Regulatory credit revenue volatility"
+      ],
+      "sector_outlook": "neutral",
+      "investment_thesis": "Tesla maintains its position as the EV market leader with robust gross margins and a compelling long-term Artificial Intelligence and Autonomous Driving narrative. However, the stock's valuation is priced for perfection, offering limited downside protection in the face of broad-based auto industry headwinds and slowing global EV demand growth. While consensus analyst ratings lean towards \"Buy,\" the significant dispersion in price targets suggests that near-term price discovery remains highly volatile and dependent on macroeconomic supply-demand balances rather than linear valuation improvement.",
+      "summary": "Tesla's stock at 375.23 is trading slightly below the historical analyst consensus of 397.83, suggesting a moderate 6% upside potential rather than a buy signal. The equity sits in a holding zone where the strong long-term moat and technology lead are heavily capitalized into its multiple, maintaining a fair value assessment. Investors should monitor gross margin trends and FSD adoption rates as primary indicators of whether the market's high expectations will materialize in the next two fiscal quarters.",
+      "_evaluation": {
+        "agent_name": "equity_research",
+        "ticker": "TSLA",
+        "faithfulness_score": 1.0,
+        "consistency_score": 1.0,
+        "completeness_score": 1.0,
+        "overall_quality_score": 1.0,
+        "grade": "A",
+        "guardrails_passed": true,
+        "hallucinations_detected": 0,
+        "warnings": []
+      }
+    },
+    "risk": {
+      "overall_risk": "very_high",
+      "volatility_assessment": "high",
+      "beta_assessment": "aggressive",
+      "sharpe_assessment": "poor",
+      "short_squeeze_risk": "low",
+      "key_risks": [
+        "Extreme asset sensitivity to market movements (Beta 1.92) amplifying portfolio losses during downturns",
+        "High volatility (44.87%) leading to unpredictable price swings and increased capital requirements",
+        "Negative risk-adjusted return (Sharpe -0.19) indicating the compensation for bearing this level of risk is currently negative"
+      ],
+      "risk_mitigants": [
+        "Low short interest relative to float (2.01%) reduces the immediate threat of a volatility-inducing short squeeze",
+        "Position sizing based on VaR limits can cap maximum potential loss to approximately 4.16% per day at a 95% confidence level"
+      ],
+      "max_drawdown_assessment": "severe",
+      "var_interpretation": "1-day 95% historical VaR: -0.04% (approx. -$416 per $10,000 portfolio).",
+      "metrics": {
+        "beta": 1.92,
+        "volatility": 0.4487,
+        "sharpe_ratio": -0.19,
+        "max_drawdown": -0.391,
+        "var_95": -0.0416
+      },
+      "summary": "TSLA presents a very high risk profile, characterized by high volatility and an aggressive beta that significantly exceeds market average exposure. The negative Sharpe ratio confirms poor risk-adjusted performance, while the nearly 40% maximum drawdown highlights severe downside potential in adverse market conditions. However, the relatively low short interest mitigates specific event-driven risks like short squeezes, keeping the primary drivers of risk to fundamental and macroeconomic volatility.",
+      "_evaluation": {
+        "agent_name": "risk",
+        "ticker": "TSLA",
+        "faithfulness_score": 1.0,
+        "consistency_score": 1.0,
+        "completeness_score": 1.0,
+        "overall_quality_score": 1.0,
+        "grade": "A",
+        "guardrails_passed": true,
+        "hallucinations_detected": 0,
+        "warnings": []
+      }
+    }
+  }
+}

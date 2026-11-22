@@ -67,3 +67,820 @@
 2026-05-21 16:37:46.160 | INFO     | main:synthesizer:101 - Running agents for JPM
 2026-05-21 16:37:46.585 | INFO     | main:synthesizer:137 - Synthesis complete for JNJ
 2026-05-21 16:37:49.983 | INFO     | main:synthesizer:137 - Synthesis complete for JPM
+2026-10-06 01:13:25.595 | INFO     | ingestion.footprint_agent:research_company_footprint:434 - Loaded cached footprint for TSLA from PostgreSQL (<2ms)
+2026-10-06 01:13:42.060 | INFO     | ingestion.footprint_agent:research_company_footprint:434 - Loaded cached footprint for TSLA from PostgreSQL (<2ms)
+2026-10-06 01:14:04.215 | INFO     | ingestion.footprint_agent:research_company_footprint:434 - Loaded cached footprint for ACN from PostgreSQL (<2ms)
+2026-10-09 18:04:18.666 | INFO     | ingestion.footprint_agent:research_company_footprint:598 - Loaded cached verified footprint for TSLA from PostgreSQL (<2ms)
+2026-10-09 18:04:37.168 | INFO     | ingestion.footprint_agent:research_company_footprint:598 - Loaded cached verified footprint for TSLA from PostgreSQL (<2ms)
+2026-10-09 18:04:45.494 | WARNING  | ingestion.adapters.geo_feed_adapter:fetch_sec_filings_atom:108 - Failed to fetch SEC 8-K Atom feed: 
+2026-10-13 02:23:26.000 | INFO     | ingestion.footprint_agent:research_company_footprint:600 - Loaded cached verified footprint for NVDA from PostgreSQL (<2ms)
+2026-10-13 19:13:00.359 | INFO     | ingestion.footprint_agent:research_company_footprint:879 - Running live autonomous tool loop on Groq Cloud for AAPL...
+2026-10-13 19:13:00.361 | INFO     | ingestion.footprint_agent:run_autonomous_tool_loop:379 - [Stage 0: Parallel Pre-Fetch] Fetching SEC 10-K & Wikipedia concurrently for AAPL...
+2026-10-13 19:13:01.448 | INFO     | ingestion.footprint_agent:run_autonomous_tool_loop:497 - [Turn 1/2] Calling Groq LLM for AAPL (tools=enabled)...
+2026-10-13 19:13:02.520 | INFO     | agents.client:complete:137 - [footprint_agent | AAPL] Model: qwen/qwen3.8-27b | Prompt: 1680 | Completion: 216 | Total: 1896 tokens | Latency: 1069.1ms
+2026-10-13 19:13:02.521 | INFO     | ingestion.footprint_agent:run_autonomous_tool_loop:520 - [Turn 1] Executing targeted search: Apple iPhone manufacturing assembly facilities India Vietnam China Pegatron Foxconn
+2026-10-13 19:13:03.318 | INFO     | ingestion.footprint_agent:run_autonomous_tool_loop:520 - [Turn 1] Executing targeted search: Apple 2024 10-K suppliers TSMC Foxconn Samsung qualified suppliers components
+2026-10-13 19:13:04.124 | INFO     | ingestion.footprint_agent:run_autonomous_tool_loop:520 - [Turn 1] Executing targeted search: Apple Park Cupertino headquarters operations campus
+2026-10-13 19:13:04.267 | INFO     | ingestion.footprint_agent:run_autonomous_tool_loop:497 - [Turn 2/2] Calling Groq LLM for AAPL (tools=disabled)...
+2026-10-13 19:13:09.125 | INFO     | agents.client:complete:137 - [footprint_agent | AAPL] Model: qwen/qwen3.8-27b | Prompt: 2245 | Completion: 1787 | Total: 4032 tokens | Latency: 4855.78ms
+2026-10-13 19:13:10.720 | INFO     | ingestion.footprint_agent:research_company_footprint:953 - Successfully cached verified footprint for AAPL into PostgreSQL.
+2026-10-13 21:19:44.765 | INFO     | ingestion.footprint_agent:research_company_footprint:879 - Running live autonomous tool loop on Groq Cloud for AAPL...
+2026-10-13 21:19:44.765 | INFO     | ingestion.footprint_agent:run_autonomous_tool_loop:379 - [Stage 0: Parallel Pre-Fetch] Fetching SEC 10-K & Wikipedia concurrently for AAPL...
+2026-10-13 21:19:45.883 | INFO     | ingestion.footprint_agent:run_autonomous_tool_loop:497 - [Turn 1/2] Calling Groq LLM for AAPL (tools=enabled)...
+2026-10-13 21:19:46.666 | INFO     | agents.client:complete:137 - [footprint_agent | AAPL] Model: qwen/qwen3.8-27b | Prompt: 1680 | Completion: 41 | Total: 1721 tokens | Latency: 739.37ms
+2026-10-13 21:19:46.682 | INFO     | ingestion.footprint_agent:run_autonomous_tool_loop:520 - [Turn 1] Executing targeted search: Apple Inc. tier 1 suppliers Foxconn TSMC manufacturing partners Cupertino Cupertino
+2026-10-13 21:19:47.497 | INFO     | ingestion.footprint_agent:run_autonomous_tool_loop:497 - [Turn 2/2] Calling Groq LLM for AAPL (tools=disabled)...
+2026-10-13 21:19:49.931 | INFO     | agents.client:complete:137 - [footprint_agent | AAPL] Model: qwen/qwen3.8-27b | Prompt: 1843 | Completion: 1039 | Total: 2882 tokens | Latency: 2431.3ms
+2026-10-13 21:19:51.506 | INFO     | ingestion.footprint_agent:research_company_footprint:953 - Successfully cached verified footprint for AAPL into PostgreSQL.
+2026-10-13 22:58:06.101 | INFO     | ingestion.footprint_agent:research_company_footprint:879 - Running live autonomous tool loop on Groq Cloud for NVDA...
+2026-10-13 22:58:06.102 | INFO     | ingestion.footprint_agent:run_autonomous_tool_loop:379 - [Stage 0: Parallel Pre-Fetch] Fetching SEC 10-K & Wikipedia concurrently for NVDA...
+2026-10-13 22:58:07.453 | INFO     | ingestion.footprint_agent:run_autonomous_tool_loop:497 - [Turn 1/2] Calling Groq LLM for NVDA (tools=enabled)...
+2026-10-13 22:58:08.116 | INFO     | agents.client:complete:137 - [footprint_agent | NVDA] Model: qwen/qwen3.8-27b | Prompt: 1703 | Completion: 122 | Total: 1825 tokens | Latency: 628.97ms
+2026-10-13 22:58:08.118 | INFO     | ingestion.footprint_agent:run_autonomous_tool_loop:520 - [Turn 1] Executing targeted search: NVIDIA Tier-1 contract manufacturers Foxconn Quanta Pegatron TSMC CoWoS foundry suppliers
+2026-10-13 22:58:08.941 | INFO     | ingestion.footprint_agent:run_autonomous_tool_loop:497 - [Turn 2/2] Calling Groq LLM for NVDA (tools=disabled)...
+2026-10-13 22:58:11.289 | INFO     | agents.client:complete:137 - [footprint_agent | NVDA] Model: qwen/qwen3.8-27b | Prompt: 2042 | Completion: 1066 | Total: 3108 tokens | Latency: 2346.79ms
+2026-10-13 22:58:12.971 | INFO     | ingestion.footprint_agent:research_company_footprint:953 - Successfully cached verified footprint for NVDA into PostgreSQL.
+2026-10-13 22:58:13.266 | INFO     | ingestion.footprint_agent:research_company_footprint:879 - Running live autonomous tool loop on Groq Cloud for MSFT...
+2026-10-13 22:58:13.267 | INFO     | ingestion.footprint_agent:run_autonomous_tool_loop:379 - [Stage 0: Parallel Pre-Fetch] Fetching SEC 10-K & Wikipedia concurrently for MSFT...
+2026-10-13 22:58:14.647 | INFO     | ingestion.footprint_agent:run_autonomous_tool_loop:497 - [Turn 1/2] Calling Groq LLM for MSFT (tools=enabled)...
+2026-10-13 22:58:25.355 | INFO     | agents.client:complete:137 - [footprint_agent | MSFT] Model: qwen/qwen3.8-27b | Prompt: 1807 | Completion: 102 | Total: 1909 tokens | Latency: 10704.85ms
+2026-10-13 22:58:25.355 | INFO     | ingestion.footprint_agent:run_autonomous_tool_loop:520 - [Turn 1] Executing targeted search: Microsoft Corporation Tier 1 suppliers Intel AMD Qualcomm contract manufacturers supply chain
+2026-10-13 22:58:26.131 | INFO     | ingestion.footprint_agent:run_autonomous_tool_loop:497 - [Turn 2/2] Calling Groq LLM for MSFT (tools=disabled)...
+2026-10-13 22:58:42.737 | INFO     | agents.client:complete:137 - [footprint_agent | MSFT] Model: qwen/qwen3.8-27b | Prompt: 1962 | Completion: 2048 | Total: 4010 tokens | Latency: 16602.76ms
+2026-10-13 22:58:44.516 | INFO     | ingestion.footprint_agent:research_company_footprint:953 - Successfully cached verified footprint for MSFT into PostgreSQL.
+2026-10-14 11:04:53.193 | INFO     | agents.news_agent:news_agent:68 - News Agent requested for AAPL
+2026-10-14 11:04:53.195 | INFO     | agents.news_agent:news_agent:73 - Running News agent for AAPL
+2026-10-14 11:04:53.662 | INFO     | agents.evaluator:evaluate_agent_output:95 - [Evaluation | NEWS | AAPL] Grade: A | Score: 1.00 | Faithfulness: 1.0 | Consistency: 1.0 | Hallucinations Caught: 0
+2026-10-14 11:04:53.663 | INFO     | agents.sentiment_agent:sentiment_agent:16 - Sentiment Agent requested for AAPL
+2026-10-14 11:04:53.663 | INFO     | agents.sentiment_agent:sentiment_agent:21 - Running sentiment agent for AAPL
+2026-10-14 11:04:53.977 | INFO     | agents.evaluator:evaluate_agent_output:95 - [Evaluation | SENTIMENT | AAPL] Grade: A | Score: 1.00 | Faithfulness: 1.0 | Consistency: 1.0 | Hallucinations Caught: 0
+2026-10-14 11:04:53.977 | INFO     | agents.fundamentals_agent:fundamentals_agent:16 - fundamentals agent requested for AAPL
+2026-10-14 11:04:53.977 | INFO     | agents.fundamentals_agent:fundamentals_agent:21 - Running fundamentals agents for AAPL
+2026-10-14 11:04:54.288 | INFO     | agents.evaluator:evaluate_agent_output:95 - [Evaluation | FUNDAMENTALS | AAPL] Grade: A | Score: 1.00 | Faithfulness: 1.0 | Consistency: 1.0 | Hallucinations Caught: 0
+2026-10-14 11:04:54.289 | INFO     | agents.technical_agent:technical_agent:16 - Technical Agent requested for AAPL
+2026-10-14 11:04:54.603 | INFO     | agents.evaluator:evaluate_agent_output:95 - [Evaluation | TECHNICAL | AAPL] Grade: A | Score: 1.00 | Faithfulness: 1.0 | Consistency: 1.0 | Hallucinations Caught: 0
+2026-10-14 11:04:54.604 | INFO     | agents.equity_reasearch_agent:equity_research_agent:16 - equity research agent requested for AAPL
+2026-10-14 11:04:54.919 | INFO     | agents.evaluator:evaluate_agent_output:95 - [Evaluation | EQUITY_RESEARCH | AAPL] Grade: A | Score: 1.00 | Faithfulness: 1.0 | Consistency: 1.0 | Hallucinations Caught: 0
+2026-10-14 11:04:54.920 | INFO     | agents.risk_agent:risk_agent:16 - Risk Agent requested for AAPL
+2026-10-14 11:04:54.920 | INFO     | agents.risk_agent:risk_agent:21 - Running Risk agent for AAPL
+2026-10-14 11:04:55.230 | INFO     | agents.evaluator:evaluate_agent_output:95 - [Evaluation | RISK | AAPL] Grade: A | Score: 1.00 | Faithfulness: 1.0 | Consistency: 1.0 | Hallucinations Caught: 0
+2026-10-14 11:04:55.231 | INFO     | main:synthesizer:252 - Synthesizing requested for AAPL
+2026-10-14 11:04:55.539 | INFO     | agents.evaluator:evaluate_agent_output:95 - [Evaluation | PORTFOLIO_MANAGER | AAPL] Grade: A | Score: 1.00 | Faithfulness: 1.0 | Consistency: 1.0 | Hallucinations Caught: 0
+2026-10-14 12:29:19.375 | INFO     | main:analyse:343 - Analysis requested for AAPL by user demo@marketpulse.com
+2026-10-14 12:29:19.377 | INFO     | main:analyse:354 - Running agents for AAPL
+2026-10-14 12:29:19.377 | INFO     | agents.news_agent:news_agent:68 - News Agent requested for AAPL
+2026-10-14 12:29:19.377 | INFO     | agents.news_agent:news_agent:73 - Running News agent for AAPL
+2026-10-14 12:29:19.785 | INFO     | agents.evaluator:evaluate_agent_output:95 - [Evaluation | NEWS | AAPL] Grade: A | Score: 1.00 | Faithfulness: 1.0 | Consistency: 1.0 | Hallucinations Caught: 0
+2026-10-14 12:29:19.786 | INFO     | agents.sentiment_agent:sentiment_agent:16 - Sentiment Agent requested for AAPL
+2026-10-14 12:29:19.786 | INFO     | agents.sentiment_agent:sentiment_agent:21 - Running sentiment agent for AAPL
+2026-10-14 12:29:19.786 | INFO     | agents.fundamentals_agent:fundamentals_agent:16 - fundamentals agent requested for AAPL
+2026-10-14 12:29:19.787 | INFO     | agents.fundamentals_agent:fundamentals_agent:21 - Running fundamentals agents for AAPL
+2026-10-14 12:29:19.787 | INFO     | agents.technical_agent:technical_agent:16 - Technical Agent requested for AAPL
+2026-10-14 12:29:19.787 | INFO     | agents.equity_reasearch_agent:equity_research_agent:16 - equity research agent requested for AAPL
+2026-10-14 12:29:19.788 | INFO     | agents.risk_agent:risk_agent:16 - Risk Agent requested for AAPL
+2026-10-14 12:29:19.788 | INFO     | agents.risk_agent:risk_agent:21 - Running Risk agent for AAPL
+2026-10-14 12:29:20.094 | INFO     | agents.evaluator:evaluate_agent_output:95 - [Evaluation | SENTIMENT | AAPL] Grade: A | Score: 1.00 | Faithfulness: 1.0 | Consistency: 1.0 | Hallucinations Caught: 0
+2026-10-14 12:29:20.096 | INFO     | agents.evaluator:evaluate_agent_output:95 - [Evaluation | TECHNICAL | AAPL] Grade: A | Score: 1.00 | Faithfulness: 1.0 | Consistency: 1.0 | Hallucinations Caught: 0
+2026-10-14 12:29:20.098 | INFO     | agents.evaluator:evaluate_agent_output:95 - [Evaluation | EQUITY_RESEARCH | AAPL] Grade: A | Score: 1.00 | Faithfulness: 1.0 | Consistency: 1.0 | Hallucinations Caught: 0
+2026-10-14 12:29:20.101 | INFO     | agents.evaluator:evaluate_agent_output:95 - [Evaluation | FUNDAMENTALS | AAPL] Grade: A | Score: 1.00 | Faithfulness: 1.0 | Consistency: 1.0 | Hallucinations Caught: 0
+2026-10-14 12:29:20.103 | INFO     | agents.evaluator:evaluate_agent_output:95 - [Evaluation | RISK | AAPL] Grade: A | Score: 1.00 | Faithfulness: 1.0 | Consistency: 1.0 | Hallucinations Caught: 0
+2026-10-14 12:29:20.104 | INFO     | main:synthesizer:252 - Synthesizing requested for AAPL
+2026-10-14 12:29:20.418 | INFO     | agents.evaluator:evaluate_agent_output:95 - [Evaluation | PORTFOLIO_MANAGER | AAPL] Grade: A | Score: 1.00 | Faithfulness: 1.0 | Consistency: 1.0 | Hallucinations Caught: 0
+2026-10-14 12:29:53.045 | INFO     | main:analyse:343 - Analysis requested for ZZZZ by user demo@marketpulse.com
+2026-10-14 12:29:53.046 | INFO     | main:analyse:354 - Running agents for ZZZZ
+2026-10-14 12:29:53.046 | INFO     | agents.news_agent:news_agent:68 - News Agent requested for ZZZZ
+2026-10-14 12:29:53.046 | INFO     | agents.news_agent:news_agent:73 - Running News agent for ZZZZ
+2026-10-14 12:29:53.462 | INFO     | agents.evaluator:evaluate_agent_output:95 - [Evaluation | NEWS | ZZZZ] Grade: A | Score: 1.00 | Faithfulness: 1.0 | Consistency: 1.0 | Hallucinations Caught: 0
+2026-10-14 12:29:53.463 | INFO     | agents.sentiment_agent:sentiment_agent:16 - Sentiment Agent requested for ZZZZ
+2026-10-14 12:29:53.463 | INFO     | agents.sentiment_agent:sentiment_agent:21 - Running sentiment agent for ZZZZ
+2026-10-14 12:29:53.463 | INFO     | agents.fundamentals_agent:fundamentals_agent:16 - fundamentals agent requested for ZZZZ
+2026-10-14 12:29:53.463 | INFO     | agents.fundamentals_agent:fundamentals_agent:21 - Running fundamentals agents for ZZZZ
+2026-10-14 12:29:53.463 | INFO     | agents.technical_agent:technical_agent:16 - Technical Agent requested for ZZZZ
+2026-10-14 12:29:53.463 | INFO     | agents.equity_reasearch_agent:equity_research_agent:16 - equity research agent requested for ZZZZ
+2026-10-14 12:29:53.464 | INFO     | agents.risk_agent:risk_agent:16 - Risk Agent requested for ZZZZ
+2026-10-14 12:29:53.464 | INFO     | agents.risk_agent:risk_agent:21 - Running Risk agent for ZZZZ
+2026-10-14 12:29:53.777 | INFO     | agents.evaluator:evaluate_agent_output:95 - [Evaluation | EQUITY_RESEARCH | ZZZZ] Grade: A | Score: 1.00 | Faithfulness: 1.0 | Consistency: 1.0 | Hallucinations Caught: 0
+2026-10-14 12:29:53.781 | INFO     | agents.evaluator:evaluate_agent_output:95 - [Evaluation | RISK | ZZZZ] Grade: A | Score: 1.00 | Faithfulness: 1.0 | Consistency: 1.0 | Hallucinations Caught: 0
+2026-10-14 12:29:53.783 | INFO     | agents.evaluator:evaluate_agent_output:95 - [Evaluation | TECHNICAL | ZZZZ] Grade: A | Score: 1.00 | Faithfulness: 1.0 | Consistency: 1.0 | Hallucinations Caught: 0
+2026-10-14 12:29:53.786 | INFO     | agents.evaluator:evaluate_agent_output:95 - [Evaluation | FUNDAMENTALS | ZZZZ] Grade: A | Score: 1.00 | Faithfulness: 1.0 | Consistency: 1.0 | Hallucinations Caught: 0
+2026-10-14 12:29:53.787 | INFO     | agents.evaluator:evaluate_agent_output:95 - [Evaluation | SENTIMENT | ZZZZ] Grade: A | Score: 1.00 | Faithfulness: 1.0 | Consistency: 1.0 | Hallucinations Caught: 0
+2026-10-14 12:29:53.788 | INFO     | main:synthesizer:252 - Synthesizing requested for ZZZZ
+2026-10-14 12:29:54.093 | INFO     | agents.evaluator:evaluate_agent_output:95 - [Evaluation | PORTFOLIO_MANAGER | ZZZZ] Grade: A | Score: 1.00 | Faithfulness: 1.0 | Consistency: 1.0 | Hallucinations Caught: 0
+2026-10-14 12:29:54.108 | INFO     | main:analyse:343 - Analysis requested for aapl by user demo@marketpulse.com
+2026-10-14 12:29:54.108 | INFO     | main:analyse:354 - Running agents for aapl
+2026-10-14 12:29:54.108 | INFO     | agents.news_agent:news_agent:68 - News Agent requested for aapl
+2026-10-14 12:29:54.108 | INFO     | agents.news_agent:news_agent:73 - Running News agent for aapl
+2026-10-14 12:29:54.511 | INFO     | agents.evaluator:evaluate_agent_output:95 - [Evaluation | NEWS | AAPL] Grade: A | Score: 1.00 | Faithfulness: 1.0 | Consistency: 1.0 | Hallucinations Caught: 0
+2026-10-14 12:29:54.513 | INFO     | agents.sentiment_agent:sentiment_agent:16 - Sentiment Agent requested for aapl
+2026-10-14 12:29:54.513 | INFO     | agents.sentiment_agent:sentiment_agent:21 - Running sentiment agent for aapl
+2026-10-14 12:29:54.514 | INFO     | agents.fundamentals_agent:fundamentals_agent:16 - fundamentals agent requested for aapl
+2026-10-14 12:29:54.514 | INFO     | agents.fundamentals_agent:fundamentals_agent:21 - Running fundamentals agents for aapl
+2026-10-14 12:29:54.514 | INFO     | agents.technical_agent:technical_agent:16 - Technical Agent requested for aapl
+2026-10-14 12:29:54.514 | INFO     | agents.equity_reasearch_agent:equity_research_agent:16 - equity research agent requested for aapl
+2026-10-14 12:29:54.514 | INFO     | agents.risk_agent:risk_agent:16 - Risk Agent requested for aapl
+2026-10-14 12:29:54.515 | INFO     | agents.risk_agent:risk_agent:21 - Running Risk agent for aapl
+2026-10-14 12:29:54.810 | INFO     | agents.evaluator:evaluate_agent_output:95 - [Evaluation | FUNDAMENTALS | AAPL] Grade: A | Score: 1.00 | Faithfulness: 1.0 | Consistency: 1.0 | Hallucinations Caught: 0
+2026-10-14 12:29:54.813 | INFO     | agents.evaluator:evaluate_agent_output:95 - [Evaluation | RISK | AAPL] Grade: A | Score: 1.00 | Faithfulness: 1.0 | Consistency: 1.0 | Hallucinations Caught: 0
+2026-10-14 12:29:54.815 | INFO     | agents.evaluator:evaluate_agent_output:95 - [Evaluation | SENTIMENT | AAPL] Grade: A | Score: 1.00 | Faithfulness: 1.0 | Consistency: 1.0 | Hallucinations Caught: 0
+2026-10-14 12:29:54.817 | INFO     | agents.evaluator:evaluate_agent_output:95 - [Evaluation | TECHNICAL | AAPL] Grade: A | Score: 1.00 | Faithfulness: 1.0 | Consistency: 1.0 | Hallucinations Caught: 0
+2026-10-14 12:29:54.824 | INFO     | agents.evaluator:evaluate_agent_output:95 - [Evaluation | EQUITY_RESEARCH | AAPL] Grade: A | Score: 1.00 | Faithfulness: 1.0 | Consistency: 1.0 | Hallucinations Caught: 0
+2026-10-14 12:29:54.824 | INFO     | main:synthesizer:252 - Synthesizing requested for aapl
+2026-10-14 12:29:55.125 | INFO     | agents.evaluator:evaluate_agent_output:95 - [Evaluation | PORTFOLIO_MANAGER | AAPL] Grade: A | Score: 1.00 | Faithfulness: 1.0 | Consistency: 1.0 | Hallucinations Caught: 0
+2026-10-14 12:29:55.141 | INFO     | main:analyse:343 - Analysis requested for MSFT by user demo@marketpulse.com
+2026-10-14 12:29:55.141 | INFO     | main:analyse:354 - Running agents for MSFT
+2026-10-14 12:29:55.141 | INFO     | agents.news_agent:news_agent:68 - News Agent requested for MSFT
+2026-10-14 12:29:55.142 | INFO     | agents.news_agent:news_agent:73 - Running News agent for MSFT
+2026-10-14 12:29:55.526 | INFO     | agents.evaluator:evaluate_agent_output:95 - [Evaluation | NEWS | MSFT] Grade: A | Score: 1.00 | Faithfulness: 1.0 | Consistency: 1.0 | Hallucinations Caught: 0
+2026-10-14 12:29:55.526 | INFO     | agents.sentiment_agent:sentiment_agent:16 - Sentiment Agent requested for MSFT
+2026-10-14 12:29:55.529 | INFO     | agents.sentiment_agent:sentiment_agent:21 - Running sentiment agent for MSFT
+2026-10-14 12:29:55.530 | INFO     | agents.fundamentals_agent:fundamentals_agent:16 - fundamentals agent requested for MSFT
+2026-10-14 12:29:55.530 | INFO     | agents.fundamentals_agent:fundamentals_agent:21 - Running fundamentals agents for MSFT
+2026-10-14 12:29:55.530 | INFO     | agents.technical_agent:technical_agent:16 - Technical Agent requested for MSFT
+2026-10-14 12:29:55.530 | INFO     | agents.equity_reasearch_agent:equity_research_agent:16 - equity research agent requested for MSFT
+2026-10-14 12:29:55.531 | INFO     | agents.risk_agent:risk_agent:16 - Risk Agent requested for MSFT
+2026-10-14 12:29:55.531 | INFO     | agents.risk_agent:risk_agent:21 - Running Risk agent for MSFT
+2026-10-14 12:29:55.837 | INFO     | agents.evaluator:evaluate_agent_output:95 - [Evaluation | SENTIMENT | MSFT] Grade: A | Score: 1.00 | Faithfulness: 1.0 | Consistency: 1.0 | Hallucinations Caught: 0
+2026-10-14 12:29:55.841 | INFO     | agents.evaluator:evaluate_agent_output:95 - [Evaluation | RISK | MSFT] Grade: A | Score: 1.00 | Faithfulness: 1.0 | Consistency: 1.0 | Hallucinations Caught: 0
+2026-10-14 12:29:55.842 | INFO     | agents.evaluator:evaluate_agent_output:95 - [Evaluation | EQUITY_RESEARCH | MSFT] Grade: A | Score: 1.00 | Faithfulness: 1.0 | Consistency: 1.0 | Hallucinations Caught: 0
+2026-10-14 12:29:55.845 | INFO     | agents.evaluator:evaluate_agent_output:95 - [Evaluation | FUNDAMENTALS | MSFT] Grade: A | Score: 1.00 | Faithfulness: 1.0 | Consistency: 1.0 | Hallucinations Caught: 0
+2026-10-14 12:29:55.847 | INFO     | agents.evaluator:evaluate_agent_output:95 - [Evaluation | TECHNICAL | MSFT] Grade: A | Score: 1.00 | Faithfulness: 1.0 | Consistency: 1.0 | Hallucinations Caught: 0
+2026-10-14 12:29:55.848 | INFO     | main:synthesizer:252 - Synthesizing requested for MSFT
+2026-10-14 12:29:56.142 | INFO     | agents.evaluator:evaluate_agent_output:95 - [Evaluation | PORTFOLIO_MANAGER | MSFT] Grade: A | Score: 1.00 | Faithfulness: 1.0 | Consistency: 1.0 | Hallucinations Caught: 0
+2026-10-14 12:30:27.023 | INFO     | main:analyse:343 - Analysis requested for AAPL by user demo@marketpulse.com
+2026-10-14 12:30:27.023 | INFO     | main:analyse:348 - Cache hit for AAPL
+2026-10-14 14:19:21.426 | INFO     | main:analyse:403 - Analysis requested for AAPL by user demo@marketpulse.com
+2026-10-14 14:19:21.431 | INFO     | main:analyse:407 - Running agents for AAPL
+2026-10-14 14:19:21.432 | INFO     | agents.news_agent:news_agent:68 - News Agent requested for AAPL
+2026-10-14 14:19:21.432 | INFO     | agents.news_agent:news_agent:73 - Running News agent for AAPL
+2026-10-14 14:19:21.844 | INFO     | agents.evaluator:evaluate_agent_output:150 - [Evaluation | NEWS | AAPL] Grade: A | Score: 1.00 | Faithfulness: 1.0 | Consistency: 1.0 | Hallucinations Caught: 0
+2026-10-14 14:19:21.844 | INFO     | agents.sentiment_agent:sentiment_agent:16 - Sentiment Agent requested for AAPL
+2026-10-14 14:19:21.844 | INFO     | agents.sentiment_agent:sentiment_agent:21 - Running sentiment agent for AAPL
+2026-10-14 14:19:21.844 | INFO     | agents.fundamentals_agent:fundamentals_agent:16 - fundamentals agent requested for AAPL
+2026-10-14 14:19:21.844 | INFO     | agents.fundamentals_agent:fundamentals_agent:21 - Running fundamentals agents for AAPL
+2026-10-14 14:19:21.844 | INFO     | agents.technical_agent:technical_agent:16 - Technical Agent requested for AAPL
+2026-10-14 14:19:21.844 | INFO     | agents.equity_reasearch_agent:equity_research_agent:16 - equity research agent requested for AAPL
+2026-10-14 14:19:21.857 | INFO     | agents.risk_agent:risk_agent:16 - Risk Agent requested for AAPL
+2026-10-14 14:19:21.857 | INFO     | agents.risk_agent:risk_agent:21 - Running Risk agent for AAPL
+2026-10-14 14:19:22.151 | INFO     | agents.evaluator:evaluate_agent_output:150 - [Evaluation | TECHNICAL | AAPL] Grade: A | Score: 1.00 | Faithfulness: 1.0 | Consistency: 1.0 | Hallucinations Caught: 0
+2026-10-14 14:19:22.153 | INFO     | agents.evaluator:evaluate_agent_output:150 - [Evaluation | FUNDAMENTALS | AAPL] Grade: A | Score: 1.00 | Faithfulness: 1.0 | Consistency: 1.0 | Hallucinations Caught: 0
+2026-10-14 14:19:22.155 | INFO     | agents.evaluator:evaluate_agent_output:150 - [Evaluation | SENTIMENT | AAPL] Grade: A | Score: 1.00 | Faithfulness: 1.0 | Consistency: 1.0 | Hallucinations Caught: 0
+2026-10-14 14:19:22.158 | INFO     | agents.evaluator:evaluate_agent_output:150 - [Evaluation | EQUITY_RESEARCH | AAPL] Grade: A | Score: 1.00 | Faithfulness: 1.0 | Consistency: 1.0 | Hallucinations Caught: 0
+2026-10-14 14:19:22.160 | INFO     | agents.evaluator:evaluate_agent_output:150 - [Evaluation | RISK | AAPL] Grade: A | Score: 1.00 | Faithfulness: 1.0 | Consistency: 1.0 | Hallucinations Caught: 0
+2026-10-14 14:19:22.161 | INFO     | main:synthesizer:270 - Synthesizing requested for AAPL
+2026-10-14 14:19:22.458 | INFO     | agents.evaluator:evaluate_agent_output:150 - [Evaluation | PORTFOLIO_MANAGER | AAPL] Grade: A | Score: 1.00 | Faithfulness: 1.0 | Consistency: 1.0 | Hallucinations Caught: 0
+2026-10-14 14:19:41.009 | INFO     | main:analyse:395 - Cache hit for AAPL
+2026-10-14 14:20:16.791 | INFO     | main:analyse:395 - Cache hit for AAPL
+2026-10-14 14:47:14.915 | INFO     | main:analyse:403 - Analysis requested for AAPL by user demo@marketpulse.com
+2026-10-14 14:47:14.926 | INFO     | main:analyse:407 - Running agents for AAPL
+2026-10-14 14:47:14.926 | INFO     | agents.news_agent:news_agent:68 - News Agent requested for AAPL
+2026-10-14 14:47:14.927 | INFO     | agents.news_agent:news_agent:73 - Running News agent for AAPL
+2026-10-14 14:47:15.308 | INFO     | agents.evaluator:evaluate_agent_output:150 - [Evaluation | NEWS | AAPL] Grade: A | Score: 1.00 | Faithfulness: 1.0 | Consistency: 1.0 | Hallucinations Caught: 0
+2026-10-14 14:47:15.321 | INFO     | agents.sentiment_agent:sentiment_agent:16 - Sentiment Agent requested for AAPL
+2026-10-14 14:47:15.322 | INFO     | agents.sentiment_agent:sentiment_agent:21 - Running sentiment agent for AAPL
+2026-10-14 14:47:15.322 | INFO     | agents.fundamentals_agent:fundamentals_agent:16 - fundamentals agent requested for AAPL
+2026-10-14 14:47:15.322 | INFO     | agents.fundamentals_agent:fundamentals_agent:21 - Running fundamentals agents for AAPL
+2026-10-14 14:47:15.323 | INFO     | agents.technical_agent:technical_agent:16 - Technical Agent requested for AAPL
+2026-10-14 14:47:15.323 | INFO     | agents.equity_reasearch_agent:equity_research_agent:16 - equity research agent requested for AAPL
+2026-10-14 14:47:15.323 | INFO     | agents.risk_agent:risk_agent:16 - Risk Agent requested for AAPL
+2026-10-14 14:47:15.324 | INFO     | agents.risk_agent:risk_agent:21 - Running Risk agent for AAPL
+2026-10-14 14:47:15.635 | INFO     | agents.evaluator:evaluate_agent_output:150 - [Evaluation | SENTIMENT | AAPL] Grade: A | Score: 1.00 | Faithfulness: 1.0 | Consistency: 1.0 | Hallucinations Caught: 0
+2026-10-14 14:47:15.638 | INFO     | agents.evaluator:evaluate_agent_output:150 - [Evaluation | EQUITY_RESEARCH | AAPL] Grade: A | Score: 1.00 | Faithfulness: 1.0 | Consistency: 1.0 | Hallucinations Caught: 0
+2026-10-14 14:47:15.641 | INFO     | agents.evaluator:evaluate_agent_output:150 - [Evaluation | RISK | AAPL] Grade: A | Score: 1.00 | Faithfulness: 1.0 | Consistency: 1.0 | Hallucinations Caught: 0
+2026-10-14 14:47:15.643 | INFO     | agents.evaluator:evaluate_agent_output:150 - [Evaluation | TECHNICAL | AAPL] Grade: A | Score: 1.00 | Faithfulness: 1.0 | Consistency: 1.0 | Hallucinations Caught: 0
+2026-10-14 14:47:15.646 | INFO     | agents.evaluator:evaluate_agent_output:150 - [Evaluation | FUNDAMENTALS | AAPL] Grade: A | Score: 1.00 | Faithfulness: 1.0 | Consistency: 1.0 | Hallucinations Caught: 0
+2026-10-14 14:47:15.646 | INFO     | main:synthesizer:270 - Synthesizing requested for AAPL
+2026-10-14 14:47:15.951 | INFO     | agents.evaluator:evaluate_agent_output:150 - [Evaluation | PORTFOLIO_MANAGER | AAPL] Grade: A | Score: 1.00 | Faithfulness: 1.0 | Consistency: 1.0 | Hallucinations Caught: 0
+2026-10-14 14:49:17.225 | INFO     | main:analyse:395 - Cache hit for AAPL
+2026-10-14 14:49:21.975 | INFO     | main:analyse:395 - Cache hit for AAPL
+2026-10-14 14:49:44.212 | INFO     | main:analyse:395 - Cache hit for AAPL
+2026-10-14 14:50:05.213 | INFO     | main:analyse:395 - Cache hit for AAPL
+2026-10-14 14:50:38.038 | INFO     | main:analyse:395 - Cache hit for AAPL
+2026-10-14 14:50:45.294 | INFO     | main:analyse:395 - Cache hit for AAPL
+2026-10-14 14:50:58.525 | INFO     | main:analyse:395 - Cache hit for AAPL
+2026-10-14 14:51:10.138 | INFO     | main:analyse:395 - Cache hit for AAPL
+2026-10-14 15:36:25.989 | INFO     | main:analyse:407 - Analysis requested for AAPL by user tester@marketpulse.com
+2026-10-14 15:36:25.990 | INFO     | main:analyse:411 - Running agents for AAPL
+2026-10-14 15:36:25.990 | INFO     | agents.news_agent:news_agent:68 - News Agent requested for AAPL
+2026-10-14 15:36:25.991 | INFO     | agents.news_agent:news_agent:73 - Running News agent for AAPL
+2026-10-14 15:36:26.423 | INFO     | agents.evaluator:evaluate_agent_output:191 - [Evaluation | NEWS | AAPL] Grade: A | Score: 1.00 | Faithfulness: 1.0 | Consistency: 1.0 | Hallucinations Caught: 0
+2026-10-14 15:36:26.424 | INFO     | agents.sentiment_agent:sentiment_agent:16 - Sentiment Agent requested for AAPL
+2026-10-14 15:36:26.424 | INFO     | agents.sentiment_agent:sentiment_agent:21 - Running sentiment agent for AAPL
+2026-10-14 15:36:26.424 | INFO     | agents.fundamentals_agent:fundamentals_agent:16 - fundamentals agent requested for AAPL
+2026-10-14 15:36:26.425 | INFO     | agents.fundamentals_agent:fundamentals_agent:21 - Running fundamentals agents for AAPL
+2026-10-14 15:36:26.425 | INFO     | agents.technical_agent:technical_agent:16 - Technical Agent requested for AAPL
+2026-10-14 15:36:26.425 | INFO     | agents.equity_reasearch_agent:equity_research_agent:16 - equity research agent requested for AAPL
+2026-10-14 15:36:26.425 | INFO     | agents.risk_agent:risk_agent:16 - Risk Agent requested for AAPL
+2026-10-14 15:36:26.425 | INFO     | agents.risk_agent:risk_agent:21 - Running Risk agent for AAPL
+2026-10-14 15:36:26.738 | INFO     | agents.evaluator:evaluate_agent_output:191 - [Evaluation | SENTIMENT | AAPL] Grade: A | Score: 1.00 | Faithfulness: 1.0 | Consistency: 1.0 | Hallucinations Caught: 0
+2026-10-14 15:36:26.741 | INFO     | agents.evaluator:evaluate_agent_output:191 - [Evaluation | RISK | AAPL] Grade: A | Score: 1.00 | Faithfulness: 1.0 | Consistency: 1.0 | Hallucinations Caught: 0
+2026-10-14 15:36:26.744 | INFO     | agents.evaluator:evaluate_agent_output:191 - [Evaluation | EQUITY_RESEARCH | AAPL] Grade: A | Score: 1.00 | Faithfulness: 1.0 | Consistency: 1.0 | Hallucinations Caught: 0
+2026-10-14 15:36:26.746 | INFO     | agents.evaluator:evaluate_agent_output:191 - [Evaluation | FUNDAMENTALS | AAPL] Grade: A | Score: 1.00 | Faithfulness: 1.0 | Consistency: 1.0 | Hallucinations Caught: 0
+2026-10-14 15:36:26.748 | INFO     | agents.evaluator:evaluate_agent_output:191 - [Evaluation | TECHNICAL | AAPL] Grade: A | Score: 1.00 | Faithfulness: 1.0 | Consistency: 1.0 | Hallucinations Caught: 0
+2026-10-14 15:36:26.749 | INFO     | main:synthesizer:270 - Synthesizing requested for AAPL
+2026-10-14 15:36:27.068 | INFO     | agents.evaluator:evaluate_agent_output:191 - [Evaluation | PORTFOLIO_MANAGER | AAPL] Grade: A | Score: 1.00 | Faithfulness: 1.0 | Consistency: 1.0 | Hallucinations Caught: 0
+2026-10-14 17:07:54.122 | INFO     | main:analyse:407 - Analysis requested for AAPL by user demo@marketpulse.com
+2026-10-14 17:07:54.123 | INFO     | main:analyse:411 - Running agents for AAPL
+2026-10-14 17:07:54.123 | INFO     | agents.news_agent:news_agent:68 - News Agent requested for AAPL
+2026-10-14 17:07:54.123 | INFO     | agents.news_agent:news_agent:73 - Running News agent for AAPL
+2026-10-14 17:07:54.565 | INFO     | agents.evaluator:evaluate_agent_output:191 - [Evaluation | NEWS | AAPL] Grade: A | Score: 1.00 | Faithfulness: 1.0 | Consistency: 1.0 | Hallucinations Caught: 0
+2026-10-14 17:07:54.566 | INFO     | agents.sentiment_agent:sentiment_agent:16 - Sentiment Agent requested for AAPL
+2026-10-14 17:07:54.567 | INFO     | agents.sentiment_agent:sentiment_agent:21 - Running sentiment agent for AAPL
+2026-10-14 17:07:54.567 | INFO     | agents.fundamentals_agent:fundamentals_agent:16 - fundamentals agent requested for AAPL
+2026-10-14 17:07:54.568 | INFO     | agents.fundamentals_agent:fundamentals_agent:21 - Running fundamentals agents for AAPL
+2026-10-14 17:07:54.568 | INFO     | agents.technical_agent:technical_agent:16 - Technical Agent requested for AAPL
+2026-10-14 17:07:54.568 | INFO     | agents.equity_reasearch_agent:equity_research_agent:16 - equity research agent requested for AAPL
+2026-10-14 17:07:54.569 | INFO     | agents.risk_agent:risk_agent:16 - Risk Agent requested for AAPL
+2026-10-14 17:07:54.569 | INFO     | agents.risk_agent:risk_agent:21 - Running Risk agent for AAPL
+2026-10-14 17:07:54.872 | INFO     | agents.evaluator:evaluate_agent_output:191 - [Evaluation | FUNDAMENTALS | AAPL] Grade: A | Score: 1.00 | Faithfulness: 1.0 | Consistency: 1.0 | Hallucinations Caught: 0
+2026-10-14 17:07:54.875 | INFO     | agents.evaluator:evaluate_agent_output:191 - [Evaluation | RISK | AAPL] Grade: A | Score: 1.00 | Faithfulness: 1.0 | Consistency: 1.0 | Hallucinations Caught: 0
+2026-10-14 17:07:54.878 | INFO     | agents.evaluator:evaluate_agent_output:191 - [Evaluation | SENTIMENT | AAPL] Grade: A | Score: 1.00 | Faithfulness: 1.0 | Consistency: 1.0 | Hallucinations Caught: 0
+2026-10-14 17:07:54.879 | INFO     | agents.evaluator:evaluate_agent_output:191 - [Evaluation | TECHNICAL | AAPL] Grade: A | Score: 1.00 | Faithfulness: 1.0 | Consistency: 1.0 | Hallucinations Caught: 0
+2026-10-14 17:07:54.882 | INFO     | agents.evaluator:evaluate_agent_output:191 - [Evaluation | EQUITY_RESEARCH | AAPL] Grade: A | Score: 1.00 | Faithfulness: 1.0 | Consistency: 1.0 | Hallucinations Caught: 0
+2026-10-14 17:07:54.882 | INFO     | main:synthesizer:270 - Synthesizing requested for AAPL
+2026-10-14 17:07:55.189 | INFO     | agents.evaluator:evaluate_agent_output:191 - [Evaluation | PORTFOLIO_MANAGER | AAPL] Grade: A | Score: 1.00 | Faithfulness: 1.0 | Consistency: 1.0 | Hallucinations Caught: 0
+2026-10-14 17:08:11.452 | INFO     | main:analyse:399 - Cache hit for AAPL
+2026-10-14 17:08:57.289 | INFO     | main:analyse:399 - Cache hit for AAPL
+2026-10-14 17:08:57.328 | INFO     | main:analyse:399 - Cache hit for AAPL
+2026-10-14 17:10:07.439 | INFO     | main:analyse:399 - Cache hit for AAPL
+2026-10-14 17:18:51.961 | INFO     | main:analyse:399 - Cache hit for AAPL
+2026-10-14 17:20:58.746 | INFO     | main:analyse:399 - Cache hit for AAPL
+2026-10-14 17:56:04.074 | INFO     | main:analyse:399 - Cache hit for AAPL
+2026-10-14 17:59:47.215 | INFO     | main:analyse:407 - Analysis requested for MSFT by user demo@marketpulse.com
+2026-10-14 17:59:47.215 | INFO     | main:analyse:411 - Running agents for MSFT
+2026-10-14 17:59:47.215 | INFO     | agents.news_agent:news_agent:68 - News Agent requested for MSFT
+2026-10-14 17:59:47.215 | INFO     | agents.news_agent:news_agent:73 - Running News agent for MSFT
+2026-10-14 17:59:47.631 | INFO     | agents.evaluator:evaluate_agent_output:191 - [Evaluation | NEWS | MSFT] Grade: A | Score: 1.00 | Faithfulness: 1.0 | Consistency: 1.0 | Hallucinations Caught: 0
+2026-10-14 17:59:47.632 | INFO     | agents.sentiment_agent:sentiment_agent:16 - Sentiment Agent requested for MSFT
+2026-10-14 17:59:47.632 | INFO     | agents.sentiment_agent:sentiment_agent:21 - Running sentiment agent for MSFT
+2026-10-14 17:59:47.633 | INFO     | agents.fundamentals_agent:fundamentals_agent:16 - fundamentals agent requested for MSFT
+2026-10-14 17:59:47.633 | INFO     | agents.fundamentals_agent:fundamentals_agent:21 - Running fundamentals agents for MSFT
+2026-10-14 17:59:47.633 | INFO     | agents.technical_agent:technical_agent:16 - Technical Agent requested for MSFT
+2026-10-14 17:59:47.633 | INFO     | agents.equity_reasearch_agent:equity_research_agent:16 - equity research agent requested for MSFT
+2026-10-14 17:59:47.635 | INFO     | agents.risk_agent:risk_agent:16 - Risk Agent requested for MSFT
+2026-10-14 17:59:47.636 | INFO     | agents.risk_agent:risk_agent:21 - Running Risk agent for MSFT
+2026-10-14 17:59:47.947 | INFO     | agents.evaluator:evaluate_agent_output:191 - [Evaluation | SENTIMENT | MSFT] Grade: A | Score: 1.00 | Faithfulness: 1.0 | Consistency: 1.0 | Hallucinations Caught: 0
+2026-10-14 17:59:47.949 | INFO     | agents.evaluator:evaluate_agent_output:191 - [Evaluation | EQUITY_RESEARCH | MSFT] Grade: A | Score: 1.00 | Faithfulness: 1.0 | Consistency: 1.0 | Hallucinations Caught: 0
+2026-10-14 17:59:47.953 | INFO     | agents.evaluator:evaluate_agent_output:191 - [Evaluation | FUNDAMENTALS | MSFT] Grade: A | Score: 1.00 | Faithfulness: 1.0 | Consistency: 1.0 | Hallucinations Caught: 0
+2026-10-14 17:59:47.956 | INFO     | agents.evaluator:evaluate_agent_output:191 - [Evaluation | TECHNICAL | MSFT] Grade: A | Score: 1.00 | Faithfulness: 1.0 | Consistency: 1.0 | Hallucinations Caught: 0
+2026-10-14 17:59:47.959 | INFO     | agents.evaluator:evaluate_agent_output:191 - [Evaluation | RISK | MSFT] Grade: A | Score: 1.00 | Faithfulness: 1.0 | Consistency: 1.0 | Hallucinations Caught: 0
+2026-10-14 17:59:47.960 | INFO     | main:synthesizer:270 - Synthesizing requested for MSFT
+2026-10-14 17:59:48.247 | INFO     | agents.evaluator:evaluate_agent_output:191 - [Evaluation | PORTFOLIO_MANAGER | MSFT] Grade: A | Score: 1.00 | Faithfulness: 1.0 | Consistency: 1.0 | Hallucinations Caught: 0
+2026-10-14 19:18:50.796 | INFO     | main:analyse:407 - Analysis requested for AAPL by user demo@marketpulse.com
+2026-10-14 19:18:50.796 | INFO     | main:analyse:411 - Running agents for AAPL
+2026-10-14 19:18:50.797 | INFO     | agents.news_agent:news_agent:68 - News Agent requested for AAPL
+2026-10-14 19:18:50.797 | INFO     | agents.news_agent:news_agent:73 - Running News agent for AAPL
+2026-10-14 19:18:51.228 | INFO     | agents.evaluator:evaluate_agent_output:191 - [Evaluation | NEWS | AAPL] Grade: A | Score: 1.00 | Faithfulness: 1.0 | Consistency: 1.0 | Hallucinations Caught: 0
+2026-10-14 19:18:51.228 | INFO     | agents.sentiment_agent:sentiment_agent:16 - Sentiment Agent requested for AAPL
+2026-10-14 19:18:51.229 | INFO     | agents.sentiment_agent:sentiment_agent:21 - Running sentiment agent for AAPL
+2026-10-14 19:18:51.229 | INFO     | agents.fundamentals_agent:fundamentals_agent:16 - fundamentals agent requested for AAPL
+2026-10-14 19:18:51.230 | INFO     | agents.fundamentals_agent:fundamentals_agent:21 - Running fundamentals agents for AAPL
+2026-10-14 19:18:51.230 | INFO     | agents.technical_agent:technical_agent:16 - Technical Agent requested for AAPL
+2026-10-14 19:18:51.230 | INFO     | agents.equity_reasearch_agent:equity_research_agent:16 - equity research agent requested for AAPL
+2026-10-14 19:18:51.231 | INFO     | agents.risk_agent:risk_agent:16 - Risk Agent requested for AAPL
+2026-10-14 19:18:51.231 | INFO     | agents.risk_agent:risk_agent:21 - Running Risk agent for AAPL
+2026-10-14 19:18:51.524 | INFO     | agents.evaluator:evaluate_agent_output:191 - [Evaluation | SENTIMENT | AAPL] Grade: A | Score: 1.00 | Faithfulness: 1.0 | Consistency: 1.0 | Hallucinations Caught: 0
+2026-10-14 19:18:51.553 | INFO     | agents.evaluator:evaluate_agent_output:191 - [Evaluation | FUNDAMENTALS | AAPL] Grade: A | Score: 1.00 | Faithfulness: 1.0 | Consistency: 1.0 | Hallucinations Caught: 0
+2026-10-14 19:18:51.556 | INFO     | agents.evaluator:evaluate_agent_output:191 - [Evaluation | RISK | AAPL] Grade: A | Score: 1.00 | Faithfulness: 1.0 | Consistency: 1.0 | Hallucinations Caught: 0
+2026-10-14 19:18:51.558 | INFO     | agents.evaluator:evaluate_agent_output:191 - [Evaluation | EQUITY_RESEARCH | AAPL] Grade: A | Score: 1.00 | Faithfulness: 1.0 | Consistency: 1.0 | Hallucinations Caught: 0
+2026-10-14 19:18:51.560 | INFO     | agents.evaluator:evaluate_agent_output:191 - [Evaluation | TECHNICAL | AAPL] Grade: A | Score: 1.00 | Faithfulness: 1.0 | Consistency: 1.0 | Hallucinations Caught: 0
+2026-10-14 19:18:51.561 | INFO     | main:synthesizer:270 - Synthesizing requested for AAPL
+2026-10-14 19:18:51.883 | INFO     | agents.evaluator:evaluate_agent_output:191 - [Evaluation | PORTFOLIO_MANAGER | AAPL] Grade: A | Score: 1.00 | Faithfulness: 1.0 | Consistency: 1.0 | Hallucinations Caught: 0
+2026-10-14 19:19:57.765 | INFO     | main:analyse:407 - Analysis requested for AAOI by user demo@marketpulse.com
+2026-10-14 19:19:57.765 | INFO     | main:analyse:411 - Running agents for AAOI
+2026-10-14 19:19:57.766 | INFO     | agents.news_agent:news_agent:68 - News Agent requested for AAOI
+2026-10-14 19:19:57.766 | INFO     | agents.news_agent:news_agent:73 - Running News agent for AAOI
+2026-10-14 19:19:57.874 | INFO     | main:analyse:407 - Analysis requested for AAOI by user demo@marketpulse.com
+2026-10-14 19:19:57.875 | INFO     | main:analyse:411 - Running agents for AAOI
+2026-10-14 19:19:57.875 | INFO     | agents.news_agent:news_agent:68 - News Agent requested for AAOI
+2026-10-14 19:19:57.875 | INFO     | agents.news_agent:news_agent:73 - Running News agent for AAOI
+2026-10-14 19:19:58.171 | INFO     | agents.evaluator:evaluate_agent_output:191 - [Evaluation | NEWS | AAOI] Grade: A | Score: 1.00 | Faithfulness: 1.0 | Consistency: 1.0 | Hallucinations Caught: 0
+2026-10-14 19:19:58.171 | INFO     | agents.sentiment_agent:sentiment_agent:16 - Sentiment Agent requested for AAOI
+2026-10-14 19:19:58.172 | INFO     | agents.sentiment_agent:sentiment_agent:21 - Running sentiment agent for AAOI
+2026-10-14 19:19:58.173 | INFO     | agents.fundamentals_agent:fundamentals_agent:16 - fundamentals agent requested for AAOI
+2026-10-14 19:19:58.173 | INFO     | agents.fundamentals_agent:fundamentals_agent:21 - Running fundamentals agents for AAOI
+2026-10-14 19:19:58.173 | INFO     | agents.technical_agent:technical_agent:16 - Technical Agent requested for AAOI
+2026-10-14 19:19:58.174 | INFO     | agents.equity_reasearch_agent:equity_research_agent:16 - equity research agent requested for AAOI
+2026-10-14 19:19:58.174 | INFO     | agents.risk_agent:risk_agent:16 - Risk Agent requested for AAOI
+2026-10-14 19:19:58.174 | INFO     | agents.risk_agent:risk_agent:21 - Running Risk agent for AAOI
+2026-10-14 19:19:58.279 | INFO     | agents.evaluator:evaluate_agent_output:191 - [Evaluation | NEWS | AAOI] Grade: A | Score: 1.00 | Faithfulness: 1.0 | Consistency: 1.0 | Hallucinations Caught: 0
+2026-10-14 19:19:58.280 | INFO     | agents.sentiment_agent:sentiment_agent:16 - Sentiment Agent requested for AAOI
+2026-10-14 19:19:58.280 | INFO     | agents.sentiment_agent:sentiment_agent:21 - Running sentiment agent for AAOI
+2026-10-14 19:19:58.281 | INFO     | agents.fundamentals_agent:fundamentals_agent:16 - fundamentals agent requested for AAOI
+2026-10-14 19:19:58.281 | INFO     | agents.fundamentals_agent:fundamentals_agent:21 - Running fundamentals agents for AAOI
+2026-10-14 19:19:58.281 | INFO     | agents.technical_agent:technical_agent:16 - Technical Agent requested for AAOI
+2026-10-14 19:19:58.282 | INFO     | agents.equity_reasearch_agent:equity_research_agent:16 - equity research agent requested for AAOI
+2026-10-14 19:19:58.282 | INFO     | agents.risk_agent:risk_agent:16 - Risk Agent requested for AAOI
+2026-10-14 19:19:58.282 | INFO     | agents.risk_agent:risk_agent:21 - Running Risk agent for AAOI
+2026-10-14 19:19:58.485 | INFO     | agents.evaluator:evaluate_agent_output:191 - [Evaluation | TECHNICAL | AAOI] Grade: A | Score: 1.00 | Faithfulness: 1.0 | Consistency: 1.0 | Hallucinations Caught: 0
+2026-10-14 19:19:58.488 | INFO     | agents.evaluator:evaluate_agent_output:191 - [Evaluation | RISK | AAOI] Grade: A | Score: 1.00 | Faithfulness: 1.0 | Consistency: 1.0 | Hallucinations Caught: 0
+2026-10-14 19:19:58.490 | INFO     | agents.evaluator:evaluate_agent_output:191 - [Evaluation | FUNDAMENTALS | AAOI] Grade: A | Score: 1.00 | Faithfulness: 1.0 | Consistency: 1.0 | Hallucinations Caught: 0
+2026-10-14 19:19:58.493 | INFO     | agents.evaluator:evaluate_agent_output:191 - [Evaluation | SENTIMENT | AAOI] Grade: A | Score: 1.00 | Faithfulness: 1.0 | Consistency: 1.0 | Hallucinations Caught: 0
+2026-10-14 19:19:58.495 | INFO     | agents.evaluator:evaluate_agent_output:191 - [Evaluation | EQUITY_RESEARCH | AAOI] Grade: A | Score: 1.00 | Faithfulness: 1.0 | Consistency: 1.0 | Hallucinations Caught: 0
+2026-10-14 19:19:58.496 | INFO     | main:synthesizer:270 - Synthesizing requested for AAOI
+2026-10-14 19:19:58.594 | INFO     | agents.evaluator:evaluate_agent_output:191 - [Evaluation | RISK | AAOI] Grade: A | Score: 1.00 | Faithfulness: 1.0 | Consistency: 1.0 | Hallucinations Caught: 0
+2026-10-14 19:19:58.596 | INFO     | agents.evaluator:evaluate_agent_output:191 - [Evaluation | TECHNICAL | AAOI] Grade: A | Score: 1.00 | Faithfulness: 1.0 | Consistency: 1.0 | Hallucinations Caught: 0
+2026-10-14 19:19:58.598 | INFO     | agents.evaluator:evaluate_agent_output:191 - [Evaluation | EQUITY_RESEARCH | AAOI] Grade: A | Score: 1.00 | Faithfulness: 1.0 | Consistency: 1.0 | Hallucinations Caught: 0
+2026-10-14 19:19:58.601 | INFO     | agents.evaluator:evaluate_agent_output:191 - [Evaluation | FUNDAMENTALS | AAOI] Grade: A | Score: 1.00 | Faithfulness: 1.0 | Consistency: 1.0 | Hallucinations Caught: 0
+2026-10-14 19:19:58.603 | INFO     | agents.evaluator:evaluate_agent_output:191 - [Evaluation | SENTIMENT | AAOI] Grade: A | Score: 1.00 | Faithfulness: 1.0 | Consistency: 1.0 | Hallucinations Caught: 0
+2026-10-14 19:19:58.604 | INFO     | main:synthesizer:270 - Synthesizing requested for AAOI
+2026-10-14 19:19:58.813 | INFO     | agents.evaluator:evaluate_agent_output:191 - [Evaluation | PORTFOLIO_MANAGER | AAOI] Grade: A | Score: 1.00 | Faithfulness: 1.0 | Consistency: 1.0 | Hallucinations Caught: 0
+2026-10-14 19:19:58.908 | INFO     | agents.evaluator:evaluate_agent_output:191 - [Evaluation | PORTFOLIO_MANAGER | AAOI] Grade: A | Score: 1.00 | Faithfulness: 1.0 | Consistency: 1.0 | Hallucinations Caught: 0
+2026-10-14 19:20:21.208 | INFO     | main:analyse:407 - Analysis requested for MSFT by user demo@marketpulse.com
+2026-10-14 19:20:21.209 | INFO     | main:analyse:411 - Running agents for MSFT
+2026-10-14 19:20:21.209 | INFO     | agents.news_agent:news_agent:68 - News Agent requested for MSFT
+2026-10-14 19:20:21.209 | INFO     | agents.news_agent:news_agent:73 - Running News agent for MSFT
+2026-10-14 19:20:21.621 | INFO     | agents.evaluator:evaluate_agent_output:191 - [Evaluation | NEWS | MSFT] Grade: A | Score: 1.00 | Faithfulness: 1.0 | Consistency: 1.0 | Hallucinations Caught: 0
+2026-10-14 19:20:21.621 | INFO     | agents.sentiment_agent:sentiment_agent:16 - Sentiment Agent requested for MSFT
+2026-10-14 19:20:21.622 | INFO     | agents.sentiment_agent:sentiment_agent:21 - Running sentiment agent for MSFT
+2026-10-14 19:20:21.622 | INFO     | agents.fundamentals_agent:fundamentals_agent:16 - fundamentals agent requested for MSFT
+2026-10-14 19:20:21.622 | INFO     | agents.fundamentals_agent:fundamentals_agent:21 - Running fundamentals agents for MSFT
+2026-10-14 19:20:21.623 | INFO     | agents.technical_agent:technical_agent:16 - Technical Agent requested for MSFT
+2026-10-14 19:20:21.623 | INFO     | agents.equity_reasearch_agent:equity_research_agent:16 - equity research agent requested for MSFT
+2026-10-14 19:20:21.623 | INFO     | agents.risk_agent:risk_agent:16 - Risk Agent requested for MSFT
+2026-10-14 19:20:21.624 | INFO     | agents.risk_agent:risk_agent:21 - Running Risk agent for MSFT
+2026-10-14 19:20:21.950 | INFO     | agents.evaluator:evaluate_agent_output:191 - [Evaluation | RISK | MSFT] Grade: A | Score: 1.00 | Faithfulness: 1.0 | Consistency: 1.0 | Hallucinations Caught: 0
+2026-10-14 19:20:21.952 | INFO     | agents.evaluator:evaluate_agent_output:191 - [Evaluation | SENTIMENT | MSFT] Grade: A | Score: 1.00 | Faithfulness: 1.0 | Consistency: 1.0 | Hallucinations Caught: 0
+2026-10-14 19:20:21.953 | INFO     | agents.evaluator:evaluate_agent_output:191 - [Evaluation | EQUITY_RESEARCH | MSFT] Grade: A | Score: 1.00 | Faithfulness: 1.0 | Consistency: 1.0 | Hallucinations Caught: 0
+2026-10-14 19:20:21.955 | INFO     | agents.evaluator:evaluate_agent_output:191 - [Evaluation | FUNDAMENTALS | MSFT] Grade: A | Score: 1.00 | Faithfulness: 1.0 | Consistency: 1.0 | Hallucinations Caught: 0
+2026-10-14 19:20:21.956 | INFO     | agents.evaluator:evaluate_agent_output:191 - [Evaluation | TECHNICAL | MSFT] Grade: A | Score: 1.00 | Faithfulness: 1.0 | Consistency: 1.0 | Hallucinations Caught: 0
+2026-10-14 19:20:21.957 | INFO     | main:synthesizer:270 - Synthesizing requested for MSFT
+2026-10-14 19:20:22.265 | INFO     | agents.evaluator:evaluate_agent_output:191 - [Evaluation | PORTFOLIO_MANAGER | MSFT] Grade: A | Score: 1.00 | Faithfulness: 1.0 | Consistency: 1.0 | Hallucinations Caught: 0
+2026-10-14 19:20:56.365 | INFO     | main:analyse:407 - Analysis requested for NVDA by user demo@marketpulse.com
+2026-10-14 19:20:56.366 | INFO     | main:analyse:411 - Running agents for NVDA
+2026-10-14 19:20:56.366 | INFO     | agents.news_agent:news_agent:68 - News Agent requested for NVDA
+2026-10-14 19:20:56.366 | INFO     | agents.news_agent:news_agent:73 - Running News agent for NVDA
+2026-10-14 19:20:56.774 | INFO     | agents.evaluator:evaluate_agent_output:191 - [Evaluation | NEWS | NVDA] Grade: A | Score: 1.00 | Faithfulness: 1.0 | Consistency: 1.0 | Hallucinations Caught: 0
+2026-10-14 19:20:56.776 | INFO     | agents.sentiment_agent:sentiment_agent:16 - Sentiment Agent requested for NVDA
+2026-10-14 19:20:56.776 | INFO     | agents.sentiment_agent:sentiment_agent:21 - Running sentiment agent for NVDA
+2026-10-14 19:20:56.776 | INFO     | agents.fundamentals_agent:fundamentals_agent:16 - fundamentals agent requested for NVDA
+2026-10-14 19:20:56.776 | INFO     | agents.fundamentals_agent:fundamentals_agent:21 - Running fundamentals agents for NVDA
+2026-10-14 19:20:56.777 | INFO     | agents.technical_agent:technical_agent:16 - Technical Agent requested for NVDA
+2026-10-14 19:20:56.777 | INFO     | agents.equity_reasearch_agent:equity_research_agent:16 - equity research agent requested for NVDA
+2026-10-14 19:20:56.777 | INFO     | agents.risk_agent:risk_agent:16 - Risk Agent requested for NVDA
+2026-10-14 19:20:56.778 | INFO     | agents.risk_agent:risk_agent:21 - Running Risk agent for NVDA
+2026-10-14 19:20:57.090 | INFO     | agents.evaluator:evaluate_agent_output:191 - [Evaluation | SENTIMENT | NVDA] Grade: A | Score: 1.00 | Faithfulness: 1.0 | Consistency: 1.0 | Hallucinations Caught: 0
+2026-10-14 19:20:57.092 | INFO     | agents.evaluator:evaluate_agent_output:191 - [Evaluation | FUNDAMENTALS | NVDA] Grade: A | Score: 1.00 | Faithfulness: 1.0 | Consistency: 1.0 | Hallucinations Caught: 0
+2026-10-14 19:20:57.094 | INFO     | agents.evaluator:evaluate_agent_output:191 - [Evaluation | EQUITY_RESEARCH | NVDA] Grade: A | Score: 1.00 | Faithfulness: 1.0 | Consistency: 1.0 | Hallucinations Caught: 0
+2026-10-14 19:20:57.096 | INFO     | agents.evaluator:evaluate_agent_output:191 - [Evaluation | TECHNICAL | NVDA] Grade: A | Score: 1.00 | Faithfulness: 1.0 | Consistency: 1.0 | Hallucinations Caught: 0
+2026-10-14 19:20:57.098 | INFO     | agents.evaluator:evaluate_agent_output:191 - [Evaluation | RISK | NVDA] Grade: A | Score: 1.00 | Faithfulness: 1.0 | Consistency: 1.0 | Hallucinations Caught: 0
+2026-10-14 19:20:57.099 | INFO     | main:synthesizer:270 - Synthesizing requested for NVDA
+2026-10-14 19:20:57.420 | INFO     | agents.evaluator:evaluate_agent_output:191 - [Evaluation | PORTFOLIO_MANAGER | NVDA] Grade: A | Score: 1.00 | Faithfulness: 1.0 | Consistency: 1.0 | Hallucinations Caught: 0
+2026-10-14 19:23:00.998 | INFO     | main:analyse:399 - Cache hit for NVDA
+2026-10-14 19:24:38.109 | INFO     | main:analyse:399 - Cache hit for NVDA
+2026-10-14 19:28:38.376 | INFO     | main:analyse:399 - Cache hit for NVDA
+2026-10-14 19:28:38.381 | INFO     | main:analyse:399 - Cache hit for NVDA
+2026-10-14 19:28:57.598 | INFO     | main:analyse:399 - Cache hit for AAOI
+2026-10-14 19:28:57.604 | INFO     | main:analyse:399 - Cache hit for AAOI
+2026-10-14 19:46:54.536 | INFO     | main:analyse:399 - Cache hit for AAPL
+2026-10-14 19:47:49.306 | INFO     | main:analyse:399 - Cache hit for AAPL
+2026-10-14 19:48:26.178 | INFO     | main:analyse:399 - Cache hit for AAPL
+2026-10-14 20:40:38.190 | INFO     | main:analyse:420 - Analysis requested for AAPL by user internal-service
+2026-10-14 20:40:38.191 | INFO     | main:analyse:424 - Running agents for AAPL
+2026-10-14 20:40:38.191 | INFO     | agents.news_agent:news_agent:68 - News Agent requested for AAPL
+2026-10-14 20:40:38.191 | INFO     | agents.news_agent:news_agent:73 - Running News agent for AAPL
+2026-10-14 20:40:38.590 | INFO     | agents.evaluator:evaluate_agent_output:191 - [Evaluation | NEWS | AAPL] Grade: A | Score: 1.00 | Faithfulness: 1.0 | Consistency: 1.0 | Hallucinations Caught: 0
+2026-10-14 20:40:38.592 | INFO     | agents.sentiment_agent:sentiment_agent:16 - Sentiment Agent requested for AAPL
+2026-10-14 20:40:38.592 | INFO     | agents.sentiment_agent:sentiment_agent:21 - Running sentiment agent for AAPL
+2026-10-14 20:40:38.593 | INFO     | agents.fundamentals_agent:fundamentals_agent:16 - fundamentals agent requested for AAPL
+2026-10-14 20:40:38.593 | INFO     | agents.fundamentals_agent:fundamentals_agent:21 - Running fundamentals agents for AAPL
+2026-10-14 20:40:38.593 | INFO     | agents.technical_agent:technical_agent:16 - Technical Agent requested for AAPL
+2026-10-14 20:40:38.593 | INFO     | agents.equity_reasearch_agent:equity_research_agent:16 - equity research agent requested for AAPL
+2026-10-14 20:40:38.594 | INFO     | agents.risk_agent:risk_agent:16 - Risk Agent requested for AAPL
+2026-10-14 20:40:38.594 | INFO     | agents.risk_agent:risk_agent:21 - Running Risk agent for AAPL
+2026-10-14 20:40:38.908 | INFO     | agents.evaluator:evaluate_agent_output:191 - [Evaluation | FUNDAMENTALS | AAPL] Grade: A | Score: 1.00 | Faithfulness: 1.0 | Consistency: 1.0 | Hallucinations Caught: 0
+2026-10-14 20:40:38.915 | INFO     | agents.evaluator:evaluate_agent_output:191 - [Evaluation | RISK | AAPL] Grade: A | Score: 1.00 | Faithfulness: 1.0 | Consistency: 1.0 | Hallucinations Caught: 0
+2026-10-14 20:40:38.921 | INFO     | agents.evaluator:evaluate_agent_output:191 - [Evaluation | EQUITY_RESEARCH | AAPL] Grade: A | Score: 1.00 | Faithfulness: 1.0 | Consistency: 1.0 | Hallucinations Caught: 0
+2026-10-14 20:40:38.923 | INFO     | agents.evaluator:evaluate_agent_output:191 - [Evaluation | SENTIMENT | AAPL] Grade: A | Score: 1.00 | Faithfulness: 1.0 | Consistency: 1.0 | Hallucinations Caught: 0
+2026-10-14 20:40:38.930 | INFO     | agents.evaluator:evaluate_agent_output:191 - [Evaluation | TECHNICAL | AAPL] Grade: A | Score: 1.00 | Faithfulness: 1.0 | Consistency: 1.0 | Hallucinations Caught: 0
+2026-10-14 20:40:38.930 | INFO     | main:synthesizer:274 - Synthesizing requested for AAPL
+2026-10-14 20:40:39.240 | INFO     | agents.evaluator:evaluate_agent_output:191 - [Evaluation | PORTFOLIO_MANAGER | AAPL] Grade: A | Score: 1.00 | Faithfulness: 1.0 | Consistency: 1.0 | Hallucinations Caught: 0
+2026-10-14 20:40:57.479 | INFO     | main:analyse:420 - Analysis requested for AAPL by user internal-service
+2026-10-14 20:40:57.479 | INFO     | main:analyse:424 - Running agents for AAPL
+2026-10-14 20:40:57.479 | INFO     | agents.news_agent:news_agent:68 - News Agent requested for AAPL
+2026-10-14 20:40:57.479 | INFO     | agents.news_agent:news_agent:73 - Running News agent for AAPL
+2026-10-14 20:40:57.889 | INFO     | agents.evaluator:evaluate_agent_output:191 - [Evaluation | NEWS | AAPL] Grade: A | Score: 1.00 | Faithfulness: 1.0 | Consistency: 1.0 | Hallucinations Caught: 0
+2026-10-14 20:40:57.889 | INFO     | agents.sentiment_agent:sentiment_agent:16 - Sentiment Agent requested for AAPL
+2026-10-14 20:40:57.890 | INFO     | agents.sentiment_agent:sentiment_agent:21 - Running sentiment agent for AAPL
+2026-10-14 20:40:57.890 | INFO     | agents.fundamentals_agent:fundamentals_agent:16 - fundamentals agent requested for AAPL
+2026-10-14 20:40:57.890 | INFO     | agents.fundamentals_agent:fundamentals_agent:21 - Running fundamentals agents for AAPL
+2026-10-14 20:40:57.890 | INFO     | agents.technical_agent:technical_agent:16 - Technical Agent requested for AAPL
+2026-10-14 20:40:57.891 | INFO     | agents.equity_reasearch_agent:equity_research_agent:16 - equity research agent requested for AAPL
+2026-10-14 20:40:57.891 | INFO     | agents.risk_agent:risk_agent:16 - Risk Agent requested for AAPL
+2026-10-14 20:40:57.891 | INFO     | agents.risk_agent:risk_agent:21 - Running Risk agent for AAPL
+2026-10-14 20:40:58.212 | INFO     | agents.evaluator:evaluate_agent_output:191 - [Evaluation | FUNDAMENTALS | AAPL] Grade: A | Score: 1.00 | Faithfulness: 1.0 | Consistency: 1.0 | Hallucinations Caught: 0
+2026-10-14 20:40:58.226 | INFO     | agents.evaluator:evaluate_agent_output:191 - [Evaluation | RISK | AAPL] Grade: A | Score: 1.00 | Faithfulness: 1.0 | Consistency: 1.0 | Hallucinations Caught: 0
+2026-10-14 20:40:58.230 | INFO     | agents.evaluator:evaluate_agent_output:191 - [Evaluation | SENTIMENT | AAPL] Grade: A | Score: 1.00 | Faithfulness: 1.0 | Consistency: 1.0 | Hallucinations Caught: 0
+2026-10-14 20:40:58.243 | INFO     | agents.evaluator:evaluate_agent_output:191 - [Evaluation | TECHNICAL | AAPL] Grade: A | Score: 1.00 | Faithfulness: 1.0 | Consistency: 1.0 | Hallucinations Caught: 0
+2026-10-14 20:40:58.251 | INFO     | agents.evaluator:evaluate_agent_output:191 - [Evaluation | EQUITY_RESEARCH | AAPL] Grade: A | Score: 1.00 | Faithfulness: 1.0 | Consistency: 1.0 | Hallucinations Caught: 0
+2026-10-14 20:40:58.252 | INFO     | main:synthesizer:274 - Synthesizing requested for AAPL
+2026-10-14 20:40:58.570 | INFO     | agents.evaluator:evaluate_agent_output:191 - [Evaluation | PORTFOLIO_MANAGER | AAPL] Grade: A | Score: 1.00 | Faithfulness: 1.0 | Consistency: 1.0 | Hallucinations Caught: 0
+2026-10-14 20:49:05.730 | INFO     | main:analyse:420 - Analysis requested for AAPL by user internal-service
+2026-10-14 20:49:05.730 | INFO     | main:analyse:424 - Running agents for AAPL
+2026-10-14 20:49:05.730 | INFO     | agents.news_agent:news_agent:68 - News Agent requested for AAPL
+2026-10-14 20:49:05.730 | INFO     | agents.news_agent:news_agent:73 - Running News agent for AAPL
+2026-10-14 20:49:06.147 | INFO     | agents.evaluator:evaluate_agent_output:191 - [Evaluation | NEWS | AAPL] Grade: A | Score: 1.00 | Faithfulness: 1.0 | Consistency: 1.0 | Hallucinations Caught: 0
+2026-10-14 20:49:06.149 | INFO     | agents.sentiment_agent:sentiment_agent:16 - Sentiment Agent requested for AAPL
+2026-10-14 20:49:06.149 | INFO     | agents.sentiment_agent:sentiment_agent:21 - Running sentiment agent for AAPL
+2026-10-14 20:49:06.149 | INFO     | agents.fundamentals_agent:fundamentals_agent:16 - fundamentals agent requested for AAPL
+2026-10-14 20:49:06.149 | INFO     | agents.fundamentals_agent:fundamentals_agent:21 - Running fundamentals agents for AAPL
+2026-10-14 20:49:06.150 | INFO     | agents.technical_agent:technical_agent:16 - Technical Agent requested for AAPL
+2026-10-14 20:49:06.150 | INFO     | agents.equity_reasearch_agent:equity_research_agent:16 - equity research agent requested for AAPL
+2026-10-14 20:49:06.150 | INFO     | agents.risk_agent:risk_agent:16 - Risk Agent requested for AAPL
+2026-10-14 20:49:06.151 | INFO     | agents.risk_agent:risk_agent:21 - Running Risk agent for AAPL
+2026-10-14 20:49:06.463 | INFO     | agents.evaluator:evaluate_agent_output:191 - [Evaluation | FUNDAMENTALS | AAPL] Grade: A | Score: 1.00 | Faithfulness: 1.0 | Consistency: 1.0 | Hallucinations Caught: 0
+2026-10-14 20:49:06.471 | INFO     | agents.evaluator:evaluate_agent_output:191 - [Evaluation | RISK | AAPL] Grade: A | Score: 1.00 | Faithfulness: 1.0 | Consistency: 1.0 | Hallucinations Caught: 0
+2026-10-14 20:49:06.473 | INFO     | agents.evaluator:evaluate_agent_output:191 - [Evaluation | SENTIMENT | AAPL] Grade: A | Score: 1.00 | Faithfulness: 1.0 | Consistency: 1.0 | Hallucinations Caught: 0
+2026-10-14 20:49:06.481 | INFO     | agents.evaluator:evaluate_agent_output:191 - [Evaluation | TECHNICAL | AAPL] Grade: A | Score: 1.00 | Faithfulness: 1.0 | Consistency: 1.0 | Hallucinations Caught: 0
+2026-10-14 20:49:06.488 | INFO     | agents.evaluator:evaluate_agent_output:191 - [Evaluation | EQUITY_RESEARCH | AAPL] Grade: A | Score: 1.00 | Faithfulness: 1.0 | Consistency: 1.0 | Hallucinations Caught: 0
+2026-10-14 20:49:06.489 | INFO     | main:synthesizer:274 - Synthesizing requested for AAPL
+2026-10-14 20:49:06.811 | INFO     | agents.evaluator:evaluate_agent_output:191 - [Evaluation | PORTFOLIO_MANAGER | AAPL] Grade: A | Score: 1.00 | Faithfulness: 1.0 | Consistency: 1.0 | Hallucinations Caught: 0
+2026-10-14 20:59:48.403 | INFO     | main:analyse:420 - Analysis requested for TSLA by user demo@marketpulse.com
+2026-10-14 20:59:48.404 | INFO     | main:analyse:424 - Running agents for TSLA
+2026-10-14 20:59:48.404 | INFO     | agents.news_agent:news_agent:68 - News Agent requested for TSLA
+2026-10-14 20:59:48.404 | INFO     | agents.news_agent:news_agent:73 - Running News agent for TSLA
+2026-10-14 20:59:48.807 | INFO     | agents.evaluator:evaluate_agent_output:191 - [Evaluation | NEWS | TSLA] Grade: A | Score: 1.00 | Faithfulness: 1.0 | Consistency: 1.0 | Hallucinations Caught: 0
+2026-10-14 20:59:48.807 | INFO     | agents.sentiment_agent:sentiment_agent:16 - Sentiment Agent requested for TSLA
+2026-10-14 20:59:48.808 | INFO     | agents.sentiment_agent:sentiment_agent:21 - Running sentiment agent for TSLA
+2026-10-14 20:59:48.808 | INFO     | agents.fundamentals_agent:fundamentals_agent:16 - fundamentals agent requested for TSLA
+2026-10-14 20:59:48.808 | INFO     | agents.fundamentals_agent:fundamentals_agent:21 - Running fundamentals agents for TSLA
+2026-10-14 20:59:48.809 | INFO     | agents.technical_agent:technical_agent:16 - Technical Agent requested for TSLA
+2026-10-14 20:59:48.809 | INFO     | agents.equity_reasearch_agent:equity_research_agent:16 - equity research agent requested for TSLA
+2026-10-14 20:59:48.809 | INFO     | agents.risk_agent:risk_agent:16 - Risk Agent requested for TSLA
+2026-10-14 20:59:48.809 | INFO     | agents.risk_agent:risk_agent:21 - Running Risk agent for TSLA
+2026-10-14 20:59:49.123 | INFO     | agents.evaluator:evaluate_agent_output:191 - [Evaluation | FUNDAMENTALS | TSLA] Grade: A | Score: 1.00 | Faithfulness: 1.0 | Consistency: 1.0 | Hallucinations Caught: 0
+2026-10-14 20:59:49.130 | INFO     | agents.evaluator:evaluate_agent_output:191 - [Evaluation | RISK | TSLA] Grade: A | Score: 1.00 | Faithfulness: 1.0 | Consistency: 1.0 | Hallucinations Caught: 0
+2026-10-14 20:59:49.137 | INFO     | agents.evaluator:evaluate_agent_output:191 - [Evaluation | EQUITY_RESEARCH | TSLA] Grade: A | Score: 1.00 | Faithfulness: 1.0 | Consistency: 1.0 | Hallucinations Caught: 0
+2026-10-14 20:59:49.139 | INFO     | agents.evaluator:evaluate_agent_output:191 - [Evaluation | SENTIMENT | TSLA] Grade: A | Score: 1.00 | Faithfulness: 1.0 | Consistency: 1.0 | Hallucinations Caught: 0
+2026-10-14 20:59:49.147 | INFO     | agents.evaluator:evaluate_agent_output:191 - [Evaluation | TECHNICAL | TSLA] Grade: A | Score: 1.00 | Faithfulness: 1.0 | Consistency: 1.0 | Hallucinations Caught: 0
+2026-10-14 20:59:49.147 | INFO     | main:synthesizer:274 - Synthesizing requested for TSLA
+2026-10-14 20:59:49.456 | INFO     | agents.evaluator:evaluate_agent_output:191 - [Evaluation | PORTFOLIO_MANAGER | TSLA] Grade: A | Score: 1.00 | Faithfulness: 1.0 | Consistency: 1.0 | Hallucinations Caught: 0
+2026-10-14 21:00:12.491 | INFO     | main:analyse:412 - Cache hit for TSLA
+2026-10-14 21:00:12.872 | INFO     | main:analyse:420 - Analysis requested for AAPL by user demo@marketpulse.com
+2026-10-14 21:00:12.872 | INFO     | main:analyse:424 - Running agents for AAPL
+2026-10-14 21:00:12.872 | INFO     | agents.news_agent:news_agent:68 - News Agent requested for AAPL
+2026-10-14 21:00:12.873 | INFO     | agents.news_agent:news_agent:73 - Running News agent for AAPL
+2026-10-14 21:00:13.281 | INFO     | agents.evaluator:evaluate_agent_output:191 - [Evaluation | NEWS | AAPL] Grade: A | Score: 1.00 | Faithfulness: 1.0 | Consistency: 1.0 | Hallucinations Caught: 0
+2026-10-14 21:00:13.281 | INFO     | agents.sentiment_agent:sentiment_agent:16 - Sentiment Agent requested for AAPL
+2026-10-14 21:00:13.281 | INFO     | agents.sentiment_agent:sentiment_agent:21 - Running sentiment agent for AAPL
+2026-10-14 21:00:13.282 | INFO     | agents.fundamentals_agent:fundamentals_agent:16 - fundamentals agent requested for AAPL
+2026-10-14 21:00:13.282 | INFO     | agents.fundamentals_agent:fundamentals_agent:21 - Running fundamentals agents for AAPL
+2026-10-14 21:00:13.282 | INFO     | agents.technical_agent:technical_agent:16 - Technical Agent requested for AAPL
+2026-10-14 21:00:13.283 | INFO     | agents.equity_reasearch_agent:equity_research_agent:16 - equity research agent requested for AAPL
+2026-10-14 21:00:13.283 | INFO     | agents.risk_agent:risk_agent:16 - Risk Agent requested for AAPL
+2026-10-14 21:00:13.283 | INFO     | agents.risk_agent:risk_agent:21 - Running Risk agent for AAPL
+2026-10-14 21:00:13.601 | INFO     | agents.evaluator:evaluate_agent_output:191 - [Evaluation | FUNDAMENTALS | AAPL] Grade: A | Score: 1.00 | Faithfulness: 1.0 | Consistency: 1.0 | Hallucinations Caught: 0
+2026-10-14 21:00:13.609 | INFO     | agents.evaluator:evaluate_agent_output:191 - [Evaluation | RISK | AAPL] Grade: A | Score: 1.00 | Faithfulness: 1.0 | Consistency: 1.0 | Hallucinations Caught: 0
+2026-10-14 21:00:13.611 | INFO     | agents.evaluator:evaluate_agent_output:191 - [Evaluation | SENTIMENT | AAPL] Grade: A | Score: 1.00 | Faithfulness: 1.0 | Consistency: 1.0 | Hallucinations Caught: 0
+2026-10-14 21:00:13.619 | INFO     | agents.evaluator:evaluate_agent_output:191 - [Evaluation | TECHNICAL | AAPL] Grade: A | Score: 1.00 | Faithfulness: 1.0 | Consistency: 1.0 | Hallucinations Caught: 0
+2026-10-14 21:00:13.626 | INFO     | agents.evaluator:evaluate_agent_output:191 - [Evaluation | EQUITY_RESEARCH | AAPL] Grade: A | Score: 1.00 | Faithfulness: 1.0 | Consistency: 1.0 | Hallucinations Caught: 0
+2026-10-14 21:00:13.626 | INFO     | main:synthesizer:274 - Synthesizing requested for AAPL
+2026-10-14 21:00:13.949 | INFO     | agents.evaluator:evaluate_agent_output:191 - [Evaluation | PORTFOLIO_MANAGER | AAPL] Grade: A | Score: 1.00 | Faithfulness: 1.0 | Consistency: 1.0 | Hallucinations Caught: 0
+2026-10-14 21:00:14.172 | INFO     | main:analyse:420 - Analysis requested for JPM by user demo@marketpulse.com
+2026-10-14 21:00:14.173 | INFO     | main:analyse:424 - Running agents for JPM
+2026-10-14 21:00:14.173 | INFO     | agents.news_agent:news_agent:68 - News Agent requested for JPM
+2026-10-14 21:00:14.173 | INFO     | agents.news_agent:news_agent:73 - Running News agent for JPM
+2026-10-14 21:00:14.591 | INFO     | agents.evaluator:evaluate_agent_output:191 - [Evaluation | NEWS | JPM] Grade: A | Score: 1.00 | Faithfulness: 1.0 | Consistency: 1.0 | Hallucinations Caught: 0
+2026-10-14 21:00:14.592 | INFO     | agents.sentiment_agent:sentiment_agent:16 - Sentiment Agent requested for JPM
+2026-10-14 21:00:14.592 | INFO     | agents.sentiment_agent:sentiment_agent:21 - Running sentiment agent for JPM
+2026-10-14 21:00:14.592 | INFO     | agents.fundamentals_agent:fundamentals_agent:16 - fundamentals agent requested for JPM
+2026-10-14 21:00:14.592 | INFO     | agents.fundamentals_agent:fundamentals_agent:21 - Running fundamentals agents for JPM
+2026-10-14 21:00:14.593 | INFO     | agents.technical_agent:technical_agent:16 - Technical Agent requested for JPM
+2026-10-14 21:00:14.593 | INFO     | agents.equity_reasearch_agent:equity_research_agent:16 - equity research agent requested for JPM
+2026-10-14 21:00:14.593 | INFO     | agents.risk_agent:risk_agent:16 - Risk Agent requested for JPM
+2026-10-14 21:00:14.594 | INFO     | agents.risk_agent:risk_agent:21 - Running Risk agent for JPM
+2026-10-14 21:00:14.914 | INFO     | agents.evaluator:evaluate_agent_output:191 - [Evaluation | FUNDAMENTALS | JPM] Grade: A | Score: 1.00 | Faithfulness: 1.0 | Consistency: 1.0 | Hallucinations Caught: 0
+2026-10-14 21:00:14.921 | INFO     | agents.evaluator:evaluate_agent_output:191 - [Evaluation | RISK | JPM] Grade: A | Score: 1.00 | Faithfulness: 1.0 | Consistency: 1.0 | Hallucinations Caught: 0
+2026-10-14 21:00:14.923 | INFO     | agents.evaluator:evaluate_agent_output:191 - [Evaluation | SENTIMENT | JPM] Grade: A | Score: 1.00 | Faithfulness: 1.0 | Consistency: 1.0 | Hallucinations Caught: 0
+2026-10-14 21:00:14.929 | INFO     | agents.evaluator:evaluate_agent_output:191 - [Evaluation | TECHNICAL | JPM] Grade: A | Score: 1.00 | Faithfulness: 1.0 | Consistency: 1.0 | Hallucinations Caught: 0
+2026-10-14 21:00:14.935 | INFO     | agents.evaluator:evaluate_agent_output:191 - [Evaluation | EQUITY_RESEARCH | JPM] Grade: A | Score: 1.00 | Faithfulness: 1.0 | Consistency: 1.0 | Hallucinations Caught: 0
+2026-10-14 21:00:14.936 | INFO     | main:synthesizer:274 - Synthesizing requested for JPM
+2026-10-14 21:00:15.260 | INFO     | agents.evaluator:evaluate_agent_output:191 - [Evaluation | PORTFOLIO_MANAGER | JPM] Grade: A | Score: 1.00 | Faithfulness: 1.0 | Consistency: 1.0 | Hallucinations Caught: 0
+2026-10-14 21:00:25.402 | INFO     | main:analyse:412 - Cache hit for AAPL
+2026-10-14 21:00:25.560 | INFO     | main:analyse:412 - Cache hit for TSLA
+2026-10-14 21:00:34.996 | INFO     | main:analyse:412 - Cache hit for TSLA
+2026-10-14 21:02:34.248 | INFO     | main:analyse:412 - Cache hit for TSLA
+2026-10-14 21:02:56.343 | INFO     | main:analyse:412 - Cache hit for TSLA
+2026-10-14 21:07:44.281 | INFO     | main:analyse:420 - Analysis requested for TSLA by user tester@example.com
+2026-10-14 21:07:44.282 | INFO     | main:analyse:424 - Running agents for TSLA
+2026-10-14 21:07:44.282 | INFO     | agents.news_agent:news_agent:68 - News Agent requested for TSLA
+2026-10-14 21:07:44.282 | INFO     | agents.news_agent:news_agent:73 - Running News agent for TSLA
+2026-10-14 21:07:44.683 | INFO     | agents.evaluator:evaluate_agent_output:191 - [Evaluation | NEWS | TSLA] Grade: A | Score: 1.00 | Faithfulness: 1.0 | Consistency: 1.0 | Hallucinations Caught: 0
+2026-10-14 21:07:44.684 | INFO     | agents.sentiment_agent:sentiment_agent:16 - Sentiment Agent requested for TSLA
+2026-10-14 21:07:44.684 | INFO     | agents.sentiment_agent:sentiment_agent:21 - Running sentiment agent for TSLA
+2026-10-14 21:07:44.685 | INFO     | agents.fundamentals_agent:fundamentals_agent:16 - fundamentals agent requested for TSLA
+2026-10-14 21:07:44.685 | INFO     | agents.fundamentals_agent:fundamentals_agent:21 - Running fundamentals agents for TSLA
+2026-10-14 21:07:44.685 | INFO     | agents.technical_agent:technical_agent:16 - Technical Agent requested for TSLA
+2026-10-14 21:07:44.686 | INFO     | agents.equity_reasearch_agent:equity_research_agent:16 - equity research agent requested for TSLA
+2026-10-14 21:07:44.686 | INFO     | agents.risk_agent:risk_agent:16 - Risk Agent requested for TSLA
+2026-10-14 21:07:44.686 | INFO     | agents.risk_agent:risk_agent:21 - Running Risk agent for TSLA
+2026-10-14 21:07:45.000 | INFO     | agents.evaluator:evaluate_agent_output:191 - [Evaluation | FUNDAMENTALS | TSLA] Grade: A | Score: 1.00 | Faithfulness: 1.0 | Consistency: 1.0 | Hallucinations Caught: 0
+2026-10-14 21:07:45.007 | INFO     | agents.evaluator:evaluate_agent_output:191 - [Evaluation | RISK | TSLA] Grade: A | Score: 1.00 | Faithfulness: 1.0 | Consistency: 1.0 | Hallucinations Caught: 0
+2026-10-14 21:07:45.014 | INFO     | agents.evaluator:evaluate_agent_output:191 - [Evaluation | EQUITY_RESEARCH | TSLA] Grade: A | Score: 1.00 | Faithfulness: 1.0 | Consistency: 1.0 | Hallucinations Caught: 0
+2026-10-14 21:07:45.017 | INFO     | agents.evaluator:evaluate_agent_output:191 - [Evaluation | SENTIMENT | TSLA] Grade: A | Score: 1.00 | Faithfulness: 1.0 | Consistency: 1.0 | Hallucinations Caught: 0
+2026-10-14 21:07:45.025 | INFO     | agents.evaluator:evaluate_agent_output:191 - [Evaluation | TECHNICAL | TSLA] Grade: A | Score: 1.00 | Faithfulness: 1.0 | Consistency: 1.0 | Hallucinations Caught: 0
+2026-10-14 21:07:45.025 | INFO     | main:synthesizer:274 - Synthesizing requested for TSLA
+2026-10-14 21:07:45.331 | INFO     | agents.evaluator:evaluate_agent_output:191 - [Evaluation | PORTFOLIO_MANAGER | TSLA] Grade: A | Score: 1.00 | Faithfulness: 1.0 | Consistency: 1.0 | Hallucinations Caught: 0
+2026-10-14 21:07:45.455 | INFO     | main:analyse:412 - Cache hit for TSLA
+2026-10-14 21:16:47.923 | INFO     | main:analyse:420 - Analysis requested for TSLA by user demo@marketpulse.com
+2026-10-14 21:16:47.924 | INFO     | main:analyse:424 - Running agents for TSLA
+2026-10-14 21:16:47.924 | INFO     | agents.news_agent:news_agent:68 - News Agent requested for TSLA
+2026-10-14 21:16:47.924 | INFO     | agents.news_agent:news_agent:73 - Running News agent for TSLA
+2026-10-14 21:16:48.335 | INFO     | agents.evaluator:evaluate_agent_output:191 - [Evaluation | NEWS | TSLA] Grade: A | Score: 1.00 | Faithfulness: 1.0 | Consistency: 1.0 | Hallucinations Caught: 0
+2026-10-14 21:16:48.336 | INFO     | agents.sentiment_agent:sentiment_agent:16 - Sentiment Agent requested for TSLA
+2026-10-14 21:16:48.336 | INFO     | agents.sentiment_agent:sentiment_agent:21 - Running sentiment agent for TSLA
+2026-10-14 21:16:48.336 | INFO     | agents.fundamentals_agent:fundamentals_agent:16 - fundamentals agent requested for TSLA
+2026-10-14 21:16:48.337 | INFO     | agents.fundamentals_agent:fundamentals_agent:21 - Running fundamentals agents for TSLA
+2026-10-14 21:16:48.337 | INFO     | agents.technical_agent:technical_agent:16 - Technical Agent requested for TSLA
+2026-10-14 21:16:48.337 | INFO     | agents.equity_reasearch_agent:equity_research_agent:16 - equity research agent requested for TSLA
+2026-10-14 21:16:48.338 | INFO     | agents.risk_agent:risk_agent:16 - Risk Agent requested for TSLA
+2026-10-14 21:16:48.338 | INFO     | agents.risk_agent:risk_agent:21 - Running Risk agent for TSLA
+2026-10-14 21:16:48.631 | INFO     | agents.evaluator:evaluate_agent_output:191 - [Evaluation | SENTIMENT | TSLA] Grade: A | Score: 1.00 | Faithfulness: 1.0 | Consistency: 1.0 | Hallucinations Caught: 0
+2026-10-14 21:16:48.640 | INFO     | agents.evaluator:evaluate_agent_output:191 - [Evaluation | EQUITY_RESEARCH | TSLA] Grade: A | Score: 1.00 | Faithfulness: 1.0 | Consistency: 1.0 | Hallucinations Caught: 0
+2026-10-14 21:16:48.647 | INFO     | agents.evaluator:evaluate_agent_output:191 - [Evaluation | RISK | TSLA] Grade: A | Score: 1.00 | Faithfulness: 1.0 | Consistency: 1.0 | Hallucinations Caught: 0
+2026-10-14 21:16:48.654 | INFO     | agents.evaluator:evaluate_agent_output:191 - [Evaluation | TECHNICAL | TSLA] Grade: A | Score: 1.00 | Faithfulness: 1.0 | Consistency: 1.0 | Hallucinations Caught: 0
+2026-10-14 21:16:48.662 | INFO     | agents.evaluator:evaluate_agent_output:191 - [Evaluation | FUNDAMENTALS | TSLA] Grade: A | Score: 1.00 | Faithfulness: 1.0 | Consistency: 1.0 | Hallucinations Caught: 0
+2026-10-14 21:16:48.662 | INFO     | main:synthesizer:274 - Synthesizing requested for TSLA
+2026-10-14 21:16:48.967 | INFO     | agents.evaluator:evaluate_agent_output:191 - [Evaluation | PORTFOLIO_MANAGER | TSLA] Grade: A | Score: 1.00 | Faithfulness: 1.0 | Consistency: 1.0 | Hallucinations Caught: 0
+2026-10-14 21:17:08.859 | INFO     | main:analyse:412 - Cache hit for TSLA
+2026-10-14 21:17:26.504 | INFO     | main:analyse:412 - Cache hit for TSLA
+2026-10-14 21:17:49.758 | INFO     | main:analyse:412 - Cache hit for TSLA
+2026-10-14 21:21:47.683 | INFO     | main:analyse:420 - Analysis requested for TSLA by user demo@marketpulse.com
+2026-10-14 21:21:47.685 | INFO     | main:analyse:424 - Running agents for TSLA
+2026-10-14 21:21:47.686 | INFO     | agents.news_agent:news_agent:68 - News Agent requested for TSLA
+2026-10-14 21:21:47.686 | INFO     | agents.news_agent:news_agent:73 - Running News agent for TSLA
+2026-10-14 21:21:48.102 | INFO     | agents.evaluator:evaluate_agent_output:191 - [Evaluation | NEWS | TSLA] Grade: A | Score: 1.00 | Faithfulness: 1.0 | Consistency: 1.0 | Hallucinations Caught: 0
+2026-10-14 21:21:48.103 | INFO     | agents.sentiment_agent:sentiment_agent:16 - Sentiment Agent requested for TSLA
+2026-10-14 21:21:48.103 | INFO     | agents.sentiment_agent:sentiment_agent:21 - Running sentiment agent for TSLA
+2026-10-14 21:21:48.104 | INFO     | agents.fundamentals_agent:fundamentals_agent:16 - fundamentals agent requested for TSLA
+2026-10-14 21:21:48.104 | INFO     | agents.fundamentals_agent:fundamentals_agent:21 - Running fundamentals agents for TSLA
+2026-10-14 21:21:48.104 | INFO     | agents.technical_agent:technical_agent:16 - Technical Agent requested for TSLA
+2026-10-14 21:21:48.105 | INFO     | agents.equity_reasearch_agent:equity_research_agent:16 - equity research agent requested for TSLA
+2026-10-14 21:21:48.105 | INFO     | agents.risk_agent:risk_agent:16 - Risk Agent requested for TSLA
+2026-10-14 21:21:48.106 | INFO     | agents.risk_agent:risk_agent:21 - Running Risk agent for TSLA
+2026-10-14 21:21:48.412 | INFO     | agents.evaluator:evaluate_agent_output:191 - [Evaluation | SENTIMENT | TSLA] Grade: A | Score: 1.00 | Faithfulness: 1.0 | Consistency: 1.0 | Hallucinations Caught: 0
+2026-10-14 21:21:48.419 | INFO     | agents.evaluator:evaluate_agent_output:191 - [Evaluation | FUNDAMENTALS | TSLA] Grade: A | Score: 1.00 | Faithfulness: 1.0 | Consistency: 1.0 | Hallucinations Caught: 0
+2026-10-14 21:21:48.426 | INFO     | agents.evaluator:evaluate_agent_output:191 - [Evaluation | TECHNICAL | TSLA] Grade: A | Score: 1.00 | Faithfulness: 1.0 | Consistency: 1.0 | Hallucinations Caught: 0
+2026-10-14 21:21:48.433 | INFO     | agents.evaluator:evaluate_agent_output:191 - [Evaluation | EQUITY_RESEARCH | TSLA] Grade: A | Score: 1.00 | Faithfulness: 1.0 | Consistency: 1.0 | Hallucinations Caught: 0
+2026-10-14 21:21:48.440 | INFO     | agents.evaluator:evaluate_agent_output:191 - [Evaluation | RISK | TSLA] Grade: A | Score: 1.00 | Faithfulness: 1.0 | Consistency: 1.0 | Hallucinations Caught: 0
+2026-10-14 21:21:48.441 | INFO     | main:synthesizer:274 - Synthesizing requested for TSLA
+2026-10-14 21:21:48.762 | INFO     | agents.evaluator:evaluate_agent_output:191 - [Evaluation | PORTFOLIO_MANAGER | TSLA] Grade: A | Score: 1.00 | Faithfulness: 1.0 | Consistency: 1.0 | Hallucinations Caught: 0
+2026-10-14 21:31:26.262 | INFO     | main:analyse:420 - Analysis requested for NVDA by user test@test.com
+2026-10-14 21:31:26.263 | INFO     | main:analyse:424 - Running agents for NVDA
+2026-10-14 21:31:26.263 | INFO     | agents.news_agent:news_agent:68 - News Agent requested for NVDA
+2026-10-14 21:31:26.263 | INFO     | agents.news_agent:news_agent:73 - Running News agent for NVDA
+2026-10-14 21:31:26.264 | INFO     | main:analyse:420 - Analysis requested for NVDA by user test@test.com
+2026-10-14 21:31:26.264 | INFO     | main:analyse:424 - Running agents for NVDA
+2026-10-14 21:31:26.264 | INFO     | agents.news_agent:news_agent:68 - News Agent requested for NVDA
+2026-10-14 21:31:26.264 | INFO     | agents.news_agent:news_agent:73 - Running News agent for NVDA
+2026-10-14 21:31:26.687 | INFO     | agents.evaluator:evaluate_agent_output:191 - [Evaluation | NEWS | NVDA] Grade: A | Score: 1.00 | Faithfulness: 1.0 | Consistency: 1.0 | Hallucinations Caught: 0
+2026-10-14 21:31:26.690 | INFO     | agents.evaluator:evaluate_agent_output:191 - [Evaluation | NEWS | NVDA] Grade: A | Score: 1.00 | Faithfulness: 1.0 | Consistency: 1.0 | Hallucinations Caught: 0
+2026-10-14 21:31:26.690 | INFO     | agents.sentiment_agent:sentiment_agent:16 - Sentiment Agent requested for NVDA
+2026-10-14 21:31:26.691 | INFO     | agents.sentiment_agent:sentiment_agent:21 - Running sentiment agent for NVDA
+2026-10-14 21:31:26.691 | INFO     | agents.fundamentals_agent:fundamentals_agent:16 - fundamentals agent requested for NVDA
+2026-10-14 21:31:26.693 | INFO     | agents.fundamentals_agent:fundamentals_agent:21 - Running fundamentals agents for NVDA
+2026-10-14 21:31:26.693 | INFO     | agents.technical_agent:technical_agent:16 - Technical Agent requested for NVDA
+2026-10-14 21:31:26.694 | INFO     | agents.equity_reasearch_agent:equity_research_agent:16 - equity research agent requested for NVDA
+2026-10-14 21:31:26.694 | INFO     | agents.risk_agent:risk_agent:16 - Risk Agent requested for NVDA
+2026-10-14 21:31:26.694 | INFO     | agents.risk_agent:risk_agent:21 - Running Risk agent for NVDA
+2026-10-14 21:31:26.695 | INFO     | agents.sentiment_agent:sentiment_agent:16 - Sentiment Agent requested for NVDA
+2026-10-14 21:31:26.695 | INFO     | agents.sentiment_agent:sentiment_agent:21 - Running sentiment agent for NVDA
+2026-10-14 21:31:26.695 | INFO     | agents.fundamentals_agent:fundamentals_agent:16 - fundamentals agent requested for NVDA
+2026-10-14 21:31:26.696 | INFO     | agents.fundamentals_agent:fundamentals_agent:21 - Running fundamentals agents for NVDA
+2026-10-14 21:31:26.696 | INFO     | agents.technical_agent:technical_agent:16 - Technical Agent requested for NVDA
+2026-10-14 21:31:26.696 | INFO     | agents.equity_reasearch_agent:equity_research_agent:16 - equity research agent requested for NVDA
+2026-10-14 21:31:26.697 | INFO     | agents.risk_agent:risk_agent:16 - Risk Agent requested for NVDA
+2026-10-14 21:31:26.697 | INFO     | agents.risk_agent:risk_agent:21 - Running Risk agent for NVDA
+2026-10-14 21:31:26.997 | INFO     | agents.evaluator:evaluate_agent_output:191 - [Evaluation | SENTIMENT | NVDA] Grade: A | Score: 1.00 | Faithfulness: 1.0 | Consistency: 1.0 | Hallucinations Caught: 0
+2026-10-14 21:31:27.004 | INFO     | agents.evaluator:evaluate_agent_output:191 - [Evaluation | RISK | NVDA] Grade: A | Score: 1.00 | Faithfulness: 1.0 | Consistency: 1.0 | Hallucinations Caught: 0
+2026-10-14 21:31:27.015 | INFO     | agents.evaluator:evaluate_agent_output:191 - [Evaluation | EQUITY_RESEARCH | NVDA] Grade: A | Score: 1.00 | Faithfulness: 1.0 | Consistency: 1.0 | Hallucinations Caught: 0
+2026-10-14 21:31:27.022 | INFO     | agents.evaluator:evaluate_agent_output:191 - [Evaluation | RISK | NVDA] Grade: A | Score: 1.00 | Faithfulness: 1.0 | Consistency: 1.0 | Hallucinations Caught: 0
+2026-10-14 21:31:27.032 | INFO     | agents.evaluator:evaluate_agent_output:191 - [Evaluation | EQUITY_RESEARCH | NVDA] Grade: A | Score: 1.00 | Faithfulness: 1.0 | Consistency: 1.0 | Hallucinations Caught: 0
+2026-10-14 21:31:27.038 | INFO     | agents.evaluator:evaluate_agent_output:191 - [Evaluation | TECHNICAL | NVDA] Grade: A | Score: 1.00 | Faithfulness: 1.0 | Consistency: 1.0 | Hallucinations Caught: 0
+2026-10-14 21:31:27.047 | INFO     | agents.evaluator:evaluate_agent_output:191 - [Evaluation | FUNDAMENTALS | NVDA] Grade: A | Score: 1.00 | Faithfulness: 1.0 | Consistency: 1.0 | Hallucinations Caught: 0
+2026-10-14 21:31:27.054 | INFO     | agents.evaluator:evaluate_agent_output:191 - [Evaluation | FUNDAMENTALS | NVDA] Grade: A | Score: 1.00 | Faithfulness: 1.0 | Consistency: 1.0 | Hallucinations Caught: 0
+2026-10-14 21:31:27.062 | INFO     | agents.evaluator:evaluate_agent_output:191 - [Evaluation | TECHNICAL | NVDA] Grade: A | Score: 1.00 | Faithfulness: 1.0 | Consistency: 1.0 | Hallucinations Caught: 0
+2026-10-14 21:31:27.064 | INFO     | agents.evaluator:evaluate_agent_output:191 - [Evaluation | SENTIMENT | NVDA] Grade: A | Score: 1.00 | Faithfulness: 1.0 | Consistency: 1.0 | Hallucinations Caught: 0
+2026-10-14 21:31:27.065 | INFO     | main:synthesizer:274 - Synthesizing requested for NVDA
+2026-10-14 21:31:27.065 | INFO     | main:synthesizer:274 - Synthesizing requested for NVDA
+2026-10-14 21:31:27.380 | INFO     | agents.evaluator:evaluate_agent_output:191 - [Evaluation | PORTFOLIO_MANAGER | NVDA] Grade: A | Score: 1.00 | Faithfulness: 1.0 | Consistency: 1.0 | Hallucinations Caught: 0
+2026-10-14 21:31:27.396 | INFO     | agents.evaluator:evaluate_agent_output:191 - [Evaluation | PORTFOLIO_MANAGER | NVDA] Grade: A | Score: 1.00 | Faithfulness: 1.0 | Consistency: 1.0 | Hallucinations Caught: 0
+2026-10-14 21:35:14.780 | INFO     | main:analyse:420 - Analysis requested for AAPL by user demo@marketpulse.com
+2026-10-14 21:35:14.780 | INFO     | main:analyse:424 - Running agents for AAPL
+2026-10-14 21:35:14.780 | INFO     | agents.news_agent:news_agent:68 - News Agent requested for AAPL
+2026-10-14 21:35:14.780 | INFO     | agents.news_agent:news_agent:73 - Running News agent for AAPL
+2026-10-14 21:35:15.195 | INFO     | agents.evaluator:evaluate_agent_output:191 - [Evaluation | NEWS | AAPL] Grade: A | Score: 1.00 | Faithfulness: 1.0 | Consistency: 1.0 | Hallucinations Caught: 0
+2026-10-14 21:35:15.195 | INFO     | agents.sentiment_agent:sentiment_agent:16 - Sentiment Agent requested for AAPL
+2026-10-14 21:35:15.196 | INFO     | agents.sentiment_agent:sentiment_agent:21 - Running sentiment agent for AAPL
+2026-10-14 21:35:15.196 | INFO     | agents.fundamentals_agent:fundamentals_agent:16 - fundamentals agent requested for AAPL
+2026-10-14 21:35:15.196 | INFO     | agents.fundamentals_agent:fundamentals_agent:21 - Running fundamentals agents for AAPL
+2026-10-14 21:35:15.196 | INFO     | agents.technical_agent:technical_agent:16 - Technical Agent requested for AAPL
+2026-10-14 21:35:15.197 | INFO     | agents.equity_reasearch_agent:equity_research_agent:16 - equity research agent requested for AAPL
+2026-10-14 21:35:15.197 | INFO     | agents.risk_agent:risk_agent:16 - Risk Agent requested for AAPL
+2026-10-14 21:35:15.197 | INFO     | agents.risk_agent:risk_agent:21 - Running Risk agent for AAPL
+2026-10-14 21:35:15.507 | INFO     | agents.evaluator:evaluate_agent_output:191 - [Evaluation | SENTIMENT | AAPL] Grade: A | Score: 1.00 | Faithfulness: 1.0 | Consistency: 1.0 | Hallucinations Caught: 0
+2026-10-14 21:35:15.515 | INFO     | agents.evaluator:evaluate_agent_output:191 - [Evaluation | RISK | AAPL] Grade: A | Score: 1.00 | Faithfulness: 1.0 | Consistency: 1.0 | Hallucinations Caught: 0
+2026-10-14 21:35:15.522 | INFO     | agents.evaluator:evaluate_agent_output:191 - [Evaluation | EQUITY_RESEARCH | AAPL] Grade: A | Score: 1.00 | Faithfulness: 1.0 | Consistency: 1.0 | Hallucinations Caught: 0
+2026-10-14 21:35:15.529 | INFO     | agents.evaluator:evaluate_agent_output:191 - [Evaluation | FUNDAMENTALS | AAPL] Grade: A | Score: 1.00 | Faithfulness: 1.0 | Consistency: 1.0 | Hallucinations Caught: 0
+2026-10-14 21:35:15.536 | INFO     | agents.evaluator:evaluate_agent_output:191 - [Evaluation | TECHNICAL | AAPL] Grade: A | Score: 1.00 | Faithfulness: 1.0 | Consistency: 1.0 | Hallucinations Caught: 0
+2026-10-14 21:35:15.537 | INFO     | main:synthesizer:274 - Synthesizing requested for AAPL
+2026-10-14 21:35:15.856 | INFO     | agents.evaluator:evaluate_agent_output:191 - [Evaluation | PORTFOLIO_MANAGER | AAPL] Grade: A | Score: 1.00 | Faithfulness: 1.0 | Consistency: 1.0 | Hallucinations Caught: 0
+2026-10-14 21:41:58.169 | INFO     | main:analyse:412 - Cache hit for AAPL
+2026-10-14 21:45:58.870 | INFO     | main:analyse:420 - Analysis requested for AAPL by user test@marketpulse.com
+2026-10-14 21:45:58.871 | INFO     | main:analyse:424 - Running agents for AAPL
+2026-10-14 21:45:58.871 | INFO     | agents.news_agent:news_agent:68 - News Agent requested for AAPL
+2026-10-14 21:45:58.872 | INFO     | agents.news_agent:news_agent:73 - Running News agent for AAPL
+2026-10-14 21:45:59.290 | INFO     | agents.evaluator:evaluate_agent_output:191 - [Evaluation | NEWS | AAPL] Grade: A | Score: 1.00 | Faithfulness: 1.0 | Consistency: 1.0 | Hallucinations Caught: 0
+2026-10-14 21:45:59.291 | INFO     | agents.sentiment_agent:sentiment_agent:16 - Sentiment Agent requested for AAPL
+2026-10-14 21:45:59.291 | INFO     | agents.sentiment_agent:sentiment_agent:21 - Running sentiment agent for AAPL
+2026-10-14 21:45:59.292 | INFO     | agents.fundamentals_agent:fundamentals_agent:16 - fundamentals agent requested for AAPL
+2026-10-14 21:45:59.292 | INFO     | agents.fundamentals_agent:fundamentals_agent:21 - Running fundamentals agents for AAPL
+2026-10-14 21:45:59.292 | INFO     | agents.technical_agent:technical_agent:16 - Technical Agent requested for AAPL
+2026-10-14 21:45:59.292 | INFO     | agents.equity_reasearch_agent:equity_research_agent:16 - equity research agent requested for AAPL
+2026-10-14 21:45:59.293 | INFO     | agents.risk_agent:risk_agent:16 - Risk Agent requested for AAPL
+2026-10-14 21:45:59.293 | INFO     | agents.risk_agent:risk_agent:21 - Running Risk agent for AAPL
+2026-10-14 21:45:59.607 | INFO     | agents.evaluator:evaluate_agent_output:191 - [Evaluation | FUNDAMENTALS | AAPL] Grade: A | Score: 1.00 | Faithfulness: 1.0 | Consistency: 1.0 | Hallucinations Caught: 0
+2026-10-14 21:45:59.609 | INFO     | agents.evaluator:evaluate_agent_output:191 - [Evaluation | SENTIMENT | AAPL] Grade: A | Score: 1.00 | Faithfulness: 1.0 | Consistency: 1.0 | Hallucinations Caught: 0
+2026-10-14 21:45:59.614 | INFO     | agents.evaluator:evaluate_agent_output:191 - [Evaluation | RISK | AAPL] Grade: B | Score: 0.92 | Faithfulness: 0.8 | Consistency: 1.0 | Hallucinations Caught: 1
+2026-10-14 21:45:59.622 | INFO     | agents.evaluator:evaluate_agent_output:191 - [Evaluation | EQUITY_RESEARCH | AAPL] Grade: A | Score: 1.00 | Faithfulness: 1.0 | Consistency: 1.0 | Hallucinations Caught: 0
+2026-10-14 21:45:59.628 | INFO     | agents.evaluator:evaluate_agent_output:191 - [Evaluation | TECHNICAL | AAPL] Grade: A | Score: 1.00 | Faithfulness: 1.0 | Consistency: 1.0 | Hallucinations Caught: 0
+2026-10-14 21:45:59.628 | INFO     | main:synthesizer:274 - Synthesizing requested for AAPL
+2026-10-14 21:45:59.953 | INFO     | agents.evaluator:evaluate_agent_output:191 - [Evaluation | PORTFOLIO_MANAGER | AAPL] Grade: B | Score: 0.82 | Faithfulness: 1.0 | Consistency: 1.0 | Hallucinations Caught: 0
+2026-10-14 21:46:09.369 | INFO     | main:analyse:420 - Analysis requested for AAPL by user test@marketpulse.com
+2026-10-14 21:46:09.369 | INFO     | main:analyse:424 - Running agents for AAPL
+2026-10-14 21:46:09.369 | INFO     | agents.news_agent:news_agent:68 - News Agent requested for AAPL
+2026-10-14 21:46:09.370 | INFO     | agents.news_agent:news_agent:73 - Running News agent for AAPL
+2026-10-14 21:46:09.773 | INFO     | agents.evaluator:evaluate_agent_output:191 - [Evaluation | NEWS | AAPL] Grade: A | Score: 1.00 | Faithfulness: 1.0 | Consistency: 1.0 | Hallucinations Caught: 0
+2026-10-14 21:46:09.774 | INFO     | agents.sentiment_agent:sentiment_agent:16 - Sentiment Agent requested for AAPL
+2026-10-14 21:46:09.774 | INFO     | agents.sentiment_agent:sentiment_agent:21 - Running sentiment agent for AAPL
+2026-10-14 21:46:09.774 | INFO     | agents.fundamentals_agent:fundamentals_agent:16 - fundamentals agent requested for AAPL
+2026-10-14 21:46:09.774 | INFO     | agents.fundamentals_agent:fundamentals_agent:21 - Running fundamentals agents for AAPL
+2026-10-14 21:46:09.775 | INFO     | agents.technical_agent:technical_agent:16 - Technical Agent requested for AAPL
+2026-10-14 21:46:09.775 | INFO     | agents.equity_reasearch_agent:equity_research_agent:16 - equity research agent requested for AAPL
+2026-10-14 21:46:09.775 | INFO     | agents.risk_agent:risk_agent:16 - Risk Agent requested for AAPL
+2026-10-14 21:46:09.775 | INFO     | agents.risk_agent:risk_agent:21 - Running Risk agent for AAPL
+2026-10-14 21:46:10.089 | INFO     | agents.evaluator:evaluate_agent_output:191 - [Evaluation | FUNDAMENTALS | AAPL] Grade: A | Score: 1.00 | Faithfulness: 1.0 | Consistency: 1.0 | Hallucinations Caught: 0
+2026-10-14 21:46:10.096 | INFO     | agents.evaluator:evaluate_agent_output:191 - [Evaluation | RISK | AAPL] Grade: B | Score: 0.92 | Faithfulness: 0.8 | Consistency: 1.0 | Hallucinations Caught: 1
+2026-10-14 21:46:10.098 | INFO     | agents.evaluator:evaluate_agent_output:191 - [Evaluation | SENTIMENT | AAPL] Grade: A | Score: 1.00 | Faithfulness: 1.0 | Consistency: 1.0 | Hallucinations Caught: 0
+2026-10-14 21:46:10.104 | INFO     | agents.evaluator:evaluate_agent_output:191 - [Evaluation | TECHNICAL | AAPL] Grade: A | Score: 1.00 | Faithfulness: 1.0 | Consistency: 1.0 | Hallucinations Caught: 0
+2026-10-14 21:46:10.110 | INFO     | agents.evaluator:evaluate_agent_output:191 - [Evaluation | EQUITY_RESEARCH | AAPL] Grade: A | Score: 1.00 | Faithfulness: 1.0 | Consistency: 1.0 | Hallucinations Caught: 0
+2026-10-14 21:46:10.110 | INFO     | main:synthesizer:274 - Synthesizing requested for AAPL
+2026-10-14 21:46:10.436 | INFO     | agents.evaluator:evaluate_agent_output:191 - [Evaluation | PORTFOLIO_MANAGER | AAPL] Grade: B | Score: 0.82 | Faithfulness: 1.0 | Consistency: 1.0 | Hallucinations Caught: 0
+2026-10-14 21:46:12.465 | INFO     | main:analyse:420 - Analysis requested for NVDA by user test@marketpulse.com
+2026-10-14 21:46:12.465 | INFO     | main:analyse:424 - Running agents for NVDA
+2026-10-14 21:46:12.466 | INFO     | agents.news_agent:news_agent:68 - News Agent requested for NVDA
+2026-10-14 21:46:12.466 | INFO     | agents.news_agent:news_agent:73 - Running News agent for NVDA
+2026-10-14 21:46:12.887 | INFO     | agents.evaluator:evaluate_agent_output:191 - [Evaluation | NEWS | NVDA] Grade: A | Score: 1.00 | Faithfulness: 1.0 | Consistency: 1.0 | Hallucinations Caught: 0
+2026-10-14 21:46:12.890 | INFO     | agents.sentiment_agent:sentiment_agent:16 - Sentiment Agent requested for NVDA
+2026-10-14 21:46:12.890 | INFO     | agents.sentiment_agent:sentiment_agent:21 - Running sentiment agent for NVDA
+2026-10-14 21:46:12.890 | INFO     | agents.fundamentals_agent:fundamentals_agent:16 - fundamentals agent requested for NVDA
+2026-10-14 21:46:12.891 | INFO     | agents.fundamentals_agent:fundamentals_agent:21 - Running fundamentals agents for NVDA
+2026-10-14 21:46:12.891 | INFO     | agents.technical_agent:technical_agent:16 - Technical Agent requested for NVDA
+2026-10-14 21:46:12.892 | INFO     | agents.equity_reasearch_agent:equity_research_agent:16 - equity research agent requested for NVDA
+2026-10-14 21:46:12.892 | INFO     | agents.risk_agent:risk_agent:16 - Risk Agent requested for NVDA
+2026-10-14 21:46:12.892 | INFO     | agents.risk_agent:risk_agent:21 - Running Risk agent for NVDA
+2026-10-14 21:46:13.218 | INFO     | agents.evaluator:evaluate_agent_output:191 - [Evaluation | FUNDAMENTALS | NVDA] Grade: A | Score: 1.00 | Faithfulness: 1.0 | Consistency: 1.0 | Hallucinations Caught: 0
+2026-10-14 21:46:13.226 | INFO     | agents.evaluator:evaluate_agent_output:191 - [Evaluation | RISK | NVDA] Grade: B | Score: 0.92 | Faithfulness: 0.8 | Consistency: 1.0 | Hallucinations Caught: 1
+2026-10-14 21:46:13.228 | INFO     | agents.evaluator:evaluate_agent_output:191 - [Evaluation | SENTIMENT | NVDA] Grade: A | Score: 1.00 | Faithfulness: 1.0 | Consistency: 1.0 | Hallucinations Caught: 0
+2026-10-14 21:46:13.234 | INFO     | agents.evaluator:evaluate_agent_output:191 - [Evaluation | TECHNICAL | NVDA] Grade: A | Score: 1.00 | Faithfulness: 1.0 | Consistency: 1.0 | Hallucinations Caught: 0
+2026-10-14 21:46:13.241 | INFO     | agents.evaluator:evaluate_agent_output:191 - [Evaluation | EQUITY_RESEARCH | NVDA] Grade: A | Score: 1.00 | Faithfulness: 1.0 | Consistency: 1.0 | Hallucinations Caught: 0
+2026-10-14 21:46:13.242 | INFO     | main:synthesizer:274 - Synthesizing requested for NVDA
+2026-10-14 21:46:13.559 | INFO     | agents.evaluator:evaluate_agent_output:191 - [Evaluation | PORTFOLIO_MANAGER | NVDA] Grade: B | Score: 0.82 | Faithfulness: 1.0 | Consistency: 1.0 | Hallucinations Caught: 0
+2026-10-14 21:46:15.608 | INFO     | main:analyse:420 - Analysis requested for JPM by user test@marketpulse.com
+2026-10-14 21:46:15.609 | INFO     | main:analyse:424 - Running agents for JPM
+2026-10-14 21:46:15.609 | INFO     | agents.news_agent:news_agent:68 - News Agent requested for JPM
+2026-10-14 21:46:15.609 | INFO     | agents.news_agent:news_agent:73 - Running News agent for JPM
+2026-10-14 21:46:16.015 | INFO     | agents.evaluator:evaluate_agent_output:191 - [Evaluation | NEWS | JPM] Grade: A | Score: 1.00 | Faithfulness: 1.0 | Consistency: 1.0 | Hallucinations Caught: 0
+2026-10-14 21:46:16.016 | INFO     | agents.sentiment_agent:sentiment_agent:16 - Sentiment Agent requested for JPM
+2026-10-14 21:46:16.016 | INFO     | agents.sentiment_agent:sentiment_agent:21 - Running sentiment agent for JPM
+2026-10-14 21:46:16.016 | INFO     | agents.fundamentals_agent:fundamentals_agent:16 - fundamentals agent requested for JPM
+2026-10-14 21:46:16.017 | INFO     | agents.fundamentals_agent:fundamentals_agent:21 - Running fundamentals agents for JPM
+2026-10-14 21:46:16.017 | INFO     | agents.technical_agent:technical_agent:16 - Technical Agent requested for JPM
+2026-10-14 21:46:16.017 | INFO     | agents.equity_reasearch_agent:equity_research_agent:16 - equity research agent requested for JPM
+2026-10-14 21:46:16.017 | INFO     | agents.risk_agent:risk_agent:16 - Risk Agent requested for JPM
+2026-10-14 21:46:16.017 | INFO     | agents.risk_agent:risk_agent:21 - Running Risk agent for JPM
+2026-10-14 21:46:16.316 | INFO     | agents.evaluator:evaluate_agent_output:191 - [Evaluation | FUNDAMENTALS | JPM] Grade: A | Score: 1.00 | Faithfulness: 1.0 | Consistency: 1.0 | Hallucinations Caught: 0
+2026-10-14 21:46:16.324 | INFO     | agents.evaluator:evaluate_agent_output:191 - [Evaluation | RISK | JPM] Grade: B | Score: 0.92 | Faithfulness: 0.8 | Consistency: 1.0 | Hallucinations Caught: 1
+2026-10-14 21:46:16.330 | INFO     | agents.evaluator:evaluate_agent_output:191 - [Evaluation | EQUITY_RESEARCH | JPM] Grade: A | Score: 1.00 | Faithfulness: 1.0 | Consistency: 1.0 | Hallucinations Caught: 0
+2026-10-14 21:46:16.332 | INFO     | agents.evaluator:evaluate_agent_output:191 - [Evaluation | SENTIMENT | JPM] Grade: A | Score: 1.00 | Faithfulness: 1.0 | Consistency: 1.0 | Hallucinations Caught: 0
+2026-10-14 21:46:16.339 | INFO     | agents.evaluator:evaluate_agent_output:191 - [Evaluation | TECHNICAL | JPM] Grade: A | Score: 1.00 | Faithfulness: 1.0 | Consistency: 1.0 | Hallucinations Caught: 0
+2026-10-14 21:46:16.339 | INFO     | main:synthesizer:274 - Synthesizing requested for JPM
+2026-10-14 21:46:16.651 | INFO     | agents.evaluator:evaluate_agent_output:191 - [Evaluation | PORTFOLIO_MANAGER | JPM] Grade: B | Score: 0.82 | Faithfulness: 1.0 | Consistency: 1.0 | Hallucinations Caught: 0
+2026-10-14 21:47:12.666 | INFO     | main:analyse:412 - Cache hit for NVDA
+2026-10-14 21:47:12.698 | INFO     | main:analyse:412 - Cache hit for AAPL
+2026-10-14 21:47:25.004 | INFO     | main:analyse:412 - Cache hit for NVDA
+2026-10-14 21:47:25.008 | INFO     | main:analyse:412 - Cache hit for AAPL
+2026-10-14 21:47:46.886 | INFO     | main:analyse:412 - Cache hit for AAPL
+2026-10-14 21:47:46.891 | INFO     | main:analyse:412 - Cache hit for NVDA
+2026-10-14 21:48:15.769 | INFO     | main:analyse:412 - Cache hit for AAPL
+2026-10-14 21:48:15.815 | INFO     | main:analyse:412 - Cache hit for NVDA
+2026-10-14 21:48:38.756 | INFO     | main:analyse:412 - Cache hit for NVDA
+2026-10-14 21:48:38.761 | INFO     | main:analyse:412 - Cache hit for AAPL
+2026-10-14 21:49:05.072 | INFO     | main:analyse:420 - Analysis requested for AAPL by user test@marketpulse.com
+2026-10-14 21:49:05.072 | INFO     | main:analyse:424 - Running agents for AAPL
+2026-10-14 21:49:05.072 | INFO     | agents.news_agent:news_agent:68 - News Agent requested for AAPL
+2026-10-14 21:49:05.072 | INFO     | agents.news_agent:news_agent:73 - Running News agent for AAPL
+2026-10-14 21:49:05.480 | INFO     | agents.evaluator:evaluate_agent_output:191 - [Evaluation | NEWS | AAPL] Grade: A | Score: 1.00 | Faithfulness: 1.0 | Consistency: 1.0 | Hallucinations Caught: 0
+2026-10-14 21:49:05.480 | INFO     | agents.sentiment_agent:sentiment_agent:16 - Sentiment Agent requested for AAPL
+2026-10-14 21:49:05.481 | INFO     | agents.sentiment_agent:sentiment_agent:21 - Running sentiment agent for AAPL
+2026-10-14 21:49:05.481 | INFO     | agents.fundamentals_agent:fundamentals_agent:16 - fundamentals agent requested for AAPL
+2026-10-14 21:49:05.481 | INFO     | agents.fundamentals_agent:fundamentals_agent:21 - Running fundamentals agents for AAPL
+2026-10-14 21:49:05.481 | INFO     | agents.technical_agent:technical_agent:16 - Technical Agent requested for AAPL
+2026-10-14 21:49:05.482 | INFO     | agents.equity_reasearch_agent:equity_research_agent:16 - equity research agent requested for AAPL
+2026-10-14 21:49:05.482 | INFO     | agents.risk_agent:risk_agent:16 - Risk Agent requested for AAPL
+2026-10-14 21:49:05.482 | INFO     | agents.risk_agent:risk_agent:21 - Running Risk agent for AAPL
+2026-10-14 21:49:05.796 | INFO     | agents.evaluator:evaluate_agent_output:191 - [Evaluation | SENTIMENT | AAPL] Grade: A | Score: 1.00 | Faithfulness: 1.0 | Consistency: 1.0 | Hallucinations Caught: 0
+2026-10-14 21:49:05.804 | INFO     | agents.evaluator:evaluate_agent_output:191 - [Evaluation | TECHNICAL | AAPL] Grade: A | Score: 1.00 | Faithfulness: 1.0 | Consistency: 1.0 | Hallucinations Caught: 0
+2026-10-14 21:49:05.809 | INFO     | agents.evaluator:evaluate_agent_output:191 - [Evaluation | FUNDAMENTALS | AAPL] Grade: A | Score: 1.00 | Faithfulness: 1.0 | Consistency: 1.0 | Hallucinations Caught: 0
+2026-10-14 21:49:05.815 | INFO     | agents.evaluator:evaluate_agent_output:191 - [Evaluation | EQUITY_RESEARCH | AAPL] Grade: A | Score: 1.00 | Faithfulness: 1.0 | Consistency: 1.0 | Hallucinations Caught: 0
+2026-10-14 21:49:05.820 | INFO     | agents.evaluator:evaluate_agent_output:191 - [Evaluation | RISK | AAPL] Grade: B | Score: 0.92 | Faithfulness: 0.8 | Consistency: 1.0 | Hallucinations Caught: 1
+2026-10-14 21:49:05.820 | INFO     | main:synthesizer:274 - Synthesizing requested for AAPL
+2026-10-14 21:49:06.128 | INFO     | agents.evaluator:evaluate_agent_output:191 - [Evaluation | PORTFOLIO_MANAGER | AAPL] Grade: B | Score: 0.82 | Faithfulness: 1.0 | Consistency: 1.0 | Hallucinations Caught: 0
+2026-10-14 21:49:08.169 | INFO     | main:analyse:420 - Analysis requested for NVDA by user test@marketpulse.com
+2026-10-14 21:49:08.169 | INFO     | main:analyse:424 - Running agents for NVDA
+2026-10-14 21:49:08.169 | INFO     | agents.news_agent:news_agent:68 - News Agent requested for NVDA
+2026-10-14 21:49:08.170 | INFO     | agents.news_agent:news_agent:73 - Running News agent for NVDA
+2026-10-14 21:49:08.574 | INFO     | agents.evaluator:evaluate_agent_output:191 - [Evaluation | NEWS | NVDA] Grade: A | Score: 1.00 | Faithfulness: 1.0 | Consistency: 1.0 | Hallucinations Caught: 0
+2026-10-14 21:49:08.575 | INFO     | agents.sentiment_agent:sentiment_agent:16 - Sentiment Agent requested for NVDA
+2026-10-14 21:49:08.575 | INFO     | agents.sentiment_agent:sentiment_agent:21 - Running sentiment agent for NVDA
+2026-10-14 21:49:08.576 | INFO     | agents.fundamentals_agent:fundamentals_agent:16 - fundamentals agent requested for NVDA
+2026-10-14 21:49:08.576 | INFO     | agents.fundamentals_agent:fundamentals_agent:21 - Running fundamentals agents for NVDA
+2026-10-14 21:49:08.576 | INFO     | agents.technical_agent:technical_agent:16 - Technical Agent requested for NVDA
+2026-10-14 21:49:08.577 | INFO     | agents.equity_reasearch_agent:equity_research_agent:16 - equity research agent requested for NVDA
+2026-10-14 21:49:08.577 | INFO     | agents.risk_agent:risk_agent:16 - Risk Agent requested for NVDA
+2026-10-14 21:49:08.577 | INFO     | agents.risk_agent:risk_agent:21 - Running Risk agent for NVDA
+2026-10-14 21:49:08.905 | INFO     | agents.evaluator:evaluate_agent_output:191 - [Evaluation | FUNDAMENTALS | NVDA] Grade: A | Score: 1.00 | Faithfulness: 1.0 | Consistency: 1.0 | Hallucinations Caught: 0
+2026-10-14 21:49:08.912 | INFO     | agents.evaluator:evaluate_agent_output:191 - [Evaluation | RISK | NVDA] Grade: B | Score: 0.92 | Faithfulness: 0.8 | Consistency: 1.0 | Hallucinations Caught: 1
+2026-10-14 21:49:08.914 | INFO     | agents.evaluator:evaluate_agent_output:191 - [Evaluation | SENTIMENT | NVDA] Grade: A | Score: 1.00 | Faithfulness: 1.0 | Consistency: 1.0 | Hallucinations Caught: 0
+2026-10-14 21:49:08.921 | INFO     | agents.evaluator:evaluate_agent_output:191 - [Evaluation | TECHNICAL | NVDA] Grade: A | Score: 1.00 | Faithfulness: 1.0 | Consistency: 1.0 | Hallucinations Caught: 0
+2026-10-14 21:49:08.926 | INFO     | agents.evaluator:evaluate_agent_output:191 - [Evaluation | EQUITY_RESEARCH | NVDA] Grade: A | Score: 1.00 | Faithfulness: 1.0 | Consistency: 1.0 | Hallucinations Caught: 0
+2026-10-14 21:49:08.926 | INFO     | main:synthesizer:274 - Synthesizing requested for NVDA
+2026-10-14 21:49:09.251 | INFO     | agents.evaluator:evaluate_agent_output:191 - [Evaluation | PORTFOLIO_MANAGER | NVDA] Grade: B | Score: 0.82 | Faithfulness: 1.0 | Consistency: 1.0 | Hallucinations Caught: 0
+2026-10-14 21:49:11.283 | INFO     | main:analyse:420 - Analysis requested for JPM by user test@marketpulse.com
+2026-10-14 21:49:11.283 | INFO     | main:analyse:424 - Running agents for JPM
+2026-10-14 21:49:11.284 | INFO     | agents.news_agent:news_agent:68 - News Agent requested for JPM
+2026-10-14 21:49:11.284 | INFO     | agents.news_agent:news_agent:73 - Running News agent for JPM
+2026-10-14 21:49:11.700 | INFO     | agents.evaluator:evaluate_agent_output:191 - [Evaluation | NEWS | JPM] Grade: A | Score: 1.00 | Faithfulness: 1.0 | Consistency: 1.0 | Hallucinations Caught: 0
+2026-10-14 21:49:11.701 | INFO     | agents.sentiment_agent:sentiment_agent:16 - Sentiment Agent requested for JPM
+2026-10-14 21:49:11.701 | INFO     | agents.sentiment_agent:sentiment_agent:21 - Running sentiment agent for JPM
+2026-10-14 21:49:11.701 | INFO     | agents.fundamentals_agent:fundamentals_agent:16 - fundamentals agent requested for JPM
+2026-10-14 21:49:11.702 | INFO     | agents.fundamentals_agent:fundamentals_agent:21 - Running fundamentals agents for JPM
+2026-10-14 21:49:11.702 | INFO     | agents.technical_agent:technical_agent:16 - Technical Agent requested for JPM
+2026-10-14 21:49:11.702 | INFO     | agents.equity_reasearch_agent:equity_research_agent:16 - equity research agent requested for JPM
+2026-10-14 21:49:11.703 | INFO     | agents.risk_agent:risk_agent:16 - Risk Agent requested for JPM
+2026-10-14 21:49:11.703 | INFO     | agents.risk_agent:risk_agent:21 - Running Risk agent for JPM
+2026-10-14 21:49:12.022 | INFO     | agents.evaluator:evaluate_agent_output:191 - [Evaluation | FUNDAMENTALS | JPM] Grade: A | Score: 1.00 | Faithfulness: 1.0 | Consistency: 1.0 | Hallucinations Caught: 0
+2026-10-14 21:49:12.030 | INFO     | agents.evaluator:evaluate_agent_output:191 - [Evaluation | RISK | JPM] Grade: B | Score: 0.92 | Faithfulness: 0.8 | Consistency: 1.0 | Hallucinations Caught: 1
+2026-10-14 21:49:12.035 | INFO     | agents.evaluator:evaluate_agent_output:191 - [Evaluation | SENTIMENT | JPM] Grade: A | Score: 1.00 | Faithfulness: 1.0 | Consistency: 1.0 | Hallucinations Caught: 0
+2026-10-14 21:49:12.042 | INFO     | agents.evaluator:evaluate_agent_output:191 - [Evaluation | TECHNICAL | JPM] Grade: A | Score: 1.00 | Faithfulness: 1.0 | Consistency: 1.0 | Hallucinations Caught: 0
+2026-10-14 21:49:12.049 | INFO     | agents.evaluator:evaluate_agent_output:191 - [Evaluation | EQUITY_RESEARCH | JPM] Grade: A | Score: 1.00 | Faithfulness: 1.0 | Consistency: 1.0 | Hallucinations Caught: 0
+2026-10-14 21:49:12.050 | INFO     | main:synthesizer:274 - Synthesizing requested for JPM
+2026-10-14 21:49:12.365 | INFO     | agents.evaluator:evaluate_agent_output:191 - [Evaluation | PORTFOLIO_MANAGER | JPM] Grade: B | Score: 0.82 | Faithfulness: 1.0 | Consistency: 1.0 | Hallucinations Caught: 0
+2026-10-14 21:52:18.340 | INFO     | main:analyse:412 - Cache hit for AAPL
+2026-10-14 21:52:26.965 | INFO     | main:analyse:412 - Cache hit for NVDA
+2026-10-14 21:52:35.557 | INFO     | main:analyse:412 - Cache hit for JPM
+2026-10-14 21:52:53.634 | INFO     | main:analyse:412 - Cache hit for NVDA
+2026-10-14 22:04:12.899 | INFO     | main:analyse:412 - Cache hit for NVDA
+2026-11-22 02:54:26.139 | INFO     | agents.billing_router:_fulfill_pro_purchase:407 - [Billing | User 7] Activated 'Pro Package' ($19/mo).
+2026-11-22 02:56:14.108 | INFO     | main:analyse:451 - Analysis requested for NVDA by user demo@marketpulse.com
+2026-11-22 02:56:14.118 | INFO     | main:analyse:455 - Running agents for NVDA
+2026-11-22 02:56:14.118 | INFO     | agents.news_agent:news_agent:68 - News Agent requested for NVDA
+2026-11-22 02:56:14.118 | INFO     | agents.news_agent:news_agent:73 - Running News agent for NVDA
+2026-11-22 02:56:14.122 | INFO     | main:analyse:451 - Analysis requested for NVDA by user demo@marketpulse.com
+2026-11-22 02:56:14.122 | INFO     | main:analyse:455 - Running agents for NVDA
+2026-11-22 02:56:14.122 | INFO     | agents.news_agent:news_agent:68 - News Agent requested for NVDA
+2026-11-22 02:56:14.122 | INFO     | agents.news_agent:news_agent:73 - Running News agent for NVDA
+2026-11-22 02:56:14.540 | INFO     | agents.evaluator:evaluate_agent_output:191 - [Evaluation | NEWS | NVDA] Grade: A | Score: 1.00 | Faithfulness: 1.0 | Consistency: 1.0 | Hallucinations Caught: 0
+2026-11-22 02:56:14.542 | INFO     | agents.evaluator:evaluate_agent_output:191 - [Evaluation | NEWS | NVDA] Grade: A | Score: 1.00 | Faithfulness: 1.0 | Consistency: 1.0 | Hallucinations Caught: 0
+2026-11-22 02:56:14.542 | INFO     | agents.sentiment_agent:sentiment_agent:16 - Sentiment Agent requested for NVDA
+2026-11-22 02:56:14.542 | INFO     | agents.sentiment_agent:sentiment_agent:21 - Running sentiment agent for NVDA
+2026-11-22 02:56:14.542 | INFO     | agents.fundamentals_agent:fundamentals_agent:16 - fundamentals agent requested for NVDA
+2026-11-22 02:56:14.542 | INFO     | agents.fundamentals_agent:fundamentals_agent:21 - Running fundamentals agents for NVDA
+2026-11-22 02:56:14.542 | INFO     | agents.technical_agent:technical_agent:16 - Technical Agent requested for NVDA
+2026-11-22 02:56:14.542 | INFO     | agents.equity_reasearch_agent:equity_research_agent:16 - equity research agent requested for NVDA
+2026-11-22 02:56:14.542 | INFO     | agents.risk_agent:risk_agent:16 - Risk Agent requested for NVDA
+2026-11-22 02:56:14.542 | INFO     | agents.risk_agent:risk_agent:21 - Running Risk agent for NVDA
+2026-11-22 02:56:14.542 | INFO     | agents.sentiment_agent:sentiment_agent:16 - Sentiment Agent requested for NVDA
+2026-11-22 02:56:14.542 | INFO     | agents.sentiment_agent:sentiment_agent:21 - Running sentiment agent for NVDA
+2026-11-22 02:56:14.542 | INFO     | agents.fundamentals_agent:fundamentals_agent:16 - fundamentals agent requested for NVDA
+2026-11-22 02:56:14.542 | INFO     | agents.fundamentals_agent:fundamentals_agent:21 - Running fundamentals agents for NVDA
+2026-11-22 02:56:14.542 | INFO     | agents.technical_agent:technical_agent:16 - Technical Agent requested for NVDA
+2026-11-22 02:56:14.542 | INFO     | agents.equity_reasearch_agent:equity_research_agent:16 - equity research agent requested for NVDA
+2026-11-22 02:56:14.542 | INFO     | agents.risk_agent:risk_agent:16 - Risk Agent requested for NVDA
+2026-11-22 02:56:14.542 | INFO     | agents.risk_agent:risk_agent:21 - Running Risk agent for NVDA
+2026-11-22 02:56:14.860 | INFO     | agents.evaluator:evaluate_agent_output:191 - [Evaluation | SENTIMENT | NVDA] Grade: A | Score: 1.00 | Faithfulness: 1.0 | Consistency: 1.0 | Hallucinations Caught: 0
+2026-11-22 02:56:14.872 | INFO     | agents.evaluator:evaluate_agent_output:191 - [Evaluation | RISK | NVDA] Grade: B | Score: 0.92 | Faithfulness: 0.8 | Consistency: 1.0 | Hallucinations Caught: 1
+2026-11-22 02:56:14.889 | INFO     | agents.evaluator:evaluate_agent_output:191 - [Evaluation | EQUITY_RESEARCH | NVDA] Grade: A | Score: 1.00 | Faithfulness: 1.0 | Consistency: 1.0 | Hallucinations Caught: 0
+2026-11-22 02:56:14.899 | INFO     | agents.evaluator:evaluate_agent_output:191 - [Evaluation | RISK | NVDA] Grade: B | Score: 0.92 | Faithfulness: 0.8 | Consistency: 1.0 | Hallucinations Caught: 1
+2026-11-22 02:56:14.906 | INFO     | agents.evaluator:evaluate_agent_output:191 - [Evaluation | EQUITY_RESEARCH | NVDA] Grade: A | Score: 1.00 | Faithfulness: 1.0 | Consistency: 1.0 | Hallucinations Caught: 0
+2026-11-22 02:56:14.915 | INFO     | agents.evaluator:evaluate_agent_output:191 - [Evaluation | TECHNICAL | NVDA] Grade: A | Score: 1.00 | Faithfulness: 1.0 | Consistency: 1.0 | Hallucinations Caught: 0
+2026-11-22 02:56:14.923 | INFO     | agents.evaluator:evaluate_agent_output:191 - [Evaluation | FUNDAMENTALS | NVDA] Grade: A | Score: 1.00 | Faithfulness: 1.0 | Consistency: 1.0 | Hallucinations Caught: 0
+2026-11-22 02:56:14.933 | INFO     | agents.evaluator:evaluate_agent_output:191 - [Evaluation | FUNDAMENTALS | NVDA] Grade: A | Score: 1.00 | Faithfulness: 1.0 | Consistency: 1.0 | Hallucinations Caught: 0
+2026-11-22 02:56:14.946 | INFO     | agents.evaluator:evaluate_agent_output:191 - [Evaluation | TECHNICAL | NVDA] Grade: A | Score: 1.00 | Faithfulness: 1.0 | Consistency: 1.0 | Hallucinations Caught: 0
+2026-11-22 02:56:14.948 | INFO     | agents.evaluator:evaluate_agent_output:191 - [Evaluation | SENTIMENT | NVDA] Grade: A | Score: 1.00 | Faithfulness: 1.0 | Consistency: 1.0 | Hallucinations Caught: 0
+2026-11-22 02:56:15.222 | INFO     | main:synthesizer:288 - Synthesizing requested for NVDA
+2026-11-22 02:56:15.247 | INFO     | main:synthesizer:288 - Synthesizing requested for NVDA
+2026-11-22 02:56:15.547 | INFO     | agents.evaluator:evaluate_agent_output:191 - [Evaluation | PORTFOLIO_MANAGER | NVDA] Grade: B | Score: 0.82 | Faithfulness: 1.0 | Consistency: 1.0 | Hallucinations Caught: 0
+2026-11-22 02:56:15.672 | INFO     | agents.billing_router:deduct_user_tokens:246 - [Backend Token Accounting | User 7] multi_agent_analysis (NVDA) used 1,250 tokens.
+2026-11-22 02:56:15.687 | INFO     | agents.evaluator:evaluate_agent_output:191 - [Evaluation | PORTFOLIO_MANAGER | NVDA] Grade: B | Score: 0.82 | Faithfulness: 1.0 | Consistency: 1.0 | Hallucinations Caught: 0
+2026-11-22 02:56:15.873 | INFO     | agents.billing_router:deduct_user_tokens:246 - [Backend Token Accounting | User 7] multi_agent_analysis (NVDA) used 1,250 tokens.
+2026-11-22 02:57:51.042 | INFO     | main:analyse:429 - Cache hit for NVDA

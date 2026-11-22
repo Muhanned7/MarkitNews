@@ -6,6 +6,7 @@ import { getMockNews } from '@/lib/mockNews'
 export const maxDuration = 60 // seconds
 
 const BACKEND_URL = process.env.BACKEND_URL || process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:8000'
+const INTERNAL_SERVICE_KEY = process.env.INTERNAL_SERVICE_KEY
 
 function mockScore(article) {
   return {
@@ -78,7 +79,10 @@ export async function POST(request) {
     if (save && mockResult.articles.length > 0) {
       fetch(`${BACKEND_URL}/articles`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 
+          'Content-Type': 'application/json',
+          'X-Service-Key': INTERNAL_SERVICE_KEY
+        },
         body: JSON.stringify({
           articles: mockResult.articles.map(article => ({
             id: article.id,
@@ -191,7 +195,10 @@ export async function POST(request) {
     // Save articles batch to PostgreSQL via FastAPI backend
     fetch(`${BACKEND_URL}/articles`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 
+        'Content-Type': 'application/json',
+        'X-Service-Key': INTERNAL_SERVICE_KEY
+      },
       body: JSON.stringify({
         articles: scoredArticles.map(article => ({
           id: article.id,
@@ -208,15 +215,22 @@ export async function POST(request) {
           query: [query]
         }))
       })
+    }).then(res => {
+      if (!res.ok) console.warn(`Article storage warning: status ${res.status}`);
     }).catch(err => console.warn('Article storage error:', err.message))
 
     fetch(`${BACKEND_URL}/searches`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 
+        'Content-Type': 'application/json',
+        'X-Service-Key': INTERNAL_SERVICE_KEY
+      },
       body: JSON.stringify({
         query: [query],
         results_count: scoredArticles.length
       })
+    }).then(res => {
+      if (!res.ok) console.warn(`Search log warning: status ${res.status}`);
     }).catch(err => console.warn('Search log error:', err.message))
 
     // Background Pinecone embedding without delaying the response

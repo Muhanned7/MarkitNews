@@ -42,3 +42,16 @@ next-env.d.ts
 
 
 venv/
+# QA tester inbox watcher state
+.tester_inbox_state.json
+
+# python cache & runtime state
+__pycache__/
+logs/
+.feedback_watcher_state.json
+
+# internal agent working logs (keep local, not on public repo)
+*_COMMUNICATIONS.md
+*_TASKS.md
+*_FEATURE_REQUESTS.md
+QA_TASKS.csv
