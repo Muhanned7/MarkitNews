@@ -55,3 +55,8 @@ logs/
 *_TASKS.md
 *_FEATURE_REQUESTS.md
 QA_TASKS.csv
+# empty / scratch files kept local only
+backend/agentic.ipynb
+backend/scratch_fingerprint_demo.py
+lib/tickerMatcher.js
+backend/*K*Q
