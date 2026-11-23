@@ -4,7 +4,7 @@
 # Re-run it any time to redeploy after pushing changes (git pull first).
 set -euo pipefail
 
-REGION="${REGION:-asia-southeast1}"          # Singapore: same city as the Neon database
+REGION="${REGION:-us-east4}"                 # N. Virginia: same area as the Neon database (aws-us-east-1)
 API_SERVICE="finnwinn-api"
 WEB_SERVICE="finnwinn-web"
 
