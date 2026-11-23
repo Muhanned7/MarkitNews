@@ -40,7 +40,10 @@ logger.add(sys.stdout, format="{time:YYYY-MM-DD HH:mm:ss} | {level} | {message}"
 logger.add("logs/app.log", rotation="10 MB", retention="7 days", level="INFO")
 
 # Prometheus metrics
-Instrumentator().instrument(app).expose(app)
+_instrumentator = Instrumentator().instrument(app)
+# /metrics leaks internals on a public URL; set EXPOSE_METRICS=false in production.
+if os.environ.get("EXPOSE_METRICS", "true").strip().lower() == "true":
+    _instrumentator.expose(app)
 
 app.add_middleware(
     CORSMiddleware,
@@ -63,7 +66,8 @@ from agents.billing_router import (
 from agents.portfolio_engine import record_analysis_snapshot
 app.include_router(portfolio_router)
 app.include_router(risk_router)
-app.include_router(qra_router)
+# Research/screener routes were unauthenticated; the Next.js proxies already send the service key.
+app.include_router(qra_router, dependencies=[Depends(get_service_or_user)])
 app.include_router(billing_router)
 
 

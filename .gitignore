@@ -60,3 +60,6 @@ backend/agentic.ipynb
 backend/scratch_fingerprint_demo.py
 lib/tickerMatcher.js
 backend/*K*Q
+
+# filled-in Cloud Run settings (contain secrets) - keep the *.example.yaml templates
+deploy/*.env.yaml

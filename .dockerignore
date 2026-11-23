@@ -1,0 +1,20 @@
+# Frontend image only needs the Next.js app
+backend/
+node_modules/
+.next/
+.git/
+.env
+.env.*
+logs/
+deploy/
+qa_fixtures/
+ui_reference/
+.agents/
+.vscode/
+*.md
+*.csv
+*.log
+.feedback_watcher_state.json
+.tester_inbox_state.json
+Dockerfile
+.dockerignore

@@ -539,7 +539,7 @@ async def get_snapshot_diff(ticker: str, user: dict = Depends(get_service_or_use
     
     return compute_snapshot_diff(latest, previous)
 
-@portfolio_router.get("/mock/prices/{ticker}")
+@portfolio_router.get("/mock/prices/{ticker}", dependencies=[Depends(get_service_or_user)])
 async def get_mock_prices(ticker: str, days: int = 504):
     """
     Returns deterministic 504-day price series and returns for a symbol.
@@ -568,7 +568,7 @@ async def get_mock_prices(ticker: str, days: int = 504):
     }
 
 
-@portfolio_router.get("/mock/diagnostics")
+@portfolio_router.get("/mock/diagnostics", dependencies=[Depends(get_service_or_user)])
 async def get_mock_diagnostics(tickers: Optional[str] = None):
     """
     RSK-001: fat-tail / volatility-clustering / stress-correlation diagnostics of the mock engine.
