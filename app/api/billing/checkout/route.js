@@ -1,19 +1,16 @@
 import { requireProxyAuthHeaders } from '@/lib/serverAuth';
+
 const BACKEND_URL = process.env.BACKEND_URL || process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:8000';
 
 export async function POST(request) {
-    const { headers: _authHeaders, errorResponse: _authErr } = requireProxyAuthHeaders(request);
-    if (_authErr) return _authErr;
-    const auth = _authHeaders.Authorization;, { status: 401 });
-    }
+    const { headers, errorResponse } = requireProxyAuthHeaders(request);
+    if (errorResponse) return errorResponse;
+
     try {
         const body = await request.json();
         const res = await fetch(`${BACKEND_URL}/billing/checkout`, {
             method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                Authorization: auth,
-            },
+            headers,
             body: JSON.stringify(body),
         });
         const data = await res.json();
