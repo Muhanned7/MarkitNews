@@ -353,6 +353,9 @@ export default function QuantResearchPage() {
           </p>
         </div>
         <div className={styles.badgeRow}>
+          <span className={styles.badgeWarning} title="Synthetic simulation universe with planted signals for quant calibration">
+            🧪 Synthetic Demo Data (mock100)
+          </span>
           <span className={styles.badgeNeutral}>Universe: mock100 (10Y PIT)</span>
           <span className={styles.badgeNeutral}>Delistings Tracked: 5</span>
           {activeLeakage && (
@@ -364,6 +367,21 @@ export default function QuantResearchPage() {
             </span>
           )}
         </div>
+      </div>
+
+      {/* Synthetic Demo Notice Banner (PROD-012) */}
+      <div
+        style={{
+          marginBottom: '16px',
+          padding: '10px 14px',
+          borderRadius: 'var(--r-control)',
+          background: 'var(--surface-2)',
+          border: '1px solid var(--rule)',
+          fontSize: 'var(--fs-xs)',
+          color: 'var(--ink-2)',
+        }}
+      >
+        <strong>Synthetic Benchmark Notice:</strong> This workbench runs against the deterministic <code>mock100</code> point-in-time simulation panel (100 synthetic equities across 11 GICS sectors over 2,520 trading days). High t-statistics on <code>planted_alpha_strong</code> verify pipeline calibration against known planted alpha.
       </div>
 
       {activeLeakage && activeLeakage.warnings && activeLeakage.warnings.length > 0 && (

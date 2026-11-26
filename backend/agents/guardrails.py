@@ -62,10 +62,17 @@ def guardrail_news_agent(raw_data: Dict[str, Any], input_articles: List[Dict[str
     if not clean_risks:
         clean_risks = ["Macroeconomic volatility", "Supplier input cost variations"]
 
-    # Validate article URLs and titles
+    # Validate article URLs, titles, and Temporal Regime consistency
     raw_articles = raw_data.get("articles", [])
     input_urls = {a.get("url") for a in input_articles if a.get("url")}
+    input_by_url = {a.get("url"): a for a in input_articles if a.get("url")}
     clean_articles = []
+
+    STALE_BREAKING_CLAIMS = (
+        "breaking:", "currently halting", "immediate halt", "halts shipments today",
+        "ongoing walkout today", "shutting down production this week"
+    )
+
     for a in raw_articles:
         if not isinstance(a, dict):
             continue
@@ -79,11 +86,34 @@ def guardrail_news_agent(raw_data: Dict[str, Any], input_articles: List[Dict[str
             # If input articles exist, ground to the closest input article URL
             url = next(iter(input_urls)) if input_urls else "https://finance.yahoo.com"
 
+        matched_input = input_by_url.get(url, {})
+        age_days = matched_input.get("age_days") if matched_input else a.get("age_days")
+        regime = matched_input.get("temporal_regime") or a.get("temporal_regime") or "ACTIVE_SHOCK"
+        relevance = a.get("relevance", "Relevant to company operations.")
+
+        # Temporal Misrepresentation Gate: Prevent >180-day old articles (e.g. 3-year-old factory fire)
+        # from being misrepresented as an active breaking shipment halt today
+        if regime == "HISTORICAL_STRUCTURAL" or (isinstance(age_days, (int, float)) and age_days > 180):
+            regime = "HISTORICAL_STRUCTURAL"
+            if any(phrase in relevance.lower() for phrase in STALE_BREAKING_CLAIMS):
+                hallucinations_detected += 1
+                warnings.append(
+                    f"Temporal misrepresentation caught: Historical article '{title[:35]}' ({age_days}d old) "
+                    "was framed as a breaking operational halt; reframed to long-term structural supply-chain context."
+                )
+                relevance = (
+                    f"[Historical Structural Event ({age_days}d ago)] Physical flow disruption resolved; "
+                    "relevant today as baseline proof of Single-Point-of-Failure (SPOF) node concentration and dual-sourcing catalysts."
+                )
+
         clean_articles.append({
             "title": title or "Financial Wire Update",
             "source": a.get("source", "Financial News Wire"),
             "url": url,
-            "relevance": a.get("relevance", "Relevant to company operations.")
+            "age_days": age_days,
+            "temporal_regime": regime,
+            "is_live_contradiction_eligible": regime != "HISTORICAL_STRUCTURAL",
+            "relevance": relevance
         })
 
     cleaned = {
@@ -91,6 +121,7 @@ def guardrail_news_agent(raw_data: Dict[str, Any], input_articles: List[Dict[str
         "summary": raw_data.get("summary", "News flow shows balanced market positioning."),
         "key_themes": clean_themes,
         "supply_chain_risks": clean_risks,
+        "temporal_supply_chain_effects": raw_data.get("temporal_supply_chain_effects", []),
         "articles": clean_articles
     }
 

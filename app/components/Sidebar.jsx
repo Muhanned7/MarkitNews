@@ -1,12 +1,12 @@
 'use client'
 import { useAuth } from '../context/AuthContext'
-import { useRouter, usePathname } from 'next/navigation'
+import { usePathname } from 'next/navigation'
+import Link from 'next/link'
 import { useState, useEffect } from 'react'
 import styles from './Sidebar.module.css'
 
 export default function Sidebar() {
     const { user } = useAuth()
-    const router = useRouter()
     const pathname = usePathname()
     const [watchlist, setWatchlist] = useState([])
 
@@ -16,16 +16,14 @@ export default function Sidebar() {
             const handler = () => loadWatchlist()
             window.addEventListener('watchlist-updated', handler)
             return () => window.removeEventListener('watchlist-updated', handler)
+        } else {
+            setWatchlist([])
         }
-    }, [user])
+    }, [user?.id, user?.email])
 
     async function loadWatchlist() {
         try {
-            const token = localStorage.getItem('token') || user?.token
-            if (!token) return
-            const res = await fetch('/api/watchlist', {
-                headers: { 'Authorization': `Bearer ${token}` }
-            })
+            const res = await fetch('/api/watchlist', { credentials: 'include' })
             if (!res.ok) return
             const data = await res.json()
             const rawList = data.tickers || []
@@ -43,9 +41,10 @@ export default function Sidebar() {
         }
     }
 
-    const navigate = (path) => {
-        document.body.classList.remove('nav-open')
-        router.push(path)
+    const closeDrawer = () => {
+        if (typeof document !== 'undefined') {
+            document.body.classList.remove('nav-open')
+        }
     }
 
     if (!user) return null
@@ -54,55 +53,62 @@ export default function Sidebar() {
         <aside className={styles.sidebar} aria-label="Main navigation">
             <div className={styles.sideGroup}>
                 <div className={styles.sideTitle}>Explore</div>
-                <button
+                <Link
+                    href="/"
                     className={styles.navItem}
                     aria-current={pathname === '/' ? 'page' : undefined}
-                    onClick={() => navigate('/')}
+                    onClick={closeDrawer}
                 >
                     <span aria-hidden="true">📰</span> News feed
-                </button>
-                <button
+                </Link>
+                <Link
+                    href="/analysis"
                     className={styles.navItem}
                     aria-current={pathname?.startsWith('/analysis') ? 'page' : undefined}
-                    onClick={() => navigate('/analysis')}
+                    onClick={closeDrawer}
                 >
                     <span aria-hidden="true">🤖</span> AI analysis
-                </button>
-                <button
+                </Link>
+                <Link
+                    href="/contradictions"
                     className={styles.navItem}
                     aria-current={pathname === '/contradictions' ? 'page' : undefined}
-                    onClick={() => navigate('/contradictions')}
+                    onClick={closeDrawer}
                 >
                     <span aria-hidden="true">⚡</span> Contradiction Radar
-                </button>
-                <button
+                </Link>
+                <Link
+                    href="/portfolio"
                     className={styles.navItem}
                     aria-current={pathname === '/portfolio' ? 'page' : undefined}
-                    onClick={() => navigate('/portfolio')}
+                    onClick={closeDrawer}
                 >
                     <span aria-hidden="true">💼</span> Portfolio
-                </button>
-                <button
+                </Link>
+                <Link
+                    href="/research"
                     className={styles.navItem}
                     aria-current={pathname?.startsWith('/research') ? 'page' : undefined}
-                    onClick={() => navigate('/research')}
+                    onClick={closeDrawer}
                 >
                     <span aria-hidden="true">🔬</span> Quant Research
-                </button>
-                <button
+                </Link>
+                <Link
+                    href="/billing"
                     className={styles.navItem}
                     aria-current={pathname === '/billing' ? 'page' : undefined}
-                    onClick={() => navigate('/billing')}
+                    onClick={closeDrawer}
                 >
                     <span aria-hidden="true">💳</span> Pro Package
-                </button>
-                <button
+                </Link>
+                <Link
+                    href="/profile"
                     className={styles.navItem}
                     aria-current={pathname === '/profile' ? 'page' : undefined}
-                    onClick={() => navigate('/profile')}
+                    onClick={closeDrawer}
                 >
                     <span aria-hidden="true">👤</span> Profile
-                </button>
+                </Link>
             </div>
 
             <div className={styles.sideGroup}>
@@ -120,18 +126,19 @@ export default function Sidebar() {
                         const pxText = price ? `$${price.toFixed(2)}` : 'View report'
 
                         return (
-                            <button
+                            <Link
                                 key={symbol}
+                                href={`/analysis/${symbol}`}
                                 className={styles.wlRow}
                                 aria-current={isCurrent ? 'page' : undefined}
-                                onClick={() => navigate(`/analysis/${symbol}`)}
+                                onClick={closeDrawer}
                             >
                                 <span className={styles.wlSym}>{symbol}</span>
                                 <span className={`${styles.wlChg} ${isUp ? styles.up : styles.down} num`}>
                                     {chgText}
                                 </span>
                                 <span className={`${styles.wlPx} num`}>{pxText}</span>
-                            </button>
+                            </Link>
                         )
                     })
                 )}

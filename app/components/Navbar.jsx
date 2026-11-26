@@ -7,7 +7,7 @@ import styles from './Navbar.module.css'
 import BreachAlert from './BreachAlert'
 
 export default function Navbar() {
-  const { user, authReady, logout } = useAuth()
+  const { user, authReady, logout, refreshSession } = useAuth()
   const router = useRouter()
   const [dropdownOpen, setDropdownOpen] = useState(false)
   const [searchQuery, setSearchQuery] = useState('')
@@ -15,37 +15,20 @@ export default function Navbar() {
   const [suggestions, setSuggestions] = useState([])
   const [isOpen, setIsOpen] = useState(false)
   const [activeIndex, setActiveIndex] = useState(-1)
-  const [membership, setMembership] = useState(null)
   const dropdownRef = useRef(null)
   const searchContainerRef = useRef(null)
   const searchInputRef = useRef(null)
 
-  useEffect(() => {
-    async function fetchMembership() {
-      try {
-        const token = localStorage.getItem('token') || user?.token
-        if (!token) {
-          setMembership(null)
-          return
-        }
-        const res = await fetch('/api/billing/wallet', {
-          headers: { Authorization: `Bearer ${token}` },
-        })
-        if (res.ok) {
-          const data = await res.json()
-          setMembership(data.membership || null)
-        }
-      } catch (e) {}
-    }
+  const membership = user ? { is_pro: Boolean(user.is_pro || user.plan_code === 'pro') } : null
 
-    if (authReady && user) {
-      fetchMembership()
-      window.addEventListener('membership-updated', fetchMembership)
-      return () => window.removeEventListener('membership-updated', fetchMembership)
-    } else {
-      setMembership(null)
+  useEffect(() => {
+    if (!authReady || !user) return
+    const handleMembershipUpdate = () => {
+      refreshSession()
     }
-  }, [authReady, user])
+    window.addEventListener('membership-updated', handleMembershipUpdate)
+    return () => window.removeEventListener('membership-updated', handleMembershipUpdate)
+  }, [authReady, user?.id, refreshSession])
 
   useEffect(() => {
     // Theme initialization

@@ -21,29 +21,6 @@ function formatTimeAgo(dateStr) {
   }
 }
 
-const TICKER_CHANGES = {
-  AAPL: '+0.65%',
-  MSFT: '+0.82%',
-  NVDA: '−1.12%',
-  GOOGL: '+0.45%',
-  AMZN: '−0.35%',
-  META: '+1.20%',
-  TSLA: '+1.45%',
-  JPM: '+0.21%',
-  XOM: '+0.15%',
-  JNJ: '−0.08%',
-  WMT: '+0.33%',
-  BAC: '+0.54%',
-  PFE: '−0.42%',
-  CVX: '+0.10%',
-  NFLX: '+1.85%',
-  AMD: '−0.95%',
-  INTC: '+0.60%',
-  DIS: '+0.40%',
-  UBER: '+1.10%',
-  COIN: '−2.15%'
-}
-
 export default function HomePage() {
   const { user, authReady } = useAuth()
   const [input, setInput] = useState("")
@@ -84,66 +61,40 @@ export default function HomePage() {
     }
   }
 
-  async function loadWatchlist() {
-    const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null
-    if (!token) {
-      setWatchlist([])
-      return
-    }
+  async function loadWatchlistAndTiles() {
+    setTilesLoading(true)
     try {
-      const response = await fetch('/api/watchlist', {
-        headers: { 'Authorization': `Bearer ${token}` }
-      })
+      const response = await fetch('/api/watchlist', { credentials: 'include' })
       if (!response.ok) {
         setWatchlist([])
+        setTiles([])
         return
       }
       const data = await response.json()
-      setWatchlist(data.tickers?.map(t => (typeof t === 'string' ? t : t.ticker)?.toUpperCase()) || [])
-    } catch {
-      setWatchlist([])
-    }
-  }
+      const rawTickers = data.tickers?.map(t => (typeof t === 'string' ? t : t.ticker)?.toUpperCase()).filter(Boolean) || []
+      setWatchlist(rawTickers)
 
-  async function loadTiles() {
-    setTilesLoading(true)
-    try {
-      const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null
-      if (!token) {
-        setTiles([])
-        return
-      }
-      const res = await fetch('/api/watchlist', {
-        headers: { 'Authorization': `Bearer ${token}` }
-      })
-      if (!res.ok) {
-        setTiles([])
-        return
-      }
-      const data = await res.json()
-      const rawTickers = data.tickers?.map(t => (typeof t === 'string' ? t : t.ticker)?.toUpperCase()) || []
-      const tickers = rawTickers.slice(0, 8)
+      const tickers = rawTickers.slice(0, 6)
       if (tickers.length === 0) {
         setTiles([])
         return
       }
+      // Load cached snapshots only (never trigger expensive live 6-agent AI runs automatically on home load)
       const results = await Promise.all(
         tickers.map(ticker =>
-          fetch(`/api/analyse/${ticker}`, {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-              'Authorization': `Bearer ${token}`
-            }
-          })
-            .then(r => r.json())
-            .then(d => ({ ticker, ...d.report, status: 'done' }))
-            .catch(() => ({ ticker, status: 'error' }))
+          fetch(`/api/snapshots/${ticker}`, { credentials: 'include' })
+            .then(r => (r.ok ? r.json() : null))
+            .then(d => {
+              const latest = d?.snapshots?.[0]?.report_json || d?.latest?.report_json || null
+              return latest ? { ticker, ...latest, status: 'done' } : null
+            })
+            .catch(() => null)
         )
       )
-      setTiles(results)
-    } catch (err) {
-      console.error(err)
+      setTiles(results.filter(Boolean))
+    } catch {
+      setWatchlist([])
+      setTiles([])
     } finally {
       setTilesLoading(false)
     }
@@ -216,11 +167,24 @@ export default function HomePage() {
     })
   }
 
+  const initializedRef = useRef(false)
+
   useEffect(() => {
+    if (initializedRef.current) return
+    initializedRef.current = true
     fetchFeed({ searchQuery: '', activeTickers: [], pageNum: 1, append: false })
-    loadWatchlist()
-    loadTiles()
   }, [])
+
+  useEffect(() => {
+    if (!authReady) return
+    if (user) {
+      loadWatchlistAndTiles()
+    } else {
+      setWatchlist([])
+      setTiles([])
+      setTilesLoading(false)
+    }
+  }, [authReady, user?.id])
 
   useEffect(() => {
     if (searchLoading || loadingMore || !hasMore) return
@@ -390,8 +354,6 @@ export default function HomePage() {
           {allTickers.map(ticker => {
             const isWatched = watchlist.includes(ticker)
             const isSelected = selectedTickers.includes(ticker)
-            const chg = TICKER_CHANGES[ticker] || '+0.50%'
-            const isUp = chg.startsWith('+')
             return (
               <button
                 key={ticker}
@@ -417,13 +379,6 @@ export default function HomePage() {
               >
                 {isWatched && <span style={{ color: isSelected ? '#06231D' : 'var(--caution)' }}>★</span>}
                 <span>{ticker}</span>
-                <span style={{
-                  fontSize: '0.8rem',
-                  fontWeight: 700,
-                  color: isSelected ? '#06231D' : (isUp ? 'var(--bull)' : 'var(--bear)')
-                }}>
-                  {chg}
-                </span>
               </button>
             )
           })}

@@ -175,26 +175,39 @@ def _extract_subject_stems(ticker: Optional[str] = None, company_name: Optional[
 def _split_into_windows(corpus: str, window_size: int = 2) -> List[str]:
     """
     Link B helper: Splits a large corpus into overlapping N-sentence windows
-    so words scattered across different pages cannot combine to fake a match.
+    within each paragraph/page/section so words scattered across different pages
+    or unrelated sections cannot combine to fake a match.
     """
     if not corpus or not corpus.strip():
         return []
-    raw_sentences = [
-        s.strip()
-        for s in re.split(r"(?<=[.!?])\s+|\n+", corpus)
-        if s and len(s.strip()) >= 8
-    ]
-    if not raw_sentences:
-        return [corpus.strip()]
-    if len(raw_sentences) <= window_size:
-        return [" ".join(raw_sentences)]
 
-    windows = []
-    for i in range(len(raw_sentences) - window_size + 1):
-        windows.append(" ".join(raw_sentences[i : i + window_size]))
-    # Also include individual sentences for short direct matches
-    windows.extend(raw_sentences)
-    return windows
+    # First split into structural blocks (paragraphs, explicit Page/Paragraph markers, or titled section headers)
+    structural_blocks = re.split(
+        r"\n+|(?=\b(?:Page|Paragraph|Section)\s+\d+\s*:)|(?=\b[A-Z][A-Za-z0-9\s]{3,35}:\s+[A-Z])",
+        corpus.strip()
+    )
+
+    windows: List[str] = []
+    for block in structural_blocks:
+        if not block or len(block.strip()) < 8:
+            continue
+        raw_sentences = [
+            s.strip()
+            for s in re.split(r"(?<=[.!?])\s+", block.strip())
+            if s and len(s.strip()) >= 8
+        ]
+        if not raw_sentences:
+            continue
+        if len(raw_sentences) <= window_size:
+            windows.append(" ".join(raw_sentences))
+        else:
+            for i in range(len(raw_sentences) - window_size + 1):
+                windows.append(" ".join(raw_sentences[i : i + window_size]))
+        for s in raw_sentences:
+            if s not in windows:
+                windows.append(s)
+
+    return windows if windows else [corpus.strip()]
 
 
 def _detect_entity_negation(
@@ -456,7 +469,8 @@ def quote_grounding_score(
     ticker: Optional[str] = None,
     company_name: Optional[str] = None,
     source_type: str = "sec_10k",
-    use_semantic_fallback: bool = True
+    use_semantic_fallback: bool = True,
+    entity_anchor_tokens: Optional[List[str]] = None
 ) -> float:
     """
     Computes a groundedness score (0.0 to 1.0) by executing ALL steps of Link B and Link C
@@ -574,10 +588,16 @@ def quote_grounding_score(
     scored_windows: List[Tuple[float, str, Dict[str, Any]]] = []
 
     # Tokens used to check if a source window is negating the specific proper nouns / entities in the quote
+    anchor_list = [t.lower().strip() for t in (entity_anchor_tokens or []) if t and len(t.strip()) >= 2]
+    anchor_stems = {_stem_token(t) for t in anchor_list}
     polarity_anchor_tokens = (
-        [p_low for _, p_low in proper_tokens]
-        if proper_tokens
-        else [low for _, low, w, _ in weighted_q_tokens if w >= 1.0]
+        anchor_list
+        if anchor_list
+        else (
+            [p_low for _, p_low in proper_tokens]
+            if proper_tokens
+            else [low for _, low, w, _ in weighted_q_tokens if w >= 1.0]
+        )
     )
 
     for win_idx, win in enumerate(windows):
@@ -598,18 +618,31 @@ def quote_grounding_score(
         raw_ratio = matched_weight / total_weight if total_weight > 0 else 0.0
         ratio = raw_ratio
 
+        # Link A <-> Link B Entity-In-Window Anchor Gate:
+        # A 2-sentence window describing a DIFFERENT entity/city (e.g. Panasonic instead of BHP Group,
+        # or Hsinchu instead of Zurich) cannot ground a claim about the target entity even if the rest
+        # of the predicate words were copied verbatim from that window.
+        entity_anchor_hit = True
+        if anchor_list:
+            entity_anchor_hit = any(
+                a_tok in win_words or a_tok in win_lower or _stem_token(a_tok) in win_stems
+                for a_tok in anchor_list
+            ) or bool(anchor_stems & win_stems)
+            if not entity_anchor_hit:
+                ratio = min(ratio, 0.30)
+
         # Link C Gate 1 (Proper-Noun Gate): if the quote has specific proper nouns (e.g. 'Berlin', 'TSMC')
         # and NONE of them appear in this window, cap this window's score at 0.35
         proper_hits = 0
         matched_proper_list: List[str] = []
-        gate_triggered = False
+        gate_triggered = not entity_anchor_hit
         if proper_tokens:
             for p_stem, p_low in proper_tokens:
                 if p_low in win_words or p_stem in win_stems or p_low in win_lower:
                     proper_hits += 1
                     matched_proper_list.append(p_low)
             if proper_hits == 0:
-                gate_triggered = ratio > 0.35
+                gate_triggered = True
                 ratio = min(ratio, 0.35)
 
         # Link B/C Gate 2 (Negation & Closure Polarity Gate):
@@ -683,10 +716,11 @@ def quote_grounding_score(
     score_before_semantic = round(best_window_ratio, 3)
     blended_with_semantic = False
 
-    # Do NOT allow semantic embedding fallback to rescue a negated/closed facility!
-    if use_semantic_fallback and not best_negation_triggered and 0.20 <= best_window_ratio < 0.70:
+    # Do NOT allow semantic embedding fallback to rescue a negated/closed facility or a cross-page stitched quote
+    # where the window containing the entity anchor had weak (< 0.55) lexical predicate support!
+    if use_semantic_fallback and not best_negation_triggered and 0.55 <= best_window_ratio < 0.70:
         sem_sim = _hf_embedding_similarity(quote, top_candidates)
-        if sem_sim is not None and sem_sim >= 0.65:
+        if sem_sim is not None and sem_sim >= 0.72:
             blended_score = round(0.5 * best_window_ratio + 0.5 * sem_sim, 2)
             if blended_score > best_window_ratio:
                 best_window_ratio = blended_score
@@ -917,7 +951,8 @@ def apply_footprint_guardrails(
                 # Select source-specific corpus if available, falling back to combined context_corpus
                 target_corpus = context_corpus
                 if source_corpora and source_corpora.get(src_type, "").strip():
-                    target_corpus = f"{source_corpora[src_type]} {context_corpus}"
+                    src_c = source_corpora[src_type].strip()
+                    target_corpus = context_corpus if src_c in context_corpus else f"{src_c}\n\n{context_corpus}"
 
                 # Link A: Payload-to-Quote Entity Binding (emits live `verify-link-a-entity-binding` span)
                 is_bound, checked_tokens = verify_payload_quote_binding(
@@ -933,7 +968,8 @@ def apply_footprint_guardrails(
                     context_corpus=target_corpus,
                     ticker=ticker,
                     company_name=company_name,
-                    source_type=src_type
+                    source_type=src_type,
+                    entity_anchor_tokens=checked_tokens
                 )
 
                 if not is_bound:
@@ -942,9 +978,9 @@ def apply_footprint_guardrails(
                     warnings.append(
                         f"Link A failed for hub '{hub_name}': location/entity {checked_tokens} not found in its evidence_quote"
                     )
-                elif g_score < 0.20 and h.evidence_quote:
+                elif g_score < 0.50 and h.evidence_quote:
                     hallucinations_detected += 1
-                    warnings.append(f"Link B/C flagged ungrounded quote for hub '{hub_name}' (score: {g_score*100:.0f}%)")
+                    warnings.append(f"Link B/C flagged ungrounded or stitched quote for hub '{hub_name}' (score: {g_score*100:.0f}%)")
 
                 # Third-Party Blog Co-Mention check (emits live `verify-third-party-comention` span)
                 comention_passed = True
@@ -1028,7 +1064,8 @@ def apply_footprint_guardrails(
 
                 target_corpus = context_corpus
                 if source_corpora and source_corpora.get(src_type, "").strip():
-                    target_corpus = f"{source_corpora[src_type]} {context_corpus}"
+                    src_c = source_corpora[src_type].strip()
+                    target_corpus = context_corpus if src_c in context_corpus else f"{src_c}\n\n{context_corpus}"
 
                 # Link A: Supplier name must appear in its own evidence quote (emits live Link A span)
                 is_bound, checked_tokens = verify_payload_quote_binding(
@@ -1044,7 +1081,8 @@ def apply_footprint_guardrails(
                     context_corpus=target_corpus,
                     ticker=ticker,
                     company_name=company_name,
-                    source_type=src_type
+                    source_type=src_type,
+                    entity_anchor_tokens=checked_tokens
                 )
 
                 if not is_bound:
@@ -1053,9 +1091,9 @@ def apply_footprint_guardrails(
                     warnings.append(
                         f"Link A failed for supplier '{name}': supplier entity {checked_tokens} not found in its evidence_quote"
                     )
-                elif g_score < 0.20 and quote:
+                elif g_score < 0.50 and quote:
                     hallucinations_detected += 1
-                    warnings.append(f"Link B/C flagged ungrounded quote for supplier '{name}' (score: {g_score*100:.0f}%)")
+                    warnings.append(f"Link B/C flagged ungrounded or stitched quote for supplier '{name}' (score: {g_score*100:.0f}%)")
 
                 # Third-Party Blog Co-Mention check (emits live span)
                 comention_passed = True

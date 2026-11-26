@@ -1,9 +1,10 @@
+import { requireProxyAuthHeaders } from '@/lib/serverAuth';
 const BACKEND_URL = process.env.BACKEND_URL || process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:8000';
 
 export async function POST(request) {
-    const auth = request.headers.get('authorization');
-    if (!auth) {
-        return Response.json({ detail: 'Unauthorized' }, { status: 401 });
+    const { headers: _authHeaders, errorResponse: _authErr } = requireProxyAuthHeaders(request);
+    if (_authErr) return _authErr;
+    const auth = _authHeaders.Authorization;, { status: 401 });
     }
     try {
         const body = await request.json();

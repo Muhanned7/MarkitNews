@@ -58,7 +58,19 @@ def _resolve_user_id(user: dict) -> int:
     try:
         return int(sub)
     except (ValueError, TypeError):
-        return 1  # Default demo user
+        raise HTTPException(status_code=401, detail="Authenticated user required")
+
+
+def _assert_portfolio_owner(portfolio_id: int, user: dict) -> dict:
+    """Fetches a portfolio and verifies that it belongs to the authenticated user (prevents IDOR)."""
+    user_id = _resolve_user_id(user)
+    p_res = query("SELECT * FROM portfolios WHERE id = %s", [portfolio_id])
+    if not p_res.rows:
+        raise HTTPException(status_code=404, detail="Portfolio not found")
+    portfolio = p_res.rows[0]
+    if int(portfolio["user_id"]) != user_id:
+        raise HTTPException(status_code=403, detail="Forbidden: portfolio does not belong to current user")
+    return portfolio
 
 def _seed_default_portfolio(user_id: int) -> dict:
     """Creates a default portfolio with initial seed positions and transactions if none exists."""
@@ -155,11 +167,7 @@ async def create_portfolio(req: CreatePortfolioRequest, user: dict = Depends(get
 
 @portfolio_router.get("/portfolios/{portfolio_id}")
 async def get_portfolio(portfolio_id: int, user: dict = Depends(get_service_or_user)):
-    user_id = _resolve_user_id(user)
-    p_res = query("SELECT * FROM portfolios WHERE id = %s", [portfolio_id])
-    if not p_res.rows:
-        raise HTTPException(status_code=404, detail="Portfolio not found")
-    portfolio = p_res.rows[0]
+    portfolio = _assert_portfolio_owner(portfolio_id, user)
     
     pos_res = query("SELECT * FROM positions WHERE portfolio_id = %s ORDER BY id ASC", [portfolio_id])
     holdings = calculate_portfolio_holdings(pos_res.rows, float(portfolio["cash"]))
@@ -218,6 +226,7 @@ async def get_portfolio(portfolio_id: int, user: dict = Depends(get_service_or_u
 
 @portfolio_router.post("/portfolios/{portfolio_id}/positions")
 async def add_or_update_position(portfolio_id: int, req: AddPositionRequest, user: dict = Depends(get_service_or_user)):
+    _assert_portfolio_owner(portfolio_id, user)
     clean_ticker = req.ticker.strip().upper()
     if req.quantity <= 0 or req.avg_cost <= 0:
         raise HTTPException(status_code=400, detail="Quantity and avg_cost must be positive numbers")
@@ -242,6 +251,7 @@ async def add_or_update_position(portfolio_id: int, req: AddPositionRequest, use
 
 @portfolio_router.delete("/portfolios/{portfolio_id}/positions/{ticker}")
 async def delete_position(portfolio_id: int, ticker: str, user: dict = Depends(get_service_or_user)):
+    _assert_portfolio_owner(portfolio_id, user)
     clean_ticker = ticker.strip().upper()
     
     # Find existing position to record exit price
@@ -265,12 +275,8 @@ async def delete_position(portfolio_id: int, ticker: str, user: dict = Depends(g
 
 @portfolio_router.post("/portfolios/{portfolio_id}/transactions")
 async def add_transaction(portfolio_id: int, req: AddTransactionRequest, user: dict = Depends(get_service_or_user)):
+    _assert_portfolio_owner(portfolio_id, user)
     clean_ticker = req.ticker.strip().upper()
-    
-    # Check portfolio exists
-    p_res = query("SELECT * FROM portfolios WHERE id = %s", [portfolio_id])
-    if not p_res.rows:
-        raise HTTPException(status_code=404, detail="Portfolio not found")
         
     pos_res = query("SELECT * FROM positions WHERE portfolio_id = %s AND ticker = %s", [portfolio_id, clean_ticker])
     
@@ -354,6 +360,7 @@ async def add_transaction(portfolio_id: int, req: AddTransactionRequest, user: d
 
 @portfolio_router.post("/portfolios/{portfolio_id}/import")
 async def import_csv_positions(portfolio_id: int, req: ImportCsvRequest, user: dict = Depends(get_service_or_user)):
+    _assert_portfolio_owner(portfolio_id, user)
     """
     Imports positions from CSV format (ticker,qty,avg_cost).
     Supports headers, comma/semicolon/tab delimiters.
@@ -430,10 +437,7 @@ async def import_csv_positions(portfolio_id: int, req: ImportCsvRequest, user: d
 
 @portfolio_router.get("/portfolios/{portfolio_id}/risk")
 async def get_portfolio_risk(portfolio_id: int, user: dict = Depends(get_service_or_user)):
-    p_res = query("SELECT * FROM portfolios WHERE id = %s", [portfolio_id])
-    if not p_res.rows:
-        raise HTTPException(status_code=404, detail="Portfolio not found")
-    portfolio = p_res.rows[0]
+    portfolio = _assert_portfolio_owner(portfolio_id, user)
     
     pos_res = query("SELECT * FROM positions WHERE portfolio_id = %s", [portfolio_id])
     holdings = calculate_portfolio_holdings(pos_res.rows, float(portfolio["cash"]))
@@ -466,13 +470,13 @@ async def get_position_sizing(
     ticker: str,
     method: Optional[str] = "vol_target",
     daily_risk_budget: Optional[float] = 0.0025,
+    conviction: Optional[int] = None,
+    expected_return: Optional[float] = None,
+    current_price: Optional[float] = None,
     user: dict = Depends(get_service_or_user)
 ):
     clean_ticker = ticker.strip().upper()
-    p_res = query("SELECT * FROM portfolios WHERE id = %s", [portfolio_id])
-    if not p_res.rows:
-        raise HTTPException(status_code=404, detail="Portfolio not found")
-    portfolio = p_res.rows[0]
+    portfolio = _assert_portfolio_owner(portfolio_id, user)
     
     pos_res = query("SELECT * FROM positions WHERE portfolio_id = %s", [portfolio_id])
     holdings = calculate_portfolio_holdings(pos_res.rows, float(portfolio["cash"]))
@@ -483,7 +487,10 @@ async def get_position_sizing(
         holdings["positions"],
         method=method or "vol_target",
         daily_risk_budget=daily_risk_budget or 0.0025,
-        target_vol=float(portfolio["target_vol"])
+        target_vol=float(portfolio["target_vol"]),
+        conviction_override=conviction,
+        expected_return_override=expected_return,
+        current_price_override=current_price
     )
     return sizing
 

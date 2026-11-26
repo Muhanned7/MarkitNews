@@ -138,13 +138,31 @@ export default function AnalysisPage() {
     const [activePortfolioId, setActivePortfolioId] = useState(1)
     const tabsRef = useRef(null)
 
-    async function fetchSizing(portId = activePortfolioId, method = selectedSizingMethod, budget = dailyRiskBudgetInput) {
+    async function fetchSizing(
+        portId = activePortfolioId,
+        method = selectedSizingMethod,
+        budget = dailyRiskBudgetInput,
+        reportOverride = null
+    ) {
         try {
-            const token = localStorage.getItem('token') || user?.token;
-            const headers = { 'Content-Type': 'application/json' };
-            if (token) headers['Authorization'] = `Bearer ${token}`;
+            const activeRep = reportOverride || report;
             const numBudget = (parseFloat(budget) || 0.25) / 100.0;
-            const res = await fetch(`/api/portfolios/${portId}/sizing/${ticker}?method=${method}&daily_risk_budget=${numBudget}`, { headers });
+            const params = new URLSearchParams({
+                method,
+                daily_risk_budget: String(numBudget),
+            });
+            if (activeRep?.conviction != null) {
+                params.set('conviction', String(activeRep.conviction));
+            }
+            if (activeRep?.expected_return != null) {
+                params.set('expected_return', String(activeRep.expected_return));
+            }
+            if (activeRep?.current_price != null) {
+                params.set('current_price', String(activeRep.current_price));
+            }
+            const res = await fetch(`/api/portfolios/${portId}/sizing/${ticker}?${params.toString()}`, {
+                credentials: 'include',
+            });
             if (res.ok) {
                 const sizeJson = await res.json();
                 setSizingData(sizeJson);
@@ -167,23 +185,24 @@ export default function AnalysisPage() {
         }
     }
 
+    const lastFetchedTickerRef = useRef(null)
+
     useEffect(() => {
         if (loading) return
         if (!user) {
             router.push('/login')
             return
         }
+        const key = `${user.id || user.email}:${ticker}`
+        if (lastFetchedTickerRef.current === key) return
+        lastFetchedTickerRef.current = key
         FetchAnalysis()
         checkWatchlist()
-    }, [user, loading, ticker])
+    }, [user?.id, user?.email, loading, ticker])
 
     async function checkWatchlist() {
         try {
-            const token = localStorage.getItem('token') || user?.token;
-            if (!token) return;
-            const res = await fetch('/api/watchlist', {
-                headers: { 'Authorization': `Bearer ${token}` }
-            });
+            const res = await fetch('/api/watchlist', { credentials: 'include' });
             if (res.ok) {
                 const data = await res.json();
                 const symbols = data.tickers?.map(t => (typeof t === 'string' ? t : t.ticker)?.toUpperCase()) || [];
@@ -197,13 +216,12 @@ export default function AnalysisPage() {
     async function toggleWatchlist() {
         setWatchlistLoading(true);
         try {
-            const token = localStorage.getItem('token') || user?.token;
-            if (!token) return;
             const cleanTicker = ticker.toUpperCase();
             if (inWatchlist) {
                 const res = await fetch('/api/watchlist', {
                     method: 'DELETE',
-                    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+                    headers: { 'Content-Type': 'application/json' },
+                    credentials: 'include',
                     body: JSON.stringify({ symbol: cleanTicker })
                 });
                 if (res.ok) {
@@ -213,7 +231,8 @@ export default function AnalysisPage() {
             } else {
                 const res = await fetch('/api/watchlist', {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+                    headers: { 'Content-Type': 'application/json' },
+                    credentials: 'include',
                     body: JSON.stringify({ symbol: cleanTicker })
                 });
                 if (res.ok) {
@@ -239,13 +258,10 @@ export default function AnalysisPage() {
         }
 
         try {
-            const token = localStorage.getItem('token') || user?.token;
             const headers = { 'Content-Type': 'application/json' };
-            if (token) headers['Authorization'] = `Bearer ${token}`;
-            
             const url = `/api/analyse/${ticker}${nocache ? '?nocache=1' : ''}`;
-            const res = await fetch(url, { method: 'POST', headers });
-            if (res.status === 402) {
+            const res = await fetch(url, { method: 'POST', headers, credentials: 'include' });
+            if (res.status === 402 || res.status === 403) {
                 const errJson = await res.json().catch(() => ({}));
                 if (typeof window !== 'undefined') {
                     window.dispatchEvent(new CustomEvent('open-upgrade-modal', { detail: errJson.detail }));
@@ -267,7 +283,7 @@ export default function AnalysisPage() {
 
             // QPM: Fetch point-in-time diff and quantitative position sizing
             try {
-                const diffRes = await fetch(`/api/snapshots/${ticker}/diff`, { headers });
+                const diffRes = await fetch(`/api/snapshots/${ticker}/diff`, { headers, credentials: 'include' });
                 if (diffRes.ok) {
                     const diffJson = await diffRes.json();
                     setSnapshotDiff(diffJson);
@@ -276,7 +292,7 @@ export default function AnalysisPage() {
                 // Resolve active portfolio
                 let activePortId = 1;
                 try {
-                    const portListRes = await fetch('/api/portfolios', { headers });
+                    const portListRes = await fetch('/api/portfolios', { headers, credentials: 'include' });
                     if (portListRes.ok) {
                         const portList = await portListRes.json();
                         if (portList && portList.length > 0) {
@@ -286,7 +302,7 @@ export default function AnalysisPage() {
                     }
                 } catch {}
 
-                await fetchSizing(activePortId, selectedSizingMethod, dailyRiskBudgetInput);
+                await fetchSizing(activePortId, selectedSizingMethod, dailyRiskBudgetInput, data.report);
             } catch (qpmErr) {
                 console.warn("Could not load QPM diff or sizing:", qpmErr);
             }
@@ -406,7 +422,7 @@ export default function AnalysisPage() {
 
     // Calculations & Data Shaping
     const currentPrice = report.current_price ?? agents?.technical?.raw?.current_price ?? 192.25;
-    const targetPrice = report.target_price ?? agents?.equity?.price_target ?? currentPrice * 1.15;
+    const targetPrice = report.price_target ?? report.target_price ?? agents?.equity?.price_target ?? currentPrice * 1.10;
     const recStr = (report.recommendation || 'hold').toLowerCase();
     const isBuy = recStr.includes('buy');
     const isSell = recStr.includes('sell');
@@ -425,10 +441,20 @@ export default function AnalysisPage() {
     }
     const isDownside = upsidePct < 0;
     const upsideStr = `${upsidePct >= 0 ? '+' : ''}${upsidePct.toFixed(1)}% ${isDownside ? 'downside' : 'upside'}`;
+    const expectedReturnVal =
+        report.expected_return !== null && report.expected_return !== undefined && !isNaN(Number(report.expected_return))
+            ? Number(report.expected_return)
+            : null;
 
     // Street Price Range computation
-    const streetLow = report.analyst_price_targets?.low || Math.round(Math.min(currentPrice, targetPrice) * 0.88);
-    const streetHigh = report.analyst_price_targets?.high || Math.round(Math.max(currentPrice, targetPrice) * 1.15);
+    const streetLow =
+        report.analyst_price_targets?.target_low ??
+        report.analyst_price_targets?.low ??
+        Math.round(Math.min(currentPrice, targetPrice) * 0.88);
+    const streetHigh =
+        report.analyst_price_targets?.target_high ??
+        report.analyst_price_targets?.high ??
+        Math.round(Math.max(currentPrice, targetPrice) * 1.15);
     const rangeSpan = Math.max(1, streetHigh - streetLow);
     const nowPct = Math.max(3, Math.min(97, ((currentPrice - streetLow) / rangeSpan) * 100));
     const tgtPct = Math.max(3, Math.min(97, ((targetPrice - streetLow) / rangeSpan) * 100));
@@ -509,7 +535,21 @@ export default function AnalysisPage() {
     const riskGrade = agents?.risk?._evaluation?.grade || 'A';
     const radarGrade = agents?.radar?._evaluation?.grade || 'A';
     const overallGrade = report._evaluation?.grade || 'A';
-    const overallScore = report._evaluation?.score ? report._evaluation.score.toFixed(2) : '0.92';
+    const rawEvalScore = report._evaluation?.overall_quality_score ?? report._evaluation?.score;
+    const overallScore =
+        rawEvalScore != null
+            ? Number(rawEvalScore).toFixed(2)
+            : overallGrade === 'A'
+            ? '0.92'
+            : overallGrade === 'B'
+            ? '0.78'
+            : overallGrade === 'C'
+            ? '0.62'
+            : '0.45';
+    const riskAgentFailed = riskGrade === 'FAIL' || Boolean(agents?.risk?._model_risk_excluded);
+    const resolvedRiskReward = riskAgentFailed || isDownside || isSell
+        ? (isDownside || riskAgentFailed ? 'Unfavorable' : 'Neutral')
+        : toSentenceCase(report.risk_reward || report.risk_reward_ratio || (isBuy ? 'Favorable' : 'Neutral'));
 
     // Authoritative Risk Metrics
     const riskMetrics = agents?.risk?.metrics || {};
@@ -675,8 +715,8 @@ export default function AnalysisPage() {
                 <div className={`${styles.vCell} ${styles.facts}`}>
                     <div className={styles.fact}>
                         <span>Expected return</span>
-                        <b style={{ color: (report.expected_return || 0) >= 0 ? 'var(--bull)' : 'var(--bear)' }}>
-                            {report.expected_return !== undefined ? `${report.expected_return > 0 ? '+' : ''}${report.expected_return}%` : '—'}
+                        <b style={{ color: expectedReturnVal !== null ? (expectedReturnVal >= 0 ? 'var(--bull)' : 'var(--bear)') : 'var(--ink-2)' }}>
+                            {expectedReturnVal !== null ? `${expectedReturnVal > 0 ? '+' : ''}${expectedReturnVal}%` : 'N/A'}
                             <small style={{ fontWeight: 400, color: 'var(--ink-3)', marginLeft: '4px' }}>({report.horizon_days || 63}d)</small>
                         </b>
                     </div>
@@ -697,11 +737,11 @@ export default function AnalysisPage() {
                         <div style={{ textAlign: 'right' }}>
                             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: '6px' }}>
                                 <span 
-                                    className={`${styles.chip} ${riskVol < 0.20 ? styles.cBull : riskVol <= 0.35 ? styles.cCaution : styles.cBear}`}
+                                    className={`${styles.chip} ${riskAgentFailed ? styles.cBear : (riskVol < 0.20 ? styles.cBull : riskVol <= 0.35 ? styles.cCaution : styles.cBear)}`}
                                     title="Low: <20%, Medium: 20–35%, High: >35% annualized volatility"
                                     style={{ cursor: 'help' }}
                                 >
-                                    {deriveRiskLevel(riskVol)}
+                                    {riskAgentFailed ? 'Degraded (FAIL)' : deriveRiskLevel(riskVol)}
                                 </span>
                                 <span style={{ fontFamily: 'var(--font-figure)', fontWeight: 600, fontSize: 'var(--fs-xs)', color: 'var(--ink)' }}>
                                     Vol {riskVol !== undefined ? `${(riskVol * 100).toFixed(1)}%` : '21.8%'}
@@ -714,11 +754,11 @@ export default function AnalysisPage() {
                     </div>
                     <div className={styles.fact}>
                         <span>Risk / reward</span>
-                        <b>{toSentenceCase(report.risk_reward_ratio || 'Favorable')}</b>
+                        <b>{resolvedRiskReward}</b>
                     </div>
                     <div className={styles.fact}>
                         <span>Report quality</span>
-                        <span className={`${styles.chip} ${styles.cBull}`} title="Faithfulness, consistency & completeness audits passed">
+                        <span className={`${styles.chip} ${overallGrade === 'A' ? styles.cBull : overallGrade === 'B' ? styles.cCaution : styles.cBear}`} title="Faithfulness, consistency & completeness audits">
                             Grade {overallGrade} ({overallScore})
                         </span>
                     </div>
@@ -798,7 +838,7 @@ export default function AnalysisPage() {
                     <div className={styles.qpmControlsRow}>
                         <div className={styles.qpmBudgetGroup}>
                             <label htmlFor="risk-budget-input" className={styles.metricLabel} style={{ cursor: 'pointer' }}>
-                                Target Daily Risk Budget:
+                                Target Daily Risk Budget ({dailyRiskBudgetInput || '0.25'}% / day):
                             </label>
                             <input
                                 id="risk-budget-input"
@@ -810,7 +850,7 @@ export default function AnalysisPage() {
                                 value={dailyRiskBudgetInput}
                                 onChange={(e) => handleBudgetChange(e.target.value)}
                             />
-                            <span style={{ fontSize: 'var(--fs-sm)', fontWeight: 700, color: 'var(--ink)' }}>% / day</span>
+                            <span style={{ fontSize: 'var(--fs-sm)', fontWeight: 700, color: 'var(--ink)' }}>{dailyRiskBudgetInput || '0.25'}% / day</span>
                             <span style={{ fontSize: 'var(--fs-xs)', color: 'var(--ink-3)', marginLeft: '4px' }}>
                                 (Default: 0.25%)
                             </span>
@@ -825,7 +865,7 @@ export default function AnalysisPage() {
                         <div>
                             <span className={styles.metricLabel}>Suggested Position Allocation ({selectedSizingMethod})</span>
                             <div className={styles.qpmBigStat}>
-                                {sizingData.suggested_weight_pct}% of NAV ≈ {sizingData.suggested_shares.toLocaleString()} shares (${sizingData.suggested_dollars?.toLocaleString()})
+                                {sizingData.suggested_weight_pct}% of NAV ≈ {sizingData.suggested_shares.toLocaleString()} shares (${sizingData.suggested_dollars?.toLocaleString()} @ ${Number(sizingData.current_price || currentPrice).toFixed(2)}/sh)
                             </div>
                             {sizingData.position_context && (
                                 <div style={{ fontSize: 'var(--fs-xs)', color: 'var(--ink-2)', marginTop: '4px', fontWeight: 600 }}>
@@ -862,15 +902,17 @@ export default function AnalysisPage() {
                             <span className={styles.qpmModelDesc}>{sizingData.models?.conviction_scaled?.description}</span>
                         </button>
 
-                        <button
-                            type="button"
-                            className={`${styles.qpmModelCol} ${selectedSizingMethod === 'half_kelly' ? styles.qpmModelColActive : ''}`}
-                            onClick={() => handleMethodChange('half_kelly')}
-                        >
-                            <span className={styles.qpmModelTitle}>Half-Kelly Criterion {selectedSizingMethod === 'half_kelly' && '✓'}</span>
-                            <span className={styles.qpmModelWeight}>{sizingData.models?.half_kelly?.raw_weight_pct}%</span>
-                            <span className={styles.qpmModelDesc}>{sizingData.models?.half_kelly?.description}</span>
-                        </button>
+                        {expectedReturnVal !== null && sizingData.models?.half_kelly?.raw_weight_pct !== null && (
+                            <button
+                                type="button"
+                                className={`${styles.qpmModelCol} ${selectedSizingMethod === 'half_kelly' ? styles.qpmModelColActive : ''}`}
+                                onClick={() => handleMethodChange('half_kelly')}
+                            >
+                                <span className={styles.qpmModelTitle}>Half-Kelly Criterion {selectedSizingMethod === 'half_kelly' && '✓'}</span>
+                                <span className={styles.qpmModelWeight}>{sizingData.models?.half_kelly?.raw_weight_pct}%</span>
+                                <span className={styles.qpmModelDesc}>{sizingData.models?.half_kelly?.description}</span>
+                            </button>
+                        )}
                     </div>
                     {/* RSK-007: hard-limit capacity for this ticker in the active portfolio */}
                     <HeadroomChip portfolioId={activePortfolioId} ticker={ticker} side="buy" />
@@ -910,7 +952,7 @@ export default function AnalysisPage() {
                     onClick={() => switchTab('fundamentals')}
                 >
                     <span className={styles.scoreTop}>Fundamentals <span className={styles.grade} title="Agent confidence grade A (audited)">{fundGrade}</span></span>
-                    <span className={styles.scoreVal}>{toSentenceCase(agents?.fundamentals?.valuation_assessment || 'Fairly valued')}</span>
+                    <span className={styles.scoreVal}>{toSentenceCase(agents?.fundamentals?.valuation || agents?.fundamentals?.valuation_assessment || 'Fairly valued')}</span>
                     <span className={styles.scoreSub}>Moat: {toSentenceCase(agents?.equity?.moat || 'Stable')}</span>
                 </button>
 
@@ -922,9 +964,17 @@ export default function AnalysisPage() {
                 >
                     <span className={styles.scoreTop}>Technical <span className={styles.grade} title="Agent confidence grade A (audited)">{techGrade}</span></span>
                     <span className={styles.scoreVal} style={{ color: 'var(--bull)' }}>
-                        {toSentenceCase(agents?.technical?.trend_assessment || 'Uptrend')}
+                        {toSentenceCase(agents?.technical?.trend || agents?.technical?.trend_assessment || 'Uptrend')}
                     </span>
-                    <span className={styles.scoreSub}>{agents?.technical?.raw?.price_vs_ma200 || 'Above 200-day avg'}</span>
+                    <span className={styles.scoreSub}>
+                        {(() => {
+                            const rawVs200 = agents?.technical?.raw?.price_vs_ma200;
+                            if (!rawVs200) return 'Above 200-day SMA';
+                            const low = String(rawVs200).toLowerCase();
+                            if (low === 'above' || low === 'below') return `${toSentenceCase(low)} 200-day SMA`;
+                            return rawVs200;
+                        })()}
+                    </span>
                 </button>
 
                 <button 
@@ -984,15 +1034,17 @@ export default function AnalysisPage() {
                         <div className={styles.box}>
                             <h3 className={styles.boxTitle}>Investment Thesis</h3>
                             <p style={{ margin: '0 0 16px', fontSize: 'var(--fs-sm)', color: 'var(--ink-2)', lineHeight: 1.6 }}>
-                                {report.investment_thesis || agents?.equity?.thesis || 'Multi-agent consensus indicates strong competitive positioning with favorable long-term fundamentals.'}
+                                {report.investment_thesis || agents?.equity?.investment_thesis || agents?.equity?.thesis || report.summary}
                             </p>
                             <h3 className={styles.boxTitle}>Core Catalysts</h3>
                             <ul className={styles.list}>
-                                {(agents?.equity?.catalysts?.length ? agents.equity.catalysts : [
-                                    "Accelerated enterprise cloud and AI workload adoption",
-                                    "Margin expansion through vertical component integration",
-                                    "Capital returns via share repurchases and stable dividend growth"
-                                ]).map((cat, i) => (
+                                {(
+                                    (agents?.equity?.growth_catalysts?.length && agents.equity.growth_catalysts) ||
+                                    (report.key_catalysts?.length && report.key_catalysts) ||
+                                    (agents?.equity?.catalysts?.length && agents.equity.catalysts) ||
+                                    (report.bull_case?.length && report.bull_case) ||
+                                    [`Upcoming quarterly earnings and forward guidance for ${ticker.toUpperCase()}`]
+                                ).map((cat, i) => (
                                     <li key={i} className={styles.listItem}>{cat}</li>
                                 ))}
                             </ul>
@@ -1220,15 +1272,25 @@ export default function AnalysisPage() {
                             <tbody>
                                 <tr>
                                     <td>RSI (14)<span className={styles.hint}>Neutral zone 30–70 (Wilder smoothed)</span></td>
-                                    <td className={styles.big}>{agents?.technical?.raw?.rsi_14 ? Number(agents.technical.raw.rsi_14).toFixed(1) : '54.2'}</td>
+                                    <td className={styles.big}>{(agents?.technical?.raw?.rsi_14 ?? agents?.technical?.raw?.rsi) != null ? Number(agents.technical.raw.rsi_14 ?? agents.technical.raw.rsi).toFixed(1) : '54.2'}</td>
                                 </tr>
                                 <tr>
                                     <td>MACD Signal</td>
-                                    <td><span className={`${styles.chip} ${styles.cBull}`}>Bullish crossover</span></td>
+                                    <td><span className={`${styles.chip} ${styles.cBull}`}>{toSentenceCase(agents?.technical?.macd_signal || 'Bullish')} crossover</span></td>
                                 </tr>
                                 <tr>
                                     <td>Volume vs. 20-day average</td>
-                                    <td><span className={`${styles.chip} ${styles.cNeutral}`}>{toSentenceCase(agents?.technical?.raw?.volume_vs_average || 'Above average')}</span></td>
+                                    <td>
+                                        <span className={`${styles.chip} ${styles.cNeutral}`}>
+                                            {(() => {
+                                                const v = agents?.technical?.raw?.volume_vs_average;
+                                                if (!v) return 'Above 20-day average';
+                                                const low = String(v).toLowerCase();
+                                                if (low === 'above' || low === 'below') return `${toSentenceCase(low)} 20-day average`;
+                                                return toSentenceCase(v);
+                                            })()}
+                                        </span>
+                                    </td>
                                 </tr>
                             </tbody>
                         </table>

@@ -1,16 +1,15 @@
+import { requireProxyAuthHeaders } from '@/lib/serverAuth';
 const BACKEND_URL = process.env.BACKEND_URL || process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:8000';
 
 // RSK-014 tear-sheet export adapter (CSV or HTML).
 function getAuthHeaders(request) {
-  const headers = {
-    'x-service-key': process.env.INTERNAL_SERVICE_KEY || ''
-  };
-  const auth = request.headers.get('authorization');
-  if (auth) headers['Authorization'] = auth;
+  const { headers } = requireProxyAuthHeaders(request);
   return headers;
 }
 
 export async function GET(request, { params }) {
+  const { errorResponse: _authErr } = requireProxyAuthHeaders(request);
+  if (_authErr) return _authErr;
   const { id } = await params;
   const qs = new URL(request.url).search;
   try {

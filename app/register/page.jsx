@@ -10,7 +10,7 @@ export default function Register() {
   const [showPassword, setShowPassword] = useState(false)
   const [error, setError] = useState(null)
   const [loading, setLoading] = useState(false)
-  const { user, setUser } = useAuth()
+  const { user, refreshSession } = useAuth()
   const router = useRouter()
 
   useEffect(() => {
@@ -39,6 +39,7 @@ export default function Register() {
       const res = await fetch('/api/auth/register', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
         body: JSON.stringify({ email: cleanEmail, password })
       })
       const data = await res.json()
@@ -46,9 +47,7 @@ export default function Register() {
         setError(data.detail || 'Registration failed.')
         return
       }
-      localStorage.setItem('token', data.token)
-      localStorage.setItem('email', data.email)
-      setUser({ token: data.token, email: data.email })
+      await refreshSession()
       router.replace('/')
     } catch (err) {
       setError('Unable to connect to authentication service.')

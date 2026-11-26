@@ -17,11 +17,8 @@ export default function ProfilePage() {
       setThemePreference(current)
     }
 
-    if (user?.token || (typeof window !== 'undefined' && localStorage.getItem('token'))) {
-      const token = user?.token || localStorage.getItem('token')
-      fetch('/api/watchlist', {
-        headers: { Authorization: `Bearer ${token}` }
-      })
+    if (user) {
+      fetch('/api/watchlist', { credentials: 'include' })
         .then(res => res.json())
         .then(data => {
           if (Array.isArray(data?.tickers)) {
@@ -32,7 +29,7 @@ export default function ProfilePage() {
         })
         .catch(() => {})
     }
-  }, [user])
+  }, [user?.id, user?.email])
 
   const handleLogout = () => {
     logout()

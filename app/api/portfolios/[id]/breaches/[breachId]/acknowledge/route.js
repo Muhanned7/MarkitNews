@@ -1,13 +1,9 @@
+import { requireProxyAuthHeaders } from '@/lib/serverAuth';
 const BACKEND_URL = process.env.BACKEND_URL || process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:8000';
 
 // RSK-002/003 adapter. Service key is read from the environment only (no hard-coded fallback).
 function getAuthHeaders(request) {
-  const headers = {
-    'Content-Type': 'application/json',
-    'x-service-key': process.env.INTERNAL_SERVICE_KEY || ''
-  };
-  const auth = request.headers.get('authorization');
-  if (auth) headers['Authorization'] = auth;
+  const { headers } = requireProxyAuthHeaders(request);
   return headers;
 }
 
@@ -22,6 +18,8 @@ async function forward(url, init) {
 }
 
 export async function POST(request, { params }) {
+  const { errorResponse: _authErr } = requireProxyAuthHeaders(request);
+  if (_authErr) return _authErr;
   const { id, breachId } = await params;
   const body = await request.json();
   return forward(`${BACKEND_URL}/portfolios/${id}/breaches/${breachId}/acknowledge`, {

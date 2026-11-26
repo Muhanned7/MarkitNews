@@ -254,7 +254,10 @@ def calculate_position_sizing(
     current_positions: list[dict] = None,
     method: str = "vol_target",
     daily_risk_budget: float = 0.0025,
-    target_vol: float = 0.15
+    target_vol: float = 0.15,
+    conviction_override: int = None,
+    expected_return_override: float = None,
+    current_price_override: float = None
 ) -> dict:
     """
     Computes suggested position size across 3 quantitative models:
@@ -266,12 +269,29 @@ def calculate_position_sizing(
       model:<name> | cap:single_name_8% | cap:sector_30% | cap:liquidity
     """
     prof = get_deterministic_mock_profile(ticker)
-    curr_price = prof["current_price"]
+    curr_price = float(current_price_override) if (current_price_override and current_price_override > 0) else prof["current_price"]
     annual_vol = prof["annualized_volatility"]
     daily_vol = annual_vol / math.sqrt(252.0)
-    conviction = prof["conviction"]
+    conviction = int(conviction_override) if (conviction_override is not None and 1 <= int(conviction_override) <= 10) else prof["conviction"]
+    expected_ret_pct = float(expected_return_override) if expected_return_override is not None else prof["expected_return"]
     adv_dollars = prof["adv_20d_dollars"]
     sector = prof["sector"]
+
+    # If no explicit overrides were provided, check latest analysis_snapshots so sizing always matches the active report
+    if conviction_override is None or expected_return_override is None:
+        try:
+            snap = query(
+                "SELECT conviction, expected_return, price_at_ts FROM analysis_snapshots WHERE ticker = %s ORDER BY ts DESC LIMIT 1",
+                [prof["ticker"]]
+            )
+            if snap.rows:
+                row = snap.rows[0]
+                if conviction_override is None and row.get("conviction") is not None:
+                    conviction = int(row["conviction"])
+                if expected_return_override is None and row.get("expected_return") is not None:
+                    expected_ret_pct = float(row["expected_return"])
+        except Exception:
+            pass
     
     # 1. Volatility Target Model: daily_risk_budget / daily_vol
     # Default daily_risk_budget = 0.0025 (0.25% daily risk budget)
@@ -292,9 +312,10 @@ def calculate_position_sizing(
     
     # 3. Half-Kelly: 0.5 * (mu - rf) / sigma^2
     rf = 0.045
-    mu = prof["expected_return"] / 100.0  # annualized expected return
+    has_valid_expected_return = expected_ret_pct is not None
+    mu = (expected_ret_pct / 100.0) if has_valid_expected_return else 0.0
     excess_ret = mu - rf
-    w_kelly = max(0.0, 0.5 * (excess_ret / max(0.01, annual_vol ** 2)))
+    w_kelly = max(0.0, 0.5 * (excess_ret / max(0.01, annual_vol ** 2))) if has_valid_expected_return else None
     
     # Resolve selected method
     norm_method = (method or "vol_target").lower().strip()
@@ -342,7 +363,7 @@ def calculate_position_sizing(
     suggested_value = round(nav * capped_weight, 2)
     suggested_shares = int(suggested_value / curr_price) if curr_price > 0 else 0
     actual_suggested_val = round(suggested_shares * curr_price, 2)
-    final_weight_pct = round(capped_weight * 100.0, 2) if nav > 0 else 0.0
+    final_weight_pct = round((actual_suggested_val / nav) * 100.0, 2) if nav > 0 else 0.0
 
     # Holding context (for rebalancing / delta sizing)
     current_pos = next((p for p in current_positions if p.get("ticker") == prof["ticker"]), None) if current_positions else None
@@ -365,12 +386,16 @@ def calculate_position_sizing(
         "ticker": prof["ticker"],
         "current_price": curr_price,
         "nav": nav,
+        "conviction": conviction,
+        "expected_return": expected_ret_pct,
         "selected_method": selected_method,
         "daily_risk_budget": safe_budget,
         "daily_risk_budget_pct": round(safe_budget * 100.0, 2),
         "suggested_weight_pct": final_weight_pct,
+        "target_cap_weight_pct": round(capped_weight * 100.0, 2),
         "suggested_shares": suggested_shares,
-        "suggested_dollars": suggested_value,
+        "suggested_dollars": actual_suggested_val,
+        "target_cap_dollars": suggested_value,
         "binding_constraint": binding_constraint,
         "position_context": position_context,
         "models": {
@@ -386,7 +411,8 @@ def calculate_position_sizing(
             },
             "half_kelly": {
                 "name": "Half-Kelly (needs calibration)",
-                "raw_weight_pct": round(w_kelly * 100.0, 2),
+                "available": w_kelly is not None,
+                "raw_weight_pct": round(w_kelly * 100.0, 2) if w_kelly is not None else None,
                 "description": "0.5 × (expected return − risk-free) / variance (requires calibrated expected return)"
             }
         },

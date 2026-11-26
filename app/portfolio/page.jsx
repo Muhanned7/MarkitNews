@@ -301,9 +301,16 @@ export default function PortfolioPage() {
               <span className={styles.metricValue}>
                 ${(holdings?.nav || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
               </span>
-              <span className={`${styles.metricSubtext} ${holdings?.total_unrealized_pnl >= 0 ? styles.posChange : styles.negChange}`}>
-                {holdings?.total_unrealized_pnl >= 0 ? '+' : ''}${holdings?.total_unrealized_pnl?.toLocaleString()} ({holdings?.total_unrealized_pnl_pct}%)
-              </span>
+              {(() => {
+                const pnl = holdings?.total_unrealized_pnl || 0
+                const baseNav = (holdings?.nav || 0) - pnl
+                const navPct = baseNav > 0 ? ((pnl / baseNav) * 100).toFixed(2) : '0.00'
+                return (
+                  <span className={`${styles.metricSubtext} ${pnl >= 0 ? styles.posChange : styles.negChange}`}>
+                    {pnl >= 0 ? '+' : ''}${pnl.toLocaleString()} ({pnl >= 0 ? '+' : ''}{navPct}% NAV · {holdings?.total_unrealized_pnl_pct}% invested)
+                  </span>
+                )
+              })()}
             </div>
 
             <div className={styles.metricCard}>
@@ -325,7 +332,14 @@ export default function PortfolioPage() {
             <div className={styles.metricCard}>
               <span className={styles.metricLabel}>Holdings</span>
               <span className={styles.metricValue}>{positions.length}</span>
-              <span className={styles.metricSubtext}>Across {Object.keys(holdings?.sector_breakdown || {}).length} sectors</span>
+              {(() => {
+                const sc = Object.keys(holdings?.sector_breakdown || {}).length
+                return (
+                  <span className={styles.metricSubtext}>
+                    Across {sc} {sc === 1 ? 'sector' : 'sectors'}
+                  </span>
+                )
+              })()}
             </div>
 
             <div className={styles.metricCard}>
@@ -346,7 +360,7 @@ export default function PortfolioPage() {
 
             <div className={styles.metricCard}>
               <span className={styles.metricLabel}>1-Day 95% VaR</span>
-              <span className={`${styles.metricValue} styles.negChange`}>
+              <span className={`${styles.metricValue} ${styles.negChange}`}>
                 {riskData ? `${(riskData.var_95_1d * 100).toFixed(2)}%` : '—'}
               </span>
               <span className={styles.metricSubtext}>Historical 252d (see VaR tab)</span>

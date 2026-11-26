@@ -18,7 +18,7 @@ async def technical_agent(ticker: str) -> dict:
 
     start = time.time()
     try:
-        if MOCK_MODE:
+        if os.environ.get("MOCK_MODE", "true").lower() == "true":
             await asyncio.sleep(0.3)  # Simulate network latency
             from agents.mock_market_data import get_deterministic_mock_profile
             prof = get_deterministic_mock_profile(ticker)
@@ -32,17 +32,20 @@ async def technical_agent(ticker: str) -> dict:
                 "short_term_outlook": "bullish" if prof["day_change"] >= 0 else "bearish",
                 "key_levels": [f"${prof['support_level']} (Support)", f"${prof['resistance_level']} (Resistance)"],
                 "signals": [
-                    "Price holding above 50-day MA" if prof["current_price"] >= prof["ma50"] else "Price below 50-day MA",
+                    f"Price trading above 50-day SMA (${prof['ma50']:.2f})" if prof["current_price"] >= prof["ma50"] else f"Price trading below 50-day SMA (${prof['ma50']:.2f})",
                     f"RSI(14) at {prof['rsi']}"
                 ],
                 "summary": f"{ticker.upper()} is currently trading at ${prof['current_price']:.2f} ({'+' if prof['day_change'] >= 0 else ''}{prof['day_change_pct']:.2f}%). Key support lies at ${prof['support_level']:.2f} and resistance at ${prof['resistance_level']:.2f}.",
                 "raw": {
                     "current_price": prof["current_price"],
                     "rsi": prof["rsi"],
+                    "rsi_14": prof["rsi"],
                     "macd": prof["macd"],
                     "ma50": prof["ma50"],
                     "ma200": prof["ma200"],
-                    "volume_vs_average": "above"
+                    "price_vs_ma50": "Above 50-day SMA" if prof["current_price"] >= prof["ma50"] else "Below 50-day SMA",
+                    "price_vs_ma200": "Above 200-day SMA" if prof["current_price"] >= prof["ma200"] else "Below 200-day SMA",
+                    "volume_vs_average": "Above 20-day avg volume"
                 }
             }
             clean_res, stats = guardrail_technical_agent(mock_res)
@@ -102,17 +105,18 @@ async def technical_agent(ticker: str) -> dict:
                 "current_price": safe_num(current_price),
                 "ma50": safe_num(ma50),
                 "ma200": safe_num(ma200),
-                "price_vs_ma50": "above" if (ma50 is not None and current_price > ma50) else "below",
-                "price_vs_ma200": "above" if (ma200 is not None and current_price > ma200) else "below",
+                "price_vs_ma50": "Above 50-day SMA" if (ma50 is not None and current_price > ma50) else "Below 50-day SMA",
+                "price_vs_ma200": "Above 200-day SMA" if (ma200 is not None and current_price > ma200) else "Below 200-day SMA",
                 "swing_support_20d": safe_num(swing_low_20d),
                 "swing_resistance_20d": safe_num(swing_high_20d),
                 "rsi": safe_num(rsi),
+                "rsi_14": safe_num(rsi),
                 "macd": safe_num(macd_value, 4),
                 "macd_signal": safe_num(signal_value, 4),
                 "macd_crossover": "bullish" if (macd_value is not None and signal_value is not None and macd_value > signal_value) else "bearish",
                 "avg_volume_20d": round(float(avg_volume)) if not pd.isna(avg_volume) else None,
                 "current_volume": round(float(current_volume)) if not pd.isna(current_volume) else None,
-                "volume_vs_average": "above" if (current_volume and avg_volume and current_volume > avg_volume) else "below",
+                "volume_vs_average": "Above 20-day avg volume" if (current_volume and avg_volume and current_volume > avg_volume) else "Below 20-day avg volume",
                 "52_week_high": safe_num(high_52w),
                 "52_week_low": safe_num(low_52w),
             }

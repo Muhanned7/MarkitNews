@@ -10,7 +10,7 @@ export default function Login() {
   const [showPassword, setShowPassword] = useState(false)
   const [error, setError] = useState(null)
   const [loading, setLoading] = useState(false)
-  const { user, setUser } = useAuth()
+  const { user, refreshSession } = useAuth()
   const router = useRouter()
 
   useEffect(() => {
@@ -33,6 +33,7 @@ export default function Login() {
       const res = await fetch('/api/auth/login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
         body: JSON.stringify({ email: email.trim(), password })
       })
       const data = await res.json()
@@ -40,9 +41,7 @@ export default function Login() {
         setError(data.detail || 'Invalid email or password.')
         return
       }
-      localStorage.setItem('token', data.token)
-      localStorage.setItem('email', data.email)
-      setUser({ token: data.token, email: data.email })
+      await refreshSession()
       const params = typeof window !== 'undefined' ? new URLSearchParams(window.location.search) : null
       const nextUrl = params?.get('next') || '/'
       router.replace(nextUrl)

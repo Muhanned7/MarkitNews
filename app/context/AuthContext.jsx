@@ -1,54 +1,71 @@
 'use client'
-import { createContext, useContext, useEffect, useState } from 'react'
+import { createContext, useContext, useEffect, useState, useCallback, useRef } from 'react'
 
 const AuthContext = createContext(null)
 
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(null)
   const [authReady, setAuthReady] = useState(false)
+  const fetchedRef = useRef(false)
 
-  useEffect(() => {
-    async function initSession() {
+  const refreshSession = useCallback(async () => {
+    try {
+      // Clean up any legacy insecure localStorage token/email (PROD-014)
       try {
-        const token = localStorage.getItem('token')
-        const email = localStorage.getItem('email')
-        if (token && email) {
-          // Verify stored token against backend so expired/rotated JWTs don't leave a dead session
-          try {
-            const res = await fetch('/api/billing/wallet', {
-              headers: { Authorization: `Bearer ${token}` },
-            })
-            if (res.status === 401) {
-              localStorage.removeItem('token')
-              localStorage.removeItem('email')
-              setUser(null)
-              setAuthReady(true)
-              return
-            }
-          } catch (netErr) {
-            // Keep session if backend is temporarily unreachable
-          }
-          setUser({ token, email })
-        }
-      } catch (e) {
-        // localStorage may fail in restricted browser contexts
-      } finally {
-        setAuthReady(true)
+        localStorage.removeItem('token')
+        localStorage.removeItem('email')
+      } catch {}
+
+      const res = await fetch('/api/auth/me', {
+        credentials: 'include',
+        cache: 'no-store',
+      })
+      if (!res.ok) {
+        setUser(null)
+        return null
       }
+      const data = await res.json()
+      if (data.authenticated) {
+        const sessionUser = {
+          id: data.id,
+          email: data.email,
+          plan_code: data.plan_code || 'free',
+          plan_name: data.plan_name || 'Starter Free',
+          has_agentic_access: Boolean(data.has_agentic_access),
+          capabilities: data.capabilities || [],
+        }
+        setUser(sessionUser)
+        return sessionUser
+      }
+      setUser(null)
+      return null
+    } catch {
+      setUser(null)
+      return null
+    } finally {
+      setAuthReady(true)
     }
-    initSession()
   }, [])
 
-  function logout() {
+  useEffect(() => {
+    if (fetchedRef.current) return
+    fetchedRef.current = true
+    refreshSession()
+  }, [refreshSession])
+
+  const logout = useCallback(async () => {
+    try {
+      await fetch('/api/auth/logout', { method: 'POST', credentials: 'include' })
+    } catch {}
     try {
       localStorage.removeItem('token')
       localStorage.removeItem('email')
-    } catch (e) {}
+    } catch {}
     setUser(null)
-  }
+  }, [])
 
   return (
-    <AuthContext.Provider value={{ user, loading: !authReady, authReady, logout, setUser }}>
+    <AuthContext.Provider value={{ user, loading: !authReady, authReady, logout, setUser, refreshSession }}>
       {children}
     </AuthContext.Provider>
   )

@@ -45,12 +45,18 @@ def _actor(user: dict) -> str:
     return str(user.get("email") or user.get("sub") or "unknown")
 
 
-def _load_portfolio(portfolio_id: int):
+def _load_portfolio(portfolio_id: int, user: Optional[dict] = None):
     p = query("SELECT * FROM portfolios WHERE id = %s", [portfolio_id])
     if not p.rows:
         raise HTTPException(status_code=404, detail="Portfolio not found")
+    portfolio = p.rows[0]
+    if user is not None and user.get("role") != "service":
+        from agents.portfolio_router import _resolve_user_id
+        uid = _resolve_user_id(user)
+        if int(portfolio["user_id"]) != uid:
+            raise HTTPException(status_code=403, detail="Forbidden: portfolio does not belong to current user")
     pos = query("SELECT ticker, quantity, avg_cost, side FROM positions WHERE portfolio_id = %s ORDER BY id", [portfolio_id])
-    return p.rows[0], [dict(r) for r in pos.rows]
+    return portfolio, [dict(r) for r in pos.rows]
 
 
 def ensure_default_limits(portfolio_id: int):
@@ -110,8 +116,8 @@ def sync_breaches(portfolio_id: int, rows: list) -> dict:
     return {"opened": opened, "resolved": resolved, "active": len(current)}
 
 
-def evaluate_portfolio(portfolio_id: int, sync: bool = True) -> dict:
-    portfolio, raw = _load_portfolio(portfolio_id)
+def evaluate_portfolio(portfolio_id: int, sync: bool = True, user: Optional[dict] = None) -> dict:
+    portfolio, raw = _load_portfolio(portfolio_id, user=user)
     limits = load_limits(portfolio_id)
     metrics = compute_limit_metrics(raw, float(portfolio["cash"]), portfolio.get("benchmark") or "SPY")
     rows = evaluate_limits(limits, metrics)
@@ -119,9 +125,9 @@ def evaluate_portfolio(portfolio_id: int, sync: bool = True) -> dict:
     return {"portfolio": portfolio, "raw": raw, "limits": limits, "metrics": metrics, "rows": rows, "sync": sync_result}
 
 
-def pre_trade_check(portfolio_id: int, ticker: str, qty: float, price: float, fees: float = 0.0) -> dict:
+def pre_trade_check(portfolio_id: int, ticker: str, qty: float, price: float, fees: float = 0.0, user: Optional[dict] = None) -> dict:
     """Used by POST /transactions before executing (RSK-003)."""
-    portfolio, raw = _load_portfolio(portfolio_id)
+    portfolio, raw = _load_portfolio(portfolio_id, user=user)
     limits = load_limits(portfolio_id)
     try:
         return what_if(raw, float(portfolio["cash"]), limits, ticker, qty, price, fees,
@@ -166,21 +172,25 @@ class AcknowledgeRequest(BaseModel):
 
 def _limits_payload(portfolio_id: int, ev: dict) -> dict:
     rows = ev["rows"]
-    open_count = query(
-        "SELECT COUNT(*) AS n FROM limit_breaches WHERE portfolio_id = %s AND status IN ('open','acknowledged')",
+    open_rows = query(
+        "SELECT severity, status FROM limit_breaches WHERE portfolio_id = %s AND status IN ('open','acknowledged')",
         [portfolio_id],
-    ).rows[0]["n"]
+    ).rows
+    open_hard = sum(1 for r in open_rows if r["severity"] == "hard" and r["status"] == "open")
+    open_soft = sum(1 for r in open_rows if r["severity"] == "soft" and r["status"] == "open")
     return {
         "portfolio_id": portfolio_id,
         "portfolio_name": ev["portfolio"]["name"],
         "nav": ev["metrics"]["nav"],
         "limits": rows,
         "summary": {
-            "hard_breaches": sum(1 for r in rows if r["status"] == "hard_breach"),
-            "soft_breaches": sum(1 for r in rows if r["status"] == "soft_breach"),
+            "hard_breaches": open_hard,
+            "soft_breaches": open_soft,
+            "hard_breach_metrics": sum(1 for r in rows if r["status"] == "hard_breach"),
+            "soft_breach_metrics": sum(1 for r in rows if r["status"] == "soft_breach"),
             "ok": sum(1 for r in rows if r["status"] == "ok"),
             "not_available": sum(1 for r in rows if r["status"] == "na"),
-            "active_breach_records": int(open_count),
+            "active_breach_records": len(open_rows),
         },
         "days_to_liquidate": ev["metrics"]["days_to_liquidate"],
         "_provenance": {
@@ -194,14 +204,14 @@ def _limits_payload(portfolio_id: int, ev: dict) -> dict:
 
 @risk_router.get("/portfolios/{portfolio_id}/limits")
 async def get_limits(portfolio_id: int, user: dict = Depends(get_service_or_user)):
-    ev = evaluate_portfolio(portfolio_id, sync=True)
+    ev = evaluate_portfolio(portfolio_id, sync=True, user=user)
     return _limits_payload(portfolio_id, ev)
 
 
 @risk_router.put("/portfolios/{portfolio_id}/limits/{metric}")
 async def update_limit(portfolio_id: int, metric: str, req: LimitUpdateRequest,
                        user: dict = Depends(get_service_or_user)):
-    _load_portfolio(portfolio_id)
+    _load_portfolio(portfolio_id, user=user)
     limits = {l["metric"]: l for l in load_limits(portfolio_id)}
     if metric not in limits:
         raise HTTPException(status_code=404, detail=f"Unknown limit metric '{metric}'")
@@ -239,6 +249,7 @@ async def update_limit(portfolio_id: int, metric: str, req: LimitUpdateRequest,
 
 @risk_router.get("/portfolios/{portfolio_id}/limits/audit")
 async def get_limit_audit(portfolio_id: int, user: dict = Depends(get_service_or_user)):
+    _load_portfolio(portfolio_id, user=user)
     ensure_risk_schema()
     rows = query(
         "SELECT * FROM risk_limit_audit WHERE portfolio_id = %s ORDER BY changed_at DESC LIMIT 200",
@@ -253,7 +264,7 @@ async def post_what_if(portfolio_id: int, req: WhatIfRequest, user: dict = Depen
     if req.qty == 0:
         raise HTTPException(status_code=400, detail="qty must be non-zero (positive = buy, negative = sell)")
     price = req.price if req.price and req.price > 0 else get_deterministic_mock_profile(req.ticker)["current_price"]
-    return pre_trade_check(portfolio_id, req.ticker, req.qty, price, req.fees or 0.0)
+    return pre_trade_check(portfolio_id, req.ticker, req.qty, price, req.fees or 0.0, user=user)
 
 
 def _breach_json(r):
@@ -269,7 +280,7 @@ def _breach_json(r):
 
 @risk_router.get("/portfolios/{portfolio_id}/breaches")
 async def get_breaches(portfolio_id: int, status: Optional[str] = None, user: dict = Depends(get_service_or_user)):
-    evaluate_portfolio(portfolio_id, sync=True)  # refresh lifecycle first
+    evaluate_portfolio(portfolio_id, sync=True, user=user)  # refresh lifecycle first
     if status == "active":
         rows = query("""SELECT * FROM limit_breaches WHERE portfolio_id = %s AND status IN ('open','acknowledged')
                         ORDER BY (severity = 'hard') DESC, first_seen DESC""", [portfolio_id]).rows
@@ -285,6 +296,7 @@ async def get_breaches(portfolio_id: int, status: Optional[str] = None, user: di
 @risk_router.post("/portfolios/{portfolio_id}/breaches/{breach_id}/acknowledge")
 async def acknowledge_breach(portfolio_id: int, breach_id: int, req: AcknowledgeRequest,
                              user: dict = Depends(get_service_or_user)):
+    _load_portfolio(portfolio_id, user=user)
     ensure_risk_schema()
     if not req.comment or not req.comment.strip():
         raise HTTPException(status_code=400, detail="An acknowledgement comment is required")
@@ -300,6 +312,7 @@ async def acknowledge_breach(portfolio_id: int, breach_id: int, req: Acknowledge
 
 @risk_router.get("/portfolios/{portfolio_id}/overrides")
 async def get_overrides(portfolio_id: int, user: dict = Depends(get_service_or_user)):
+    _load_portfolio(portfolio_id, user=user)
     ensure_risk_schema()
     rows = query("SELECT * FROM limit_overrides WHERE portfolio_id = %s ORDER BY created_at DESC LIMIT 200",
                  [portfolio_id]).rows
@@ -311,7 +324,7 @@ async def get_overrides(portfolio_id: int, user: dict = Depends(get_service_or_u
 # ---------------------------------------------------------------------------
 @risk_router.get("/portfolios/{portfolio_id}/headroom/{ticker}")
 async def get_headroom(portfolio_id: int, ticker: str, user: dict = Depends(get_service_or_user)):
-    portfolio, raw = _load_portfolio(portfolio_id)
+    portfolio, raw = _load_portfolio(portfolio_id, user=user)
     limits = load_limits(portfolio_id)
     return compute_headroom(raw, float(portfolio["cash"]), limits, ticker)
 
@@ -380,7 +393,7 @@ def _persist_history(portfolio_id: int, rows: list):
 async def get_risk_history(portfolio_id: int, range: str = "1Y", user: dict = Depends(get_service_or_user)):
     from agents.risk_models import risk_history
     ensure_risk_schema()
-    portfolio, raw = _load_portfolio(portfolio_id)
+    portfolio, raw = _load_portfolio(portfolio_id, user=user)
     h = risk_history(raw, float(portfolio["cash"]))
     _persist_history(portfolio_id, h["rows"])
     n = _RANGES.get((range or "1Y").upper(), 252)
@@ -395,7 +408,7 @@ async def get_var(portfolio_id: int, confidence: float = 0.99, horizon: int = 1,
     from agents.risk_models import var_report
     if confidence not in (0.95, 0.99) or horizon not in (1, 10):
         raise HTTPException(status_code=400, detail="confidence must be 0.95 or 0.99 and horizon 1 or 10")
-    portfolio, raw = _load_portfolio(portfolio_id)
+    portfolio, raw = _load_portfolio(portfolio_id, user=user)
     extra = tickers.split(",") if tickers else None
     return var_report(raw, float(portfolio["cash"]), confidence, horizon, extra_tickers=extra)
 
@@ -405,7 +418,7 @@ async def get_var_backtest(portfolio_id: int, confidence: float = 0.99, user: di
     from agents.risk_models import proforma_series, backtest_series, BACKTEST_DAYS, BACKTEST_WINDOW
     if confidence not in (0.95, 0.99):
         raise HTTPException(status_code=400, detail="confidence must be 0.95 or 0.99")
-    portfolio, raw = _load_portfolio(portfolio_id)
+    portfolio, raw = _load_portfolio(portfolio_id, user=user)
     if not raw:
         raise HTTPException(status_code=400, detail="Portfolio has no positions to backtest")
     s = proforma_series(raw, float(portfolio["cash"]))
@@ -562,7 +575,7 @@ async def get_stress_test(portfolio_id: int, target_loss_pct: float = 10.0, scen
     from agents.risk_models import current_drawdown
     if not 0 < target_loss_pct < 100:
         raise HTTPException(status_code=400, detail="target_loss_pct must be between 0 and 100")
-    portfolio, raw = _load_portfolio(portfolio_id)
+    portfolio, raw = _load_portfolio(portfolio_id, user=user)
     cash = float(portfolio["cash"])
     limits = load_limits(portfolio_id)
     scenarios = _scenarios_for(portfolio_id)
@@ -599,7 +612,7 @@ async def get_liquidity_risk(portfolio_id: int, participation: float = 0.20, imp
         raise HTTPException(status_code=400, detail="participation must be between 0.01 and 1.0")
     if not 0 <= impact_coeff <= 5:
         raise HTTPException(status_code=400, detail="impact_coeff must be between 0 and 5")
-    portfolio, raw = _load_portfolio(portfolio_id)
+    portfolio, raw = _load_portfolio(portfolio_id, user=user)
     return liquidity_risk(raw, float(portfolio["cash"]), participation, impact_coeff=impact_coeff)
 
 
@@ -608,7 +621,7 @@ async def get_risk_attribution(portfolio_id: int, confidence: float = 0.99, user
     from agents.risk_phase3 import risk_attribution
     if confidence not in (0.95, 0.99):
         raise HTTPException(status_code=400, detail="confidence must be 0.95 or 0.99")
-    portfolio, raw = _load_portfolio(portfolio_id)
+    portfolio, raw = _load_portfolio(portfolio_id, user=user)
     return risk_attribution(raw, float(portfolio["cash"]), confidence)
 
 
@@ -630,7 +643,7 @@ async def get_hedge_calculator(
         raise HTTPException(status_code=400, detail="target_beta must be between -1.0 and 2.0")
     if derisk_mode not in ("pro_rata", "top_rc"):
         raise HTTPException(status_code=400, detail="derisk_mode must be 'pro_rata' or 'top_rc'")
-    portfolio, raw = _load_portfolio(portfolio_id)
+    portfolio, raw = _load_portfolio(portfolio_id, user=user)
     limits = load_limits(portfolio_id)
     res = hedge_calculator(
         raw,
@@ -723,7 +736,7 @@ async def post_simulate_degradation(req: SimulateDegradationRequest, user: dict 
 async def get_tear_sheet(portfolio_id: int, user: dict = Depends(get_service_or_user)):
     from agents.risk_phase4 import morning_tear_sheet
     ensure_risk_schema()
-    portfolio, raw = _load_portfolio(portfolio_id)
+    portfolio, raw = _load_portfolio(portfolio_id, user=user)
     limits = load_limits(portfolio_id)
     return morning_tear_sheet(portfolio_id, portfolio, raw, limits)
 
@@ -733,7 +746,7 @@ async def export_tear_sheet(portfolio_id: int, format: str = "csv", user: dict =
     from fastapi.responses import Response
     from agents.risk_phase4 import morning_tear_sheet, tear_sheet_csv, tear_sheet_html
     ensure_risk_schema()
-    portfolio, raw = _load_portfolio(portfolio_id)
+    portfolio, raw = _load_portfolio(portfolio_id, user=user)
     limits = load_limits(portfolio_id)
     sheet = morning_tear_sheet(portfolio_id, portfolio, raw, limits)
     fmt = (format or "csv").lower().strip()

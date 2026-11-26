@@ -1,17 +1,15 @@
+import { requireProxyAuthHeaders } from '@/lib/serverAuth';
 const BACKEND_URL = process.env.BACKEND_URL || process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:8000';
 
 // RSK-013 simulate agent degradation / restoration adapter.
 function getAuthHeaders(request) {
-  const headers = {
-    'Content-Type': 'application/json',
-    'x-service-key': process.env.INTERNAL_SERVICE_KEY || ''
-  };
-  const auth = request.headers.get('authorization');
-  if (auth) headers['Authorization'] = auth;
+  const { headers } = requireProxyAuthHeaders(request);
   return headers;
 }
 
 export async function POST(request) {
+  const { errorResponse: _authErr } = requireProxyAuthHeaders(request);
+  if (_authErr) return _authErr;
   const body = await request.text();
   try {
     const res = await fetch(`${BACKEND_URL}/risk/model-risk/simulate-degradation`, {

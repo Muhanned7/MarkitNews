@@ -1,49 +1,165 @@
 import { tagSectors } from '@/lib/sectorTagger'
 import { index } from '@/lib/pinecone'
 import { getEmbedding } from '@/lib/embeddings'
-import { getMockNews } from '@/lib/mockNews'
 
 export const maxDuration = 60 // seconds
 
 const BACKEND_URL = process.env.BACKEND_URL || process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:8000'
 const INTERNAL_SERVICE_KEY = process.env.INTERNAL_SERVICE_KEY
 
-function mockScore(article) {
+// In-memory cache with 10-minute TTL to protect API quotas
+const cache = new Map()
+
+function hashStr(str) {
+  let h = 0
+  for (let i = 0; i < str.length; i++) {
+    h = (Math.imul(31, h) + str.charCodeAt(i)) | 0
+  }
+  return Math.abs(h).toString(16)
+}
+
+function scoreHeadlineDeterministically(title = '', summary = '') {
+  const text = `${title} ${summary}`.toLowerCase()
+  const bullWords = ['beat', 'beats', 'surge', 'rally', 'growth', 'upgrade', 'record', 'strong', 'expands', 'gain', 'profit', 'bullish', 'raises']
+  const bearWords = ['miss', 'misses', 'drop', 'plunge', 'slump', 'downgrade', 'probe', 'lawsuit', 'recall', 'shortage', 'delay', 'cuts', 'bearish', 'fall', 'loss', 'tariff']
+  let bull = 0
+  let bear = 0
+  for (const w of bullWords) if (text.includes(w)) bull++
+  for (const w of bearWords) if (text.includes(w)) bear++
+
+  if (bull > bear) {
+    return {
+      score: Math.min(9, 6 + (bull - bear)),
+      sentiment: 'bullish',
+      confidence: Math.min(0.85, 0.55 + bull * 0.1),
+      rationale: 'Headline lexical cues indicate positive earnings, guidance, or momentum.'
+    }
+  }
+  if (bear > bull) {
+    return {
+      score: Math.max(2, 5 - (bear - bull)),
+      sentiment: 'bearish',
+      confidence: Math.min(0.85, 0.55 + bear * 0.1),
+      rationale: 'Headline lexical cues indicate operational, regulatory, or earnings headwinds.'
+    }
+  }
   return {
-    score: Math.floor(Math.random() * 10) + 1,
-    sentiment: ['bullish', 'bearish', 'neutral'][Math.floor(Math.random() * 3)],
-    confidence: parseFloat((Math.random()).toFixed(2)),
-    rationale: 'Market sentiment scored based on headline momentum.'
+    score: 5,
+    sentiment: 'neutral',
+    confidence: 0.5,
+    rationale: 'Headline presents balanced or informational market coverage.'
   }
 }
 
-// In-memory cache with 15-minute TTL to eliminate latency and protect API quotas
-const cache = new Map()
+function decodeXmlEntities(str = '') {
+  return str
+    .replace(/<!\[CDATA\[([\s\S]*?)\]\]>/g, '$1')
+    .replace(/&amp;/g, '&')
+    .replace(/&lt;/g, '<')
+    .replace(/&gt;/g, '>')
+    .replace(/&quot;/g, '"')
+    .replace(/&#39;/g, "'")
+    .replace(/<[^>]+>/g, '')
+    .trim()
+}
+
+async function fetchGoogleNewsRss(searchQuery, maxItems = 12) {
+  try {
+    const q = `${searchQuery} when:14d`
+    const url = `https://news.google.com/rss/search?q=${encodeURIComponent(q)}&hl=en-US&gl=US&ceid=US:en`
+    const res = await fetch(url, {
+      headers: {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
+        'Accept': 'application/rss+xml, application/xml, text/xml'
+      },
+      signal: AbortSignal.timeout(8000)
+    })
+    if (!res.ok) return []
+    const xml = await res.text()
+    const items = []
+    const itemRegex = /<item>([\s\S]*?)<\/item>/g
+    let match
+    while ((match = itemRegex.exec(xml)) !== null && items.length < maxItems) {
+      const block = match[1]
+      const rawTitle = (block.match(/<title>([\s\S]*?)<\/title>/) || [])[1] || ''
+      const rawLink = (block.match(/<link>([\s\S]*?)<\/link>/) || [])[1] || ''
+      const rawPubDate = (block.match(/<pubDate>([\s\S]*?)<\/pubDate>/) || [])[1] || ''
+      const rawSource = (block.match(/<source[^>]*>([\s\S]*?)<\/source>/) || [])[1] || ''
+
+      let title = decodeXmlEntities(rawTitle)
+      let source = decodeXmlEntities(rawSource)
+      if (!source && title.includes(' - ')) {
+        const idx = title.lastIndexOf(' - ')
+        source = title.slice(idx + 3).trim()
+        title = title.slice(0, idx).trim()
+      }
+      const link = decodeXmlEntities(rawLink)
+      const pubDate = decodeXmlEntities(rawPubDate)
+      if (title && link) {
+        items.push({
+          title,
+          description: title,
+          source: { name: source || 'Google News' },
+          url: link,
+          publishedAt: pubDate ? new Date(pubDate).toISOString() : new Date().toISOString()
+        })
+      }
+    }
+    return items
+  } catch (err) {
+    console.warn('Google News RSS fetch warning:', err.message)
+    return []
+  }
+}
 
 export async function POST(request) {
-  const body = await request.json().catch(() => ({}))
+  // Strict JSON validation (PROD-015): return 400 on malformed JSON
+  let body
+  try {
+    const rawText = await request.text()
+    if (!rawText || !rawText.trim()) {
+      return Response.json({ error: 'Request body must be valid JSON' }, { status: 400 })
+    }
+    body = JSON.parse(rawText)
+    if (!body || typeof body !== 'object' || Array.isArray(body)) {
+      return Response.json({ error: 'Request body must be a JSON object' }, { status: 400 })
+    }
+  } catch {
+    return Response.json({ error: 'Malformed JSON in request body' }, { status: 400 })
+  }
+
   const {
     query = '',
     tickers = [],
     page = 1,
     limit = 6,
-    save = false,
-    useLiveNews = false
+    save = false
   } = body
+
+  if (query !== undefined && typeof query !== 'string') {
+    return Response.json({ error: 'Field "query" must be a string' }, { status: 400 })
+  }
+  if (tickers !== undefined && !Array.isArray(tickers)) {
+    return Response.json({ error: 'Field "tickers" must be an array' }, { status: 400 })
+  }
 
   const normTickers = Array.isArray(tickers)
     ? [...tickers].map(t => String(t).trim().toUpperCase()).filter(Boolean).sort()
     : []
-  const normQuery = (query || '').trim().toLowerCase()
+  const normQuery = (query || '').trim()
   const pageNum = Math.max(1, parseInt(page, 10) || 1)
-  const limitNum = Math.max(1, parseInt(limit, 10) || 6)
+  const limitNum = Math.min(25, Math.max(1, parseInt(limit, 10) || 6))
 
-  // Cache key accounting for query, tickers, and pagination
-  const cacheKey = `${normTickers.join(',')}:${normQuery}:${pageNum}:${limitNum}`
+  // Build effective search term (default to live macro financial markets when home feed requests empty query)
+  const effectiveQuery = normQuery
+    ? (normTickers.length > 0 ? `${normQuery} ${normTickers.join(' OR ')}` : normQuery)
+    : (normTickers.length > 0 ? `${normTickers.join(' OR ')} stock` : 'stock market earnings economy')
+
+  const cacheKey = `${effectiveQuery.toLowerCase()}:${pageNum}:${limitNum}`
 
   if (cache.has(cacheKey)) {
     const cachedEntry = cache.get(cacheKey)
-    if (Date.now() - cachedEntry.timestamp < 15 * 60 * 1000) {
+    if (Date.now() - cachedEntry.timestamp < 10 * 60 * 1000) {
       return Response.json({
         message: 'Response received',
         scoredArticles: cachedEntry.articles,
@@ -56,151 +172,77 @@ export async function POST(request) {
     }
   }
 
-  // Use Smart Mock News Engine when live news is not explicitly requested or when multi-ticker / macro
-  const useMock = !useLiveNews || !process.env.NEWSAPI_KEY || process.env.USE_MOCK_NEWS === 'true'
-
-  if (useMock) {
-    const mockResult = getMockNews({
-      tickers: normTickers,
-      query: normQuery || 'market news',
-      page: pageNum,
-      limit: limitNum
-    })
-
-    cache.set(cacheKey, {
-      articles: mockResult.articles,
-      page: mockResult.page,
-      limit: mockResult.limit,
-      hasMore: mockResult.hasMore,
-      total: mockResult.total,
-      timestamp: Date.now()
-    })
-
-    if (save && mockResult.articles.length > 0) {
-      fetch(`${BACKEND_URL}/articles`, {
-        method: 'POST',
-        headers: { 
-          'Content-Type': 'application/json',
-          'X-Service-Key': INTERNAL_SERVICE_KEY
-        },
-        body: JSON.stringify({
-          articles: mockResult.articles.map(article => ({
-            id: article.id,
-            headline: article.headline,
-            summary: article.summary,
-            source: article.source,
-            url: article.url,
-            published: article.published || null,
-            score: article.score,
-            sentiment: article.sentiment,
-            confidence: article.confidence,
-            rationale: article.rationale,
-            sectors: article.sectors,
-            query: normTickers.length > 0 ? normTickers : [query || 'market news']
-          }))
-        })
-      }).catch(err => console.warn('Article storage error:', err.message))
-    }
-
-    return Response.json({
-      message: 'Response received',
-      scoredArticles: mockResult.articles,
-      page: mockResult.page,
-      limit: mockResult.limit,
-      hasMore: mockResult.hasMore,
-      total: mockResult.total
-    })
-  }
-
-  function hashStr(str) {
-    let h = 0
-    for (let i = 0; i < str.length; i++) {
-      h = Math.imul(31, h) + str.charCodeAt(i) | 0
-    }
-    return Math.abs(h).toString(16)
-  }
-
   let articlesRaw = []
 
-  // 2. Fetch single query from NewsAPI to preserve developer allowance (100 req/day)
+  // 1. Primary: NewsAPI live search (real articles only; never fabricate)
   try {
     const apiKey = process.env.NEWSAPI_KEY
     if (apiKey) {
+      const fromDate = new Date(Date.now() - 14 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]
       const res = await fetch(
-        `https://newsapi.org/v2/everything?q=${encodeURIComponent(query)}&pageSize=8&sortBy=publishedAt&apiKey=${apiKey}`
+        `https://newsapi.org/v2/everything?q=${encodeURIComponent(effectiveQuery)}&from=${fromDate}&language=en&pageSize=24&sortBy=publishedAt&apiKey=${apiKey}`,
+        { signal: AbortSignal.timeout(8000) }
       )
-      const data = await res.json()
-      if (data.status === 'ok' && Array.isArray(data.articles)) {
-        articlesRaw = data.articles
+      if (res.ok) {
+        const data = await res.json()
+        if (data.status === 'ok' && Array.isArray(data.articles)) {
+          articlesRaw = data.articles.filter(a => a && a.title && a.title !== '[Removed]' && a.url)
+        }
       }
     }
   } catch (err) {
     console.warn('NewsAPI fetch warning:', err.message)
   }
 
-  // Fallback headlines if NewsAPI quota exceeded or empty response
-  if (!articlesRaw || articlesRaw.length === 0) {
-    const uppercaseTicker = query.toUpperCase()
-    articlesRaw = [
-      {
-        title: `${uppercaseTicker} Shows Constructive Momentum Amid Market Volatility`,
-        description: `Institutional interest and analyst commentary around ${uppercaseTicker} highlight ongoing developments in sector performance.`,
-        source: { name: 'MarketPulse News' },
-        url: `https://finance.yahoo.com/quote/${encodeURIComponent(query)}`,
-        publishedAt: new Date().toISOString()
-      },
-      {
-        title: `What Investors Are Watching in ${uppercaseTicker} Today`,
-        description: `Key catalysts, upcoming earnings milestones, and supply chain updates for ${uppercaseTicker}.`,
-        source: { name: 'Financial Times' },
-        url: `https://www.bloomberg.com/search?query=${encodeURIComponent(query)}`,
-        publishedAt: new Date().toISOString()
-      },
-      {
-        title: `Macro Trends Impacting ${uppercaseTicker} and Sector Peers`,
-        description: `Interest rates, federal policy, and industry demand shape the near-term forecast for ${uppercaseTicker}.`,
-        source: { name: 'Reuters' },
-        url: `https://www.reuters.com/search/news?blob=${encodeURIComponent(query)}`,
-        publishedAt: new Date().toISOString()
-      }
-    ]
+  // 2. Secondary: Live Google News RSS (still 100% real articles; returns [] for gibberish like "zzqqxx")
+  if (articlesRaw.length === 0) {
+    articlesRaw = await fetchGoogleNewsRss(effectiveQuery, 24)
   }
 
+  // NEVER fabricate fake articles or attribute invented quotes to real outlets (PROD-002).
+  // If no real articles match, return an honest empty array [].
   const seen = new Set()
-  const articles = articlesRaw
-    .filter(a => a && a.title && !seen.has(a.url) && seen.add(a.url))
-    .map(article => ({
-      headline: article.title,
-      summary: article.description || article.title,
-      source: article.source?.name || 'News',
-      url: article.url || '#',
-      published: article.publishedAt,
-      id: hashStr(article.title + (article.url || '')),
-      sectors: tagSectors((article.title || '') + ' ' + (article.description || ''))
-    }))
+  const allRealArticles = articlesRaw
+    .filter(a => a && a.title && a.url && !seen.has(a.url) && seen.add(a.url))
+    .map(article => {
+      const headline = article.title.trim()
+      const summary = (article.description || article.title).trim()
+      const scoring = scoreHeadlineDeterministically(headline, summary)
+      return {
+        headline,
+        summary,
+        source: article.source?.name || 'Financial News',
+        url: article.url,
+        published: article.publishedAt || null,
+        id: hashStr(headline + article.url),
+        sectors: tagSectors(`${headline} ${summary}`),
+        ...scoring
+      }
+    })
 
-  const scoredArticles = articles.map(article => ({
-    ...article,
-    ...mockScore(article)
-  }))
+  const startIdx = (pageNum - 1) * limitNum
+  const pageArticles = allRealArticles.slice(startIdx, startIdx + limitNum)
+  const hasMore = startIdx + limitNum < allRealArticles.length
 
-  // 3. Cache the results
-  cache.set(normQuery, {
-    articles: scoredArticles,
+  cache.set(cacheKey, {
+    articles: pageArticles,
+    page: pageNum,
+    limit: limitNum,
+    hasMore,
+    total: allRealArticles.length,
     timestamp: Date.now()
   })
 
-  // 4. Persistence if save is true (non-blocking for UI speed)
-  if (save) {
-    // Save articles batch to PostgreSQL via FastAPI backend
+  // Optional non-blocking persistence when save=true and real articles exist
+  if (save && pageArticles.length > 0 && INTERNAL_SERVICE_KEY) {
     fetch(`${BACKEND_URL}/articles`, {
       method: 'POST',
-      headers: { 
+      headers: {
         'Content-Type': 'application/json',
         'X-Service-Key': INTERNAL_SERVICE_KEY
       },
       body: JSON.stringify({
-        articles: scoredArticles.map(article => ({
+        articles: pageArticles.map(article => ({
           id: article.id,
           headline: article.headline,
           summary: article.summary,
@@ -212,31 +254,26 @@ export async function POST(request) {
           confidence: article.confidence,
           rationale: article.rationale,
           sectors: article.sectors,
-          query: [query]
+          query: normTickers.length > 0 ? normTickers : [normQuery || 'market']
         }))
       })
-    }).then(res => {
-      if (!res.ok) console.warn(`Article storage warning: status ${res.status}`);
     }).catch(err => console.warn('Article storage error:', err.message))
 
     fetch(`${BACKEND_URL}/searches`, {
       method: 'POST',
-      headers: { 
+      headers: {
         'Content-Type': 'application/json',
         'X-Service-Key': INTERNAL_SERVICE_KEY
       },
       body: JSON.stringify({
-        query: [query],
-        results_count: scoredArticles.length
+        query: [effectiveQuery],
+        results_count: pageArticles.length
       })
-    }).then(res => {
-      if (!res.ok) console.warn(`Search log warning: status ${res.status}`);
     }).catch(err => console.warn('Search log error:', err.message))
 
-    // Background Pinecone embedding without delaying the response
     Promise.allSettled(
-      scoredArticles.slice(0, 3).map(async article => {
-        const textToEmbed = (article.headline || '') + ' ' + (article.summary || '')
+      pageArticles.slice(0, 3).map(async article => {
+        const textToEmbed = `${article.headline || ''} ${article.summary || ''}`
         if (textToEmbed.trim().length > 20) {
           const embedding = await getEmbedding(textToEmbed)
           await index.upsert({
@@ -258,11 +295,11 @@ export async function POST(request) {
   }
 
   return Response.json({
-    message: 'Response received',
-    scoredArticles,
+    message: pageArticles.length > 0 ? 'Response received' : 'No matching live news articles found',
+    scoredArticles: pageArticles,
     page: pageNum,
     limit: limitNum,
-    hasMore: false,
-    total: scoredArticles.length
+    hasMore,
+    total: allRealArticles.length
   })
 }

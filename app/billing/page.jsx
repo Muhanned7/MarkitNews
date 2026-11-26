@@ -30,17 +30,14 @@ export default function BillingPage() {
       return
     }
     loadBillingData()
-  }, [user, loading])
+  }, [user?.id, user?.email, loading])
 
   async function loadBillingData() {
     setPageLoading(true)
     try {
-      const token = localStorage.getItem('token') || user?.token
       const [pkgRes, walletRes] = await Promise.all([
-        fetch('/api/billing/packages'),
-        fetch('/api/billing/wallet', {
-          headers: token ? { Authorization: `Bearer ${token}` } : {},
-        }),
+        fetch('/api/billing/packages', { credentials: 'include' }),
+        fetch('/api/billing/wallet', { credentials: 'include' }),
       ])
 
       if (pkgRes.ok) {
@@ -75,19 +72,14 @@ export default function BillingPage() {
     setErrorMessage(null)
     setBannerMessage(null)
     try {
-      const token = localStorage.getItem('token') || user?.token
       const res = await fetch('/api/billing/checkout', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`,
-        },
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
         body: JSON.stringify({ package_id: packageId }),
       })
       const data = await res.json()
       if (res.status === 401) {
-        localStorage.removeItem('token')
-        localStorage.removeItem('email')
         router.push('/login?next=/billing&expired=1')
         return
       }
@@ -112,13 +104,10 @@ export default function BillingPage() {
     setProcessingPayment(true)
     setErrorMessage(null)
     try {
-      const token = localStorage.getItem('token') || user?.token
       const res = await fetch('/api/billing/confirm', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`,
-        },
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
         body: JSON.stringify({
           session_id: sessionId,
           package_id: packageId,

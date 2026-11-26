@@ -7,6 +7,7 @@ from agents.client import client
 from agents.metrics import agent_calls, agent_latency, mistral_errors
 from agents.guardrails import guardrail_news_agent
 from agents.evaluator import evaluate_agent_output
+from ingestion.adapters.geo_feed_adapter import classify_article_temporal_regime
 from loguru import logger
 import time
 
@@ -123,12 +124,18 @@ async def news_agent(ticker: str) -> dict:
             for article in articles:
                 if article["url"] not in seen:
                     seen.add(article["url"])
+                    pub_ts = article.get("publishedAt") or article.get("published_at") or ""
+                    temporal_meta = classify_article_temporal_regime(pub_ts)
                     all_articles.append({
                         "title": article["title"],
                         "description": article["description"],
-                        "source": article["source"]["name"],
+                        "source": article["source"]["name"] if isinstance(article.get("source"), dict) else article.get("source", "News Wire"),
                         "url": article["url"],
-                        "published": article["publishedAt"]
+                        "published": pub_ts,
+                        "age_days": temporal_meta["age_days"],
+                        "temporal_regime": temporal_meta["temporal_regime"],
+                        "is_live_contradiction_eligible": temporal_meta["is_live_contradiction_eligible"],
+                        "temporal_guidance": temporal_meta["temporal_guidance"]
                     })
 
         response = await asyncio.to_thread(
@@ -137,20 +144,42 @@ async def news_agent(ticker: str) -> dict:
             messages=[
                 {
                     "role": "system",
-                    "content": """You are a financial news analyst. Given a list of news articles about a company and its supply chain, 
-                    return a JSON object with keys:
+                    "content": """You are a senior institutional financial & supply-chain news analyst. Given a list of news articles about a company and its supply chain (each annotated with `age_days`, `temporal_regime`, and `temporal_guidance`), return a JSON object with keys:
                     {
                         "overall_sentiment": "bullish/bearish/neutral",
                         "summary": "3 sentence summary of the news landscape",
                         "key_themes": ["theme1", "theme2", "theme3"],
                         "supply_chain_risks": ["risk1", "risk2"],
-                        "articles": [{"title": "...", "source": "...", "url": "...", "relevance": "why this matters"}]
+                        "temporal_supply_chain_effects": [
+                            {
+                                "event": "short description of the supply chain event",
+                                "temporal_regime": "ACTIVE_SHOCK | RECOVERY_LAG | HISTORICAL_STRUCTURAL",
+                                "age_days": 0,
+                                "supply_chain_effect": "time-calibrated operational or structural impact"
+                            }
+                        ],
+                        "articles": [
+                            {
+                                "title": "...",
+                                "source": "...",
+                                "url": "...",
+                                "temporal_regime": "ACTIVE_SHOCK | RECOVERY_LAG | HISTORICAL_STRUCTURAL",
+                                "relevance": "why this matters according to its temporal regime"
+                            }
+                        ]
                     }
+                    CRITICAL TEMPORAL SUPPLY-CHAIN REASONING RULES:
+                    1. ACTIVE_SHOCK (0-30 days old): Treat as an active operational flow event (immediate factory stoppage, spot shortage, or active shipment contradiction).
+                    2. RECOVERY_LAG (31-180 days old): The physical shock is in recovery/rebuild; analyze the lagged financial/inventory effect (COGS inflation, expedited air-freight, buffer inventory drawdown, upcoming quarterly gross-margin compression).
+                    3. HISTORICAL_STRUCTURAL (>180 days / 1-3+ years old, e.g., a supplier factory fire or walkout 3 years ago): NEVER claim an old historical event causes a current shipment halt or active production bottleneck today! Physical repairs and inventory flows normalized years ago. Instead, analyze its LONG-TERM STRUCTURAL EFFECT today:
+                       - Did it expose a Single-Point-of-Failure (SPOF) concentration risk at that hub/supplier?
+                       - Did it trigger geographic diversification or dual-sourcing (e.g., shifting capacity to a secondary country or qualifying a second wafer/component supplier)?
+                       - How does that historical vulnerability shape baseline supply-chain resilience today?
                     Return only raw JSON, no markdown."""
                 },
                 {
                     "role": "user",
-                    "content": f"Analyze these articles for {ticker} ({research['company_name']}): {json.dumps(all_articles)}"
+                    "content": f"Analyze these temporally-tagged articles for {ticker} ({research['company_name']}): {json.dumps(all_articles)}"
                 }
             ]
         )

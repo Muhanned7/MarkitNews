@@ -1,11 +1,6 @@
-// Shared fetch helper for risk components: forwards the user's bearer token when present.
+// Shared fetch helper for risk components: relies on httpOnly cookie auth (PROD-014).
 export function riskHeaders() {
-  const h = { 'Content-Type': 'application/json' }
-  try {
-    const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null
-    if (token) h['Authorization'] = `Bearer ${token}`
-  } catch (e) { /* storage unavailable */ }
-  return h
+  return { 'Content-Type': 'application/json' }
 }
 
 // Fired after trades / limit edits / acknowledgements so the navbar badge refreshes immediately.

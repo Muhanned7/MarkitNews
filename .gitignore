@@ -48,11 +48,15 @@ venv/
 # python cache & runtime state
 __pycache__/
 logs/
+!backend/logs/
+backend/logs/*
+!backend/logs/golden_footprint_benchmark.json
 .feedback_watcher_state.json
 
 # internal agent working logs (keep local, not on public repo)
 *_COMMUNICATIONS.md
 *_TASKS.md
+!PRODUCTION_BUGS_AND_TASKS.md
 *_FEATURE_REQUESTS.md
 QA_TASKS.csv
 # empty / scratch files kept local only

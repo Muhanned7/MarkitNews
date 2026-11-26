@@ -3,11 +3,11 @@ import { useState } from 'react'
 import { MOCK_CONTRADICTION_SCENARIOS } from '../../lib/mockContradictions'
 import styles from './ContradictionRadar.module.css'
 
-export default function ContradictionRadar({ defaultScenarioId = 'tsingshan-nickel' }) {
+export default function ContradictionRadar({ defaultScenarioId = 'meridian-nickel' }) {
   const [selectedId, setSelectedId] = useState(defaultScenarioId)
   const [severityFilter, setSeverityFilter] = useState('all')
 
-  const scenario = MOCK_CONTRADICTION_SCENARIOS[selectedId] || MOCK_CONTRADICTION_SCENARIOS['tsingshan-nickel']
+  const scenario = MOCK_CONTRADICTION_SCENARIOS[selectedId] || MOCK_CONTRADICTION_SCENARIOS['meridian-nickel']
 
   const filteredContradictions = (scenario?.contradictions || []).filter(item => {
     if (severityFilter === 'all') return true

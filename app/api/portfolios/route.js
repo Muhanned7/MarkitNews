@@ -1,19 +1,15 @@
+import { requireProxyAuthHeaders } from '@/lib/serverAuth';
 const BACKEND_URL = process.env.BACKEND_URL || process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:8000';
 const INTERNAL_SERVICE_KEY = process.env.INTERNAL_SERVICE_KEY || '';
 
 function getAuthHeaders(request) {
-  const auth = request.headers.get('authorization');
-  const headers = {
-    'Content-Type': 'application/json',
-    'x-service-key': INTERNAL_SERVICE_KEY
-  };
-  if (auth) {
-    headers['Authorization'] = auth;
-  }
+  const { headers } = requireProxyAuthHeaders(request);
   return headers;
 }
 
 export async function GET(request) {
+  const { errorResponse: _authErr } = requireProxyAuthHeaders(request);
+  if (_authErr) return _authErr;
   try {
     const res = await fetch(`${BACKEND_URL}/portfolios`, {
       headers: getAuthHeaders(request),
@@ -27,6 +23,8 @@ export async function GET(request) {
 }
 
 export async function POST(request) {
+  const { errorResponse: _authErr } = requireProxyAuthHeaders(request);
+  if (_authErr) return _authErr;
   try {
     const body = await request.json();
     const res = await fetch(`${BACKEND_URL}/portfolios`, {

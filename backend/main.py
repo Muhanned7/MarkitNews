@@ -438,8 +438,8 @@ async def analyse(ticker: str, nocache: Optional[int] = 0, user: dict = Depends(
     if not is_valid:
         raise HTTPException(status_code=404, detail=f"Ticker '{ticker_clean}' not found. Please verify the symbol.")
 
-    # Enforce subscription tier & internal token capacity before running AI analysis
-    req_tier = "pro" if nocache else "free"
+    # Enforce Pro Package subscription tier & internal token capacity before running 6-agent AI analysis (PROD-011)
+    req_tier = "pro"
     req_feature = f"Agentic Company Analysis ({ticker_clean})"
     await asyncio.to_thread(
         check_tokens_and_tier,
@@ -461,12 +461,19 @@ async def analyse(ticker: str, nocache: Optional[int] = 0, user: dict = Depends(
         authoritative_consensus = "buy"
         street_price_targets = {}
         if os.environ.get("MOCK_MODE", "true").lower() == "true":
-            authoritative_consensus = "buy"
+            from agents.mock_market_data import get_deterministic_mock_profile
+            prof = get_deterministic_mock_profile(ticker_clean)
+            authoritative_consensus = prof["recommendation"]
+            bear_t = prof["scenarios"]["bear"]["target"]
+            base_t = prof["target_price"]
+            bull_t = prof["scenarios"]["bull"]["target"]
             street_price_targets = {
-                "target_low": 180.0,
-                "target_median": 220.0,
-                "target_mean": 218.5,
-                "target_high": 250.0
+                "target_low": bear_t,
+                "target_median": base_t,
+                "target_mean": round((bear_t + base_t + bull_t) / 3.0, 2),
+                "target_high": bull_t,
+                "low": bear_t,
+                "high": bull_t,
             }
         else:
             def fetch_consensus_and_targets():
@@ -557,17 +564,22 @@ async def analyse(ticker: str, nocache: Optional[int] = 0, user: dict = Depends(
             report["model_risk_banner"] = None
             report["degraded_agents"] = []
         
-        if isinstance(equity, dict) and equity.get("price_target") and "equity" not in degraded_map:
-            report["price_target"] = equity["price_target"]
+        if isinstance(equity, dict) and "equity" not in degraded_map:
+            if equity.get("price_target"):
+                report["price_target"] = equity["price_target"]
+            if equity.get("investment_thesis"):
+                report["investment_thesis"] = equity["investment_thesis"]
+            if equity.get("growth_catalysts"):
+                report["key_catalysts"] = equity["growth_catalysts"]
             
         current_price = None
-        if isinstance(technical, dict):
+        if os.environ.get("MOCK_MODE", "true").lower() == "true":
+            from agents.mock_market_data import get_deterministic_mock_profile
+            current_price = get_deterministic_mock_profile(ticker_clean)["current_price"]
+        if not current_price and isinstance(technical, dict):
             current_price = technical.get("raw", {}).get("current_price") or technical.get("current_price")
         if not current_price and isinstance(fundamentals, dict):
             current_price = fundamentals.get("current_price")
-        if not current_price and os.environ.get("MOCK_MODE", "true").lower() == "true":
-            from agents.mock_market_data import get_deterministic_mock_profile
-            current_price = get_deterministic_mock_profile(ticker_clean)["current_price"]
             
         if current_price:
             report["current_price"] = current_price
@@ -579,6 +591,18 @@ async def analyse(ticker: str, nocache: Optional[int] = 0, user: dict = Depends(
                     report["upside_downside"] = f"{abs(diff_pct)}% downside from current price"
                 if isinstance(equity, dict):
                     equity["upside_downside"] = report["upside_downside"]
+                if report.get("expected_return") is None:
+                    report["expected_return"] = diff_pct
+
+                # Keep risk_reward coherent with upside/downside, recommendation, and Risk agent evaluation (PROD-007)
+                risk_grade = risk.get("_evaluation", {}).get("grade", "A") if isinstance(risk, dict) else "FAIL"
+                rec_now = str(report.get("recommendation", "hold")).lower()
+                if risk_grade == "FAIL" or "risk" in degraded_map or diff_pct < -1.0 or "sell" in rec_now:
+                    report["risk_reward"] = "unfavorable"
+                elif rec_now == "hold" or diff_pct < 4.0:
+                    report["risk_reward"] = "neutral"
+                else:
+                    report["risk_reward"] = "favorable"
         
         if street_price_targets:
             report["analyst_price_targets"] = street_price_targets

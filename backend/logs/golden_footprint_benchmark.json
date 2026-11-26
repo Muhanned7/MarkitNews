@@ -1,0 +1,453 @@
+{
+  "benchmark_name": "marketpulse-footprint-bench-v1",
+  "standards": [
+    "FinanceBench (SEC 10-K Item 2 Property & Supply Chain Grounding)",
+    "DocRED / Re-DocRED (Document-Level Entity-Relation Extraction)",
+    "ALCE (Automated LLM Citation Evaluation - Tiered Precision & Whitelist Verification)",
+    "HaluBench (Clause-Scoped Negation, Divestiture & Stitched-Quote Traps)"
+  ],
+  "thresholds": {
+    "industry_baseline_f1": 0.75,
+    "institutional_sota_f1": 0.95,
+    "max_false_positive_rate": 0.00,
+    "min_item_grounding_pass": 0.70
+  },
+  "cases": [
+    {
+      "case_id": "FB-01",
+      "category": "verbatim_10k_item2",
+      "ticker": "NVDA",
+      "company_name": "NVIDIA Corporation",
+      "entity_type": "hub",
+      "candidate": {
+        "hub_name": "Santa Clara Global Headquarters",
+        "region_name": "Santa Clara, California",
+        "country_code": "US",
+        "facility_type": "Corporate Headquarters & R&D",
+        "evidence_quote": "Our headquarters are located in Santa Clara, California, where we own and lease commercial buildings for research and development.",
+        "source_url": "https://www.sec.gov/Archives/edgar/data/1045810/000104581024000029/nvda-20240128.htm",
+        "source_type": "sec_10k"
+      },
+      "context_corpus": "Item 2. Properties. Our headquarters are located in Santa Clara, California, where we own and lease commercial buildings for research and development. We also lease data center and engineering office space in Hsinchu, Taiwan and Tel Aviv, Israel.",
+      "retrieved_urls": [
+        "https://www.sec.gov/Archives/edgar/data/1045810/000104581024000029/nvda-20240128.htm"
+      ],
+      "expected_is_grounded": true,
+      "expected_min_score": 0.90,
+      "rationale": "Exact verbatim SEC 10-K Item 2 property disclosure with Tier-1 SEC URL."
+    },
+    {
+      "case_id": "FB-02",
+      "category": "verbatim_10k_item2",
+      "ticker": "TSLA",
+      "company_name": "Tesla, Inc.",
+      "entity_type": "hub",
+      "candidate": {
+        "hub_name": "Gigafactory Texas",
+        "region_name": "Austin, Texas",
+        "country_code": "US",
+        "facility_type": "Vehicle & Battery Manufacturing",
+        "evidence_quote": "We manufacture Model Y and Cybertruck vehicles at Gigafactory Texas in Austin, Texas.",
+        "source_url": "https://www.sec.gov/Archives/edgar/data/1318605/000162828124000036/tsla-20231231.htm",
+        "source_type": "sec_10k"
+      },
+      "context_corpus": "Item 2. Properties. We manufacture Model Y and Cybertruck vehicles at Gigafactory Texas in Austin, Texas. In addition, we operate Gigafactory Shanghai in China for vehicle and battery pack assembly.",
+      "retrieved_urls": [
+        "https://www.sec.gov/Archives/edgar/data/1318605/000162828124000036/tsla-20231231.htm"
+      ],
+      "expected_is_grounded": true,
+      "expected_min_score": 0.90,
+      "rationale": "Verbatim SEC 10-K Item 2 facility disclosure for Austin Gigafactory."
+    },
+    {
+      "case_id": "FB-03",
+      "category": "verbatim_10k_item2",
+      "ticker": "AAPL",
+      "company_name": "Apple Inc.",
+      "entity_type": "supplier",
+      "candidate": {
+        "name": "Foxconn (Hon Hai Precision Industry)",
+        "evidence_quote": "Substantially all of our hardware products are manufactured by outsourcing partners, primarily Foxconn in Zhengzhou, China and Tamil Nadu, India.",
+        "source_url": "https://www.sec.gov/Archives/edgar/data/320193/000032019323000106/aapl-20230930.htm",
+        "source_type": "sec_10k"
+      },
+      "context_corpus": "Supply Chain and Manufacturing. Substantially all of our hardware products are manufactured by outsourcing partners, primarily Foxconn in Zhengzhou, China and Tamil Nadu, India. Final assembly is also performed by Pegatron and Luxshare.",
+      "retrieved_urls": [
+        "https://www.sec.gov/Archives/edgar/data/320193/000032019323000106/aapl-20230930.htm"
+      ],
+      "expected_is_grounded": true,
+      "expected_min_score": 0.90,
+      "rationale": "Verbatim 10-K supplier disclosure with Link A entity match and Link B/C window match."
+    },
+    {
+      "case_id": "FB-04",
+      "category": "verbatim_10k_item2",
+      "ticker": "NVDA",
+      "company_name": "NVIDIA Corporation",
+      "entity_type": "supplier",
+      "candidate": {
+        "name": "TSMC (Taiwan Semiconductor Manufacturing Company)",
+        "evidence_quote": "We do not own wafer fabs; instead, we rely on Taiwan Semiconductor Manufacturing Company Limited (TSMC) and Samsung Electronics to fabricate our semiconductor wafers.",
+        "source_url": "https://www.sec.gov/Archives/edgar/data/1045810/000104581024000029/nvda-20240128.htm",
+        "source_type": "sec_10k"
+      },
+      "context_corpus": "Semiconductor Wafer Supply. We do not own wafer fabs; instead, we rely on Taiwan Semiconductor Manufacturing Company Limited (TSMC) and Samsung Electronics to fabricate our semiconductor wafers. CoWoS advanced packaging is also performed by TSMC in Taiwan.",
+      "retrieved_urls": [
+        "https://www.sec.gov/Archives/edgar/data/1045810/000104581024000029/nvda-20240128.htm"
+      ],
+      "expected_is_grounded": true,
+      "expected_min_score": 0.90,
+      "rationale": "Tests clause-scoped polarity gate: 'We do not own wafer fabs; instead, we rely on TSMC' must NOT false-positive on 'do not' because the negation is in the first clause while TSMC is affirmed after '; instead'."
+    },
+    {
+      "case_id": "FB-05",
+      "category": "verbatim_10k_item2",
+      "ticker": "VALE",
+      "company_name": "Vale S.A.",
+      "entity_type": "hub",
+      "candidate": {
+        "hub_name": "Carajas Iron Ore Complex",
+        "region_name": "Parauapebas, Para",
+        "country_code": "BR",
+        "facility_type": "Open-Pit Iron Ore Mining Complex",
+        "evidence_quote": "Vale operates the Carajas Serra Norte and S11D iron ore mining complex located in Parauapebas, Para, Brazil.",
+        "source_url": "https://en.wikipedia.org/wiki/Vale_(company)",
+        "source_type": "wikipedia"
+      },
+      "context_corpus": "Mining Operations. Vale operates the Carajas Serra Norte and S11D iron ore mining complex located in Parauapebas, Para, Brazil. Ore is transported via the Carajas Railway to the Ponta da Madeira maritime terminal in Sao Luis.",
+      "retrieved_urls": [
+        "https://en.wikipedia.org/wiki/Vale_(company)"
+      ],
+      "expected_is_grounded": true,
+      "expected_min_score": 0.85,
+      "rationale": "Wikipedia Tier-2 verified heavy-industry mining hub extraction."
+    },
+    {
+      "case_id": "CR-01",
+      "category": "first_party_coreference",
+      "ticker": "TSLA",
+      "company_name": "Tesla, Inc.",
+      "entity_type": "hub",
+      "candidate": {
+        "hub_name": "Fremont Manufacturing Plant",
+        "region_name": "Fremont, California",
+        "country_code": "US",
+        "facility_type": "Automotive Assembly Plant",
+        "evidence_quote": "Tesla operates its primary California vehicle manufacturing facility in Fremont, California, producing Model S, Model 3, and Model X.",
+        "source_url": "https://www.sec.gov/Archives/edgar/data/1318605/000162828124000036/tsla-20231231.htm",
+        "source_type": "sec_10k"
+      },
+      "context_corpus": "Item 2. Properties. We operate our primary California vehicle manufacturing facility in Fremont, California, producing Model S, Model 3, and Model X. The facility encompasses 5.3 million square feet of manufacturing floor space.",
+      "retrieved_urls": [
+        "https://www.sec.gov/Archives/edgar/data/1318605/000162828124000036/tsla-20231231.htm"
+      ],
+      "expected_is_grounded": true,
+      "expected_min_score": 0.85,
+      "rationale": "First-party pronoun coreference forgiveness: SEC 10-K says 'We operate our...' while LLM quote says 'Tesla operates its...'."
+    },
+    {
+      "case_id": "CR-02",
+      "category": "first_party_coreference",
+      "ticker": "AMD",
+      "company_name": "Advanced Micro Devices, Inc.",
+      "entity_type": "supplier",
+      "candidate": {
+        "name": "GlobalFoundries",
+        "evidence_quote": "AMD utilizes GlobalFoundries in Malta, New York and Dresden, Germany for 12nm and 14nm I/O die wafer fabrication.",
+        "source_url": "https://www.sec.gov/Archives/edgar/data/2488/000000248824000012/amd-20231230.htm",
+        "source_type": "sec_10k"
+      },
+      "context_corpus": "Foundry Wafer Supply Agreement. We utilize GlobalFoundries in Malta, New York and Dresden, Germany for 12nm and 14nm I/O die wafer fabrication under our amended Wafer Supply Agreement.",
+      "retrieved_urls": [
+        "https://www.sec.gov/Archives/edgar/data/2488/000000248824000012/amd-20231230.htm"
+      ],
+      "expected_is_grounded": true,
+      "expected_min_score": 0.85,
+      "rationale": "First-party coreference ('We utilize' -> 'AMD utilizes') on official 10-K supplier disclosure."
+    },
+    {
+      "case_id": "CR-03",
+      "category": "first_party_coreference",
+      "ticker": "MSFT",
+      "company_name": "Microsoft Corporation",
+      "entity_type": "hub",
+      "candidate": {
+        "hub_name": "Quincy Azure Cloud Data Center",
+        "region_name": "Quincy, Washington",
+        "country_code": "US",
+        "facility_type": "Hyperscale Cloud Data Center",
+        "evidence_quote": "Microsoft owns hyperscale Azure cloud data center campuses in Quincy, Washington powered by hydroelectric energy.",
+        "source_url": "https://www.sec.gov/Archives/edgar/data/789019/000095017023035122/msft-20230630.htm",
+        "source_type": "sec_10k"
+      },
+      "context_corpus": "Data Center Properties. We own hyperscale Azure cloud data center campuses in Quincy, Washington powered by hydroelectric energy. Additional data center regions operate in Dublin, Ireland and Boydton, Virginia.",
+      "retrieved_urls": [
+        "https://www.sec.gov/Archives/edgar/data/789019/000095017023035122/msft-20230630.htm"
+      ],
+      "expected_is_grounded": true,
+      "expected_min_score": 0.85,
+      "rationale": "First-party coreference ('We own' -> 'Microsoft owns') on digital/cloud infrastructure hub."
+    },
+    {
+      "case_id": "CR-04",
+      "category": "first_party_coreference",
+      "ticker": "NVDA",
+      "company_name": "NVIDIA Corporation",
+      "entity_type": "supplier",
+      "candidate": {
+        "name": "SK Hynix",
+        "evidence_quote": "NVIDIA sources high-bandwidth memory (HBM3 and HBM3e) stacks from SK Hynix in Icheon, South Korea for its Hopper and Blackwell GPUs.",
+        "source_url": "https://www.reuters.com/technology/sk-hynix-supplies-hbm3e-nvidia-2024-03-19/",
+        "source_type": "web_search"
+      },
+      "context_corpus": "Third-Party Web Search Corpus: NVIDIA sources high-bandwidth memory (HBM3 and HBM3e) stacks from SK Hynix in Icheon, South Korea for its Hopper and Blackwell GPUs. The memory chips are integrated onto CoWoS interposers at TSMC.",
+      "retrieved_urls": [
+        "https://www.reuters.com/technology/sk-hynix-supplies-hbm3e-nvidia-2024-03-19/"
+      ],
+      "expected_is_grounded": true,
+      "expected_min_score": 0.90,
+      "rationale": "Third-party web search co-mention verification where both NVIDIA and SK Hynix appear in the same 2-sentence window."
+    },
+    {
+      "case_id": "ST-01",
+      "category": "stitched_cross_page_trap",
+      "ticker": "NVDA",
+      "company_name": "NVIDIA Corporation",
+      "entity_type": "hub",
+      "candidate": {
+        "hub_name": "Zurich Wafer Fab",
+        "region_name": "Zurich, Switzerland",
+        "country_code": "CH",
+        "facility_type": "Semiconductor Wafer Fabrication",
+        "evidence_quote": "We operate our high-volume 3nm EUV semiconductor wafer fabrication cleanrooms in Zurich, Switzerland for sovereign AI clients.",
+        "source_url": "https://www.sec.gov/Archives/edgar/data/1045810/000104581024000029/nvda-20240128.htm",
+        "source_type": "sec_10k"
+      },
+      "context_corpus": "Page 12: Our contract foundry partners operate high-volume 3nm EUV semiconductor wafer fabrication cleanrooms in Hsinchu, Taiwan. We rely on third-party foundries for all wafer manufacturing. Page 45: Unrelated European regional sales representative office leases exist in Munich, Germany and Zurich, Switzerland for sovereign AI clients.",
+      "retrieved_urls": [
+        "https://www.sec.gov/Archives/edgar/data/1045810/000104581024000029/nvda-20240128.htm"
+      ],
+      "expected_is_grounded": false,
+      "expected_max_score": 0.65,
+      "rationale": "Frankenstein stitched quote combining wafer cleanroom terms from Page 12 with Zurich sales office on Page 45; Link B 2-sentence sliding window must reject."
+    },
+    {
+      "case_id": "ST-02",
+      "category": "stitched_cross_page_trap",
+      "ticker": "AAPL",
+      "company_name": "Apple Inc.",
+      "entity_type": "hub",
+      "candidate": {
+        "hub_name": "Reykjavik Titanium Smelter",
+        "region_name": "Reykjavik, Iceland",
+        "country_code": "IS",
+        "facility_type": "Metallurgical Smelting Plant",
+        "evidence_quote": "Apple operates an aerospace-grade titanium enclosure smelting and CNC machining mega-plant in Reykjavik, Iceland.",
+        "source_url": "https://www.sec.gov/Archives/edgar/data/320193/000032019323000106/aapl-20230930.htm",
+        "source_type": "sec_10k"
+      },
+      "context_corpus": "Product Materials: iPhone Pro models utilize aerospace-grade titanium enclosures produced by precision CNC machining partners in Asia. International Sales Subsidiaries: Apple maintains local App Store billing registrations in Dublin, Ireland and Reykjavik, Iceland.",
+      "retrieved_urls": [
+        "https://www.sec.gov/Archives/edgar/data/320193/000032019323000106/aapl-20230930.htm"
+      ],
+      "expected_is_grounded": false,
+      "expected_max_score": 0.65,
+      "rationale": "Cross-paragraph stitching of titanium CNC enclosures with Reykjavik billing subsidiary."
+    },
+    {
+      "case_id": "ST-03",
+      "category": "stitched_cross_page_trap",
+      "ticker": "TSLA",
+      "company_name": "Tesla, Inc.",
+      "entity_type": "supplier",
+      "candidate": {
+        "name": "BHP Group",
+        "evidence_quote": "BHP Group manufactures our proprietary 4680 lithium-ion battery cells and drive inverters at Gigafactory Nevada.",
+        "source_url": "https://www.sec.gov/Archives/edgar/data/1318605/000162828124000036/tsla-20231231.htm",
+        "source_type": "sec_10k"
+      },
+      "context_corpus": "Paragraph 1: Panasonic manufactures our proprietary lithium-ion battery cells and drive inverters at Gigafactory Nevada under our joint facility agreement. Paragraph 8: Several years ago we held preliminary nickel sustainability discussions with mining companies such as BHP Group in Australia.",
+      "retrieved_urls": [
+        "https://www.sec.gov/Archives/edgar/data/1318605/000162828124000036/tsla-20231231.htm"
+      ],
+      "expected_is_grounded": false,
+      "expected_max_score": 0.65,
+      "rationale": "Entity substitution stitching BHP Group (from Paragraph 8) into Panasonic's Gigafactory Nevada sentence (Paragraph 1)."
+    },
+    {
+      "case_id": "ST-04",
+      "category": "stitched_cross_page_trap",
+      "ticker": "PFE",
+      "company_name": "Pfizer Inc.",
+      "entity_type": "hub",
+      "candidate": {
+        "hub_name": "Oslo mRNA Bioreactor Complex",
+        "region_name": "Oslo, Norway",
+        "country_code": "NO",
+        "facility_type": "Sterile Injectable Biologics Plant",
+        "evidence_quote": "Pfizer operates its primary sterile injectable mRNA vaccine bioreactor manufacturing complex in Oslo, Norway.",
+        "source_url": "https://www.sec.gov/Archives/edgar/data/78003/000007800324000014/pfe-20231231.htm",
+        "source_type": "sec_10k"
+      },
+      "context_corpus": "Manufacturing Network: Pfizer operates its primary sterile injectable mRNA vaccine bioreactor manufacturing complex in Kalamazoo, Michigan and Puurs, Belgium. Commercial Distribution: Nordic commercial marketing offices are leased in Stockholm, Sweden and Oslo, Norway.",
+      "retrieved_urls": [
+        "https://www.sec.gov/Archives/edgar/data/78003/000007800324000014/pfe-20231231.htm"
+      ],
+      "expected_is_grounded": false,
+      "expected_max_score": 0.65,
+      "rationale": "Cross-sentence stitching swapping Kalamazoo/Puurs manufacturing complex with Oslo marketing office."
+    },
+    {
+      "case_id": "NG-01",
+      "category": "negated_or_closed_facility",
+      "ticker": "NVDA",
+      "company_name": "NVIDIA Corporation",
+      "entity_type": "hub",
+      "candidate": {
+        "hub_name": "Shinjuan Packaging Facility",
+        "region_name": "Shinjuan, China",
+        "country_code": "CN",
+        "facility_type": "Semiconductor Assembly Plant",
+        "evidence_quote": "We no longer operate our legacy assembly and test facility in Shinjuan, China following our 2022 restructuring.",
+        "source_url": "https://www.sec.gov/Archives/edgar/data/1045810/000104581024000029/nvda-20240128.htm",
+        "source_type": "sec_10k"
+      },
+      "context_corpus": "Item 2. Properties. We no longer operate our legacy assembly and test facility in Shinjuan, China following our 2022 restructuring. All test operations were consolidated into Hsinchu, Taiwan.",
+      "retrieved_urls": [
+        "https://www.sec.gov/Archives/edgar/data/1045810/000104581024000029/nvda-20240128.htm"
+      ],
+      "expected_is_grounded": false,
+      "expected_max_score": 0.15,
+      "rationale": "Verbatim negated quote ('We no longer operate... in Shinjuan, China') must be rejected by Link A polarity gate."
+    },
+    {
+      "case_id": "NG-02",
+      "category": "negated_or_closed_facility",
+      "ticker": "NVDA",
+      "company_name": "NVIDIA Corporation",
+      "entity_type": "hub",
+      "candidate": {
+        "hub_name": "Shinjuan Packaging Facility",
+        "region_name": "Shinjuan, China",
+        "country_code": "CN",
+        "facility_type": "Semiconductor Assembly Plant",
+        "evidence_quote": "We operate our legacy assembly and test facility in Shinjuan, China.",
+        "source_url": "https://www.sec.gov/Archives/edgar/data/1045810/000104581024000029/nvda-20240128.htm",
+        "source_type": "sec_10k"
+      },
+      "context_corpus": "Item 2. Properties. We no longer operate our legacy assembly and test facility in Shinjuan, China following our 2022 restructuring. All test operations were consolidated into Hsinchu, Taiwan.",
+      "retrieved_urls": [
+        "https://www.sec.gov/Archives/edgar/data/1045810/000104581024000029/nvda-20240128.htm"
+      ],
+      "expected_is_grounded": false,
+      "expected_max_score": 0.15,
+      "rationale": "Sneaky omitted-negation quote: LLM deleted 'no longer' from the quote, but the source 10-K window negates Shinjuan. Source-window polarity gate must cap score at 0.05."
+    },
+    {
+      "case_id": "NG-03",
+      "category": "negated_or_closed_facility",
+      "ticker": "AAPL",
+      "company_name": "Apple Inc.",
+      "entity_type": "supplier",
+      "candidate": {
+        "name": "OFILM Group",
+        "evidence_quote": "Apple terminated its camera module supplier contract with OFILM Group in 2021 and ceased all component purchases.",
+        "source_url": "https://www.reuters.com/article/us-apple-ofilm-idUSKBN2B90X5",
+        "source_type": "web_search"
+      },
+      "context_corpus": "Supply Chain Updates: Apple terminated its camera module supplier contract with OFILM Group in 2021 and ceased all component purchases. Camera module production shifted to LG Innotek and Sharp.",
+      "retrieved_urls": [
+        "https://www.reuters.com/article/us-apple-ofilm-idUSKBN2B90X5"
+      ],
+      "expected_is_grounded": false,
+      "expected_max_score": 0.15,
+      "rationale": "Terminated supplier relationship ('terminated its... contract with OFILM Group and ceased all component purchases') must be blocked by closure/termination polarity gate."
+    },
+    {
+      "case_id": "NG-04",
+      "category": "negated_or_closed_facility",
+      "ticker": "GM",
+      "company_name": "General Motors Company",
+      "entity_type": "hub",
+      "candidate": {
+        "hub_name": "Lordstown Assembly Plant",
+        "region_name": "Lordstown, Ohio",
+        "country_code": "US",
+        "facility_type": "Vehicle Assembly Plant",
+        "evidence_quote": "General Motors permanently closed and divested its Lordstown, Ohio vehicle assembly complex.",
+        "source_url": "https://www.sec.gov/Archives/edgar/data/1467858/000146785824000031/gm-20231231.htm",
+        "source_type": "sec_10k"
+      },
+      "context_corpus": "Restructuring Disclosures. General Motors permanently closed and divested its Lordstown, Ohio vehicle assembly complex. Active full-size truck assembly continues in Fort Wayne, Indiana and Arlington, Texas.",
+      "retrieved_urls": [
+        "https://www.sec.gov/Archives/edgar/data/1467858/000146785824000031/gm-20231231.htm"
+      ],
+      "expected_is_grounded": false,
+      "expected_max_score": 0.15,
+      "rationale": "Divested/permanently closed plant must be rejected as an active operational hub."
+    },
+    {
+      "case_id": "HL-01",
+      "category": "hallucinated_entity_or_url",
+      "ticker": "NVDA",
+      "company_name": "NVIDIA Corporation",
+      "entity_type": "supplier",
+      "candidate": {
+        "name": "QuantumSilicon Fab Corp",
+        "evidence_quote": "We rely on Taiwan Semiconductor Manufacturing Company Limited (TSMC) to fabricate our advanced GPU wafers.",
+        "source_url": "https://www.sec.gov/Archives/edgar/data/1045810/000104581024000029/nvda-20240128.htm",
+        "source_type": "sec_10k"
+      },
+      "context_corpus": "We rely on Taiwan Semiconductor Manufacturing Company Limited (TSMC) to fabricate our advanced GPU wafers.",
+      "retrieved_urls": [
+        "https://www.sec.gov/Archives/edgar/data/1045810/000104581024000029/nvda-20240128.htm"
+      ],
+      "expected_is_grounded": false,
+      "expected_max_score": 0.15,
+      "rationale": "Hallucinated supplier name ('QuantumSilicon Fab Corp') paired with a real TSMC quote; Link A entity-to-quote binding must catch that 'QuantumSilicon' is absent from the quote."
+    },
+    {
+      "case_id": "HL-02",
+      "category": "hallucinated_entity_or_url",
+      "ticker": "TSLA",
+      "company_name": "Tesla, Inc.",
+      "entity_type": "hub",
+      "candidate": {
+        "hub_name": "Gigafactory Osaka",
+        "region_name": "Osaka, Japan",
+        "country_code": "JP",
+        "facility_type": "Battery Megapack Factory",
+        "evidence_quote": "Tesla operates Gigafactory Osaka in Japan producing 100 GWh of LFP Megapack grid batteries annually.",
+        "source_url": "https://www.sec.gov/Archives/edgar/data/1318605/000162828124000036/tsla-20231231.htm",
+        "source_type": "sec_10k"
+      },
+      "context_corpus": "Item 2. Properties. We operate Megapack battery manufacturing facilities in Lathrop, California and Shanghai, China. We also operate vehicle factories in Fremont, Austin, and Berlin-Brandenburg.",
+      "retrieved_urls": [
+        "https://www.sec.gov/Archives/edgar/data/1318605/000162828124000036/tsla-20231231.htm"
+      ],
+      "expected_is_grounded": false,
+      "expected_max_score": 0.35,
+      "rationale": "Purely fabricated facility ('Gigafactory Osaka') and fabricated quote absent from the 10-K corpus; Link C proper-noun gate and threshold must reject."
+    },
+    {
+      "case_id": "HL-03",
+      "category": "hallucinated_entity_or_url",
+      "ticker": "AAPL",
+      "company_name": "Apple Inc.",
+      "entity_type": "supplier",
+      "candidate": {
+        "name": "Shenzhen HyperOptics Ltd",
+        "evidence_quote": "Shenzhen HyperOptics Ltd supplies periscope camera lenses for iPhone 16 Pro models from its Guangdong factory.",
+        "source_url": "https://www.bloomberg.com/news/articles/2026-99-99/fake-fabricated-apple-url-hallucination",
+        "source_type": "web_search"
+      },
+      "context_corpus": "Third-Party Web Search Corpus: Genius Electronic Optical (GSEO) and Largan Precision supply periscope tetraprism camera lenses for iPhone Pro models from Taiwan.",
+      "retrieved_urls": [
+        "https://www.reuters.com/technology/apple-camera-suppliers-largan-2024-09-10/"
+      ],
+      "expected_is_grounded": false,
+      "expected_max_score": 0.35,
+      "rationale": "Both the URL ('bloomberg.com/.../fake-fabricated-apple-url-hallucination' not in retrieved_urls whitelist) and the quote/supplier are hallucinated."
+    }
+  ]
+}

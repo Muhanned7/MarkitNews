@@ -37,6 +37,7 @@
   font-size: var(--fs-sm);
   font-weight: 600;
   text-align: left;
+  text-decoration: none;
   cursor: pointer;
   position: relative;
   transition: background-color 0.15s, color 0.15s;
@@ -75,6 +76,7 @@
   background: none;
   border: 0;
   text-align: left;
+  text-decoration: none;
   transition: background-color 0.15s;
 }
 
