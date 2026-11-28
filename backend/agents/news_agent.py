@@ -105,12 +105,13 @@ async def news_agent(ticker: str) -> dict:
         research = await research_agent(ticker)
         queries = research.get("search_queries", [ticker])
 
-        def fetch_news(query):
+        async def fetch_news(query):
             api_key = os.environ.get("NEWSAPI_KEY", "").strip()
             if api_key:
                 t0 = time.time()
                 try:
-                    resp = requests.get(
+                    resp = await asyncio.to_thread(
+                        requests.get,
                         "https://newsapi.org/v2/everything",
                         params={
                             "q": query,
@@ -123,17 +124,18 @@ async def news_agent(ticker: str) -> dict:
                     latency = (time.time() - t0) * 1000.0
                     data = resp.json() if resp.status_code == 200 else {}
                     arts = data.get("articles", []) or []
-                    log_external_api_call(
-                        provider="NewsAPI",
-                        endpoint="GET /v2/everything",
-                        method="GET",
-                        status_code=resp.status_code,
-                        latency_ms=latency,
-                        caller="news_agent",
-                        ticker=ticker,
-                        query_summary=f"q={query} ({len(arts)} articles)",
-                        success=(resp.status_code == 200 and len(arts) > 0),
-                    )
+                    if resp.status_code != 429:
+                        log_external_api_call(
+                            provider="NewsAPI",
+                            endpoint="GET /v2/everything",
+                            method="GET",
+                            status_code=resp.status_code,
+                            latency_ms=latency,
+                            caller="news_agent",
+                            ticker=ticker,
+                            query_summary=f"q={query} ({len(arts)} articles)",
+                            success=(resp.status_code == 200),
+                        )
                     if arts:
                         return arts
                 except Exception as ex:
@@ -150,20 +152,30 @@ async def news_agent(ticker: str) -> dict:
                         error_message=str(ex)[:200],
                     )
             # Fallback to live Google News RSS via geo_feed_adapter if NewsAPI quota is reached or missing
-            rss_items = fetch_rss_feed(query, region="US", lang="en-US", max_items=5, recency_window="90d")
+            import httpx
+            async with httpx.AsyncClient(follow_redirects=True) as rss_client:
+                rss_items = await fetch_rss_feed(
+                    client=rss_client,
+                    query_str=query,
+                    gl="US",
+                    hl="en-US",
+                    ceid="US:en",
+                    max_items=5,
+                    recency_window="90d",
+                )
             return [
                 {
                     "title": item.get("title", ""),
-                    "description": item.get("snippet", ""),
+                    "description": item.get("title", ""),
                     "source": {"name": item.get("source", "Google News RSS")},
-                    "url": item.get("link", ""),
+                    "url": item.get("url", ""),
                     "publishedAt": item.get("published_at", ""),
                 }
                 for item in rss_items
             ]
 
         all_articles_nested = await asyncio.gather(
-            *[asyncio.to_thread(fetch_news, q) for q in queries]
+            *[fetch_news(q) for q in queries[:3]]
         )
 
         seen = set()

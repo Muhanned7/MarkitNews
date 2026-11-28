@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { useAuth } from '../context/AuthContext';
 
 const CATEGORY_COLORS = {
@@ -17,6 +17,128 @@ const HEALTH_BADGES = {
   degraded: { label: 'DEGRADED', bg: '#FEE2E2', text: '#B91C1C' },
   unconfigured: { label: 'MISSING KEY', bg: '#F1F5F9', text: '#64748B' },
 };
+
+/**
+ * Reusable horizontally scrollable panel with:
+ *  - Visible horizontal scrollbar (`overflowX: 'auto'`)
+ *  - Click-and-drag horizontal panning
+ *  - Left / Right slide buttons (`◀ Slide Left` / `Slide Right ▶`)
+ */
+function ScrollableTablePanel({ title, subtitle, minTableWidth = 980, children }) {
+  const scrollRef = useRef(null);
+  const isDraggingRef = useRef(false);
+  const startXRef = useRef(0);
+  const scrollLeftRef = useRef(0);
+
+  const slideBy = (delta) => {
+    if (!scrollRef.current) return;
+    scrollRef.current.scrollBy({ left: delta, behavior: 'smooth' });
+  };
+
+  const onMouseDown = (e) => {
+    if (!scrollRef.current) return;
+    // Don't hijack clicks on links, buttons, or inputs
+    if (['A', 'BUTTON', 'INPUT'].includes(e.target?.tagName)) return;
+    isDraggingRef.current = true;
+    startXRef.current = e.pageX - scrollRef.current.offsetLeft;
+    scrollLeftRef.current = scrollRef.current.scrollLeft;
+  };
+
+  const onMouseLeaveOrUp = () => {
+    isDraggingRef.current = false;
+  };
+
+  const onMouseMove = (e) => {
+    if (!isDraggingRef.current || !scrollRef.current) return;
+    e.preventDefault();
+    const x = e.pageX - scrollRef.current.offsetLeft;
+    const walk = (x - startXRef.current) * 1.25;
+    scrollRef.current.scrollLeft = scrollLeftRef.current - walk;
+  };
+
+  return (
+    <div
+      style={{
+        background: '#FFFFFF',
+        border: '1px solid #E2E8F0',
+        borderRadius: '12px',
+        marginBottom: '24px',
+        maxWidth: '100%',
+        overflow: 'hidden',
+      }}
+    >
+      <div
+        style={{
+          padding: '12px 16px',
+          borderBottom: '1px solid #E2E8F0',
+          display: 'flex',
+          flexWrap: 'wrap',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+          gap: '10px',
+          background: '#F8FAFC',
+        }}
+      >
+        <div>
+          {title && <div style={{ fontWeight: 700, fontSize: '14px', color: '#0F172A' }}>{title}</div>}
+          {subtitle && <div style={{ fontSize: '11px', color: '#64748B', marginTop: '2px' }}>{subtitle}</div>}
+        </div>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+          <span style={{ fontSize: '11px', color: '#64748B', marginRight: '4px' }}>Drag or slide:</span>
+          <button
+            type="button"
+            onClick={() => slideBy(-320)}
+            style={{
+              background: '#FFFFFF',
+              border: '1px solid #CBD5E1',
+              color: '#0F172A',
+              padding: '4px 10px',
+              borderRadius: '6px',
+              fontSize: '11px',
+              fontWeight: 700,
+              cursor: 'pointer',
+            }}
+          >
+            ◀ Left
+          </button>
+          <button
+            type="button"
+            onClick={() => slideBy(320)}
+            style={{
+              background: '#FFFFFF',
+              border: '1px solid #CBD5E1',
+              color: '#0F172A',
+              padding: '4px 10px',
+              borderRadius: '6px',
+              fontSize: '11px',
+              fontWeight: 700,
+              cursor: 'pointer',
+            }}
+          >
+            Right ▶
+          </button>
+        </div>
+      </div>
+
+      <div
+        ref={scrollRef}
+        onMouseDown={onMouseDown}
+        onMouseLeave={onMouseLeaveOrUp}
+        onMouseUp={onMouseLeaveOrUp}
+        onMouseMove={onMouseMove}
+        style={{
+          width: '100%',
+          overflowX: 'auto',
+          overflowY: 'hidden',
+          WebkitOverflowScrolling: 'touch',
+          cursor: 'grab',
+        }}
+      >
+        <div style={{ minWidth: `${minTableWidth}px` }}>{children}</div>
+      </div>
+    </div>
+  );
+}
 
 export default function DeveloperAdminMonitorPage() {
   const { user, loading: authLoading } = useAuth();
@@ -142,7 +264,16 @@ export default function DeveloperAdminMonitorPage() {
   const maxHttpReqs = Math.max(1, ...httpHandlers.map((h) => h.requests || 0));
 
   return (
-    <main style={{ padding: '28px 32px', maxWidth: '1420px', width: '100%', margin: '0 auto' }}>
+    <main
+      style={{
+        padding: '24px clamp(16px, 2.5vw, 32px)',
+        maxWidth: '100%',
+        width: '100%',
+        minWidth: 0,
+        boxSizing: 'border-box',
+        overflowX: 'hidden',
+      }}
+    >
       {/* Top Banner */}
       <div
         style={{
@@ -416,14 +547,10 @@ export default function DeveloperAdminMonitorPage() {
             )}
           </div>
 
-          <div
-            style={{
-              background: '#FFFFFF',
-              border: '1px solid #E2E8F0',
-              borderRadius: '12px',
-              overflow: 'hidden',
-              marginBottom: '28px',
-            }}
+          <ScrollableTablePanel
+            title="Outbound External API Providers (12)"
+            subtitle="Slide horizontally or click-and-drag to view 24h calls, latency, 429 counters, and quota bars"
+            minTableWidth={1060}
           >
             <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '13px' }}>
               <thead>
@@ -450,7 +577,7 @@ export default function DeveloperAdminMonitorPage() {
                         <div style={{ fontSize: '11px', color: '#64748B', fontFamily: 'monospace' }}>{p.base_url}</div>
                         <div style={{ fontSize: '11px', color: '#475569', marginTop: '2px' }}>{p.used_by}</div>
                       </td>
-                      <td style={{ padding: '12px 14px' }}>
+                      <td style={{ padding: '12px 14px', whiteSpace: 'nowrap' }}>
                         <span
                           style={{
                             background: catStyle.bg,
@@ -465,7 +592,7 @@ export default function DeveloperAdminMonitorPage() {
                           {p.category}
                         </span>
                       </td>
-                      <td style={{ padding: '12px 14px' }}>
+                      <td style={{ padding: '12px 14px', whiteSpace: 'nowrap' }}>
                         <span
                           style={{
                             background: hb.bg,
@@ -495,7 +622,7 @@ export default function DeveloperAdminMonitorPage() {
                       >
                         {p.success_rate_pct}%
                       </td>
-                      <td style={{ padding: '12px 14px', textAlign: 'right', fontFamily: 'monospace' }}>
+                      <td style={{ padding: '12px 14px', textAlign: 'right', fontFamily: 'monospace', whiteSpace: 'nowrap' }}>
                         {p.avg_latency_ms} ms <span style={{ color: '#94A3B8' }}>/ {p.p95_latency_ms} ms</span>
                       </td>
                       <td
@@ -508,7 +635,7 @@ export default function DeveloperAdminMonitorPage() {
                       >
                         {p.rate_limit_429_count}
                       </td>
-                      <td style={{ padding: '12px 14px', minWidth: '170px' }}>
+                      <td style={{ padding: '12px 14px', minWidth: '185px' }}>
                         <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '11px', marginBottom: '4px' }}>
                           <span style={{ fontWeight: 700 }}>{p.quota_used_pct}%</span>
                           <span style={{ color: '#64748B' }}>{p.quota_window}</span>
@@ -528,20 +655,14 @@ export default function DeveloperAdminMonitorPage() {
                 })}
               </tbody>
             </table>
-          </div>
+          </ScrollableTablePanel>
 
           {/* Live Call Log Table */}
-          <div
-            style={{
-              background: '#FFFFFF',
-              border: '1px solid #E2E8F0',
-              borderRadius: '12px',
-              overflow: 'hidden',
-            }}
+          <ScrollableTablePanel
+            title="Recent Outbound External API Calls (Live Stream)"
+            subtitle="Slide right to inspect HTTP status codes, latency (ms), and LLM token usage"
+            minTableWidth={920}
           >
-            <div style={{ padding: '14px 18px', borderBottom: '1px solid #E2E8F0', fontWeight: 700, fontSize: '14px' }}>
-              Recent Outbound External API Calls (Live Stream)
-            </div>
             <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '12px' }}>
               <thead>
                 <tr style={{ background: '#F8FAFC', borderBottom: '1px solid #E2E8F0', textAlign: 'left' }}>
@@ -564,10 +685,10 @@ export default function DeveloperAdminMonitorPage() {
                 ) : (
                   recentCalls.map((c) => (
                     <tr key={c.id} style={{ borderBottom: '1px solid #F1F5F9' }}>
-                      <td style={{ padding: '10px 14px', fontFamily: 'monospace', color: '#475569' }}>
+                      <td style={{ padding: '10px 14px', fontFamily: 'monospace', color: '#475569', whiteSpace: 'nowrap' }}>
                         {String(c.created_at).slice(0, 19)}
                       </td>
-                      <td style={{ padding: '10px 14px', fontWeight: 700 }}>{c.provider_name}</td>
+                      <td style={{ padding: '10px 14px', fontWeight: 700, whiteSpace: 'nowrap' }}>{c.provider_name}</td>
                       <td style={{ padding: '10px 14px', fontFamily: 'monospace', color: '#334155' }}>
                         {c.operation}
                       </td>
@@ -588,7 +709,7 @@ export default function DeveloperAdminMonitorPage() {
                           {c.status_code}
                         </span>
                       </td>
-                      <td style={{ padding: '10px 14px', textAlign: 'right', fontFamily: 'monospace' }}>
+                      <td style={{ padding: '10px 14px', textAlign: 'right', fontFamily: 'monospace', whiteSpace: 'nowrap' }}>
                         {c.duration_ms} ms
                       </td>
                       <td style={{ padding: '10px 14px', textAlign: 'right', fontFamily: 'monospace' }}>
@@ -599,14 +720,14 @@ export default function DeveloperAdminMonitorPage() {
                 )}
               </tbody>
             </table>
-          </div>
+          </ScrollableTablePanel>
         </>
       )}
 
       {/* TAB 2: VISUAL PROMETHEUS DASHBOARD */}
       {activeTab === 'prometheus' && (
         <div style={{ display: 'grid', gap: '20px' }}>
-          {/* Prometheus Header Bar (Styled like Prometheus UI) */}
+          {/* Prometheus Header Bar */}
           <div
             style={{
               background: '#1E293B',
@@ -622,7 +743,7 @@ export default function DeveloperAdminMonitorPage() {
             }}
           >
             <div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
                 <span
                   style={{
                     background: '#EA580C',
@@ -669,9 +790,9 @@ export default function DeveloperAdminMonitorPage() {
           </div>
 
           {/* Visual Charts Row: HTTP Route Traffic & Latency + Specialist Agent Histograms */}
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(460px, 1fr))', gap: '18px' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(340px, 1fr))', gap: '18px' }}>
             {/* Panel A: FastAPI HTTP Instrumentator Route Throughput & Latency */}
-            <div style={{ background: '#FFFFFF', border: '1px solid #E2E8F0', borderRadius: '12px', padding: '18px 20px' }}>
+            <div style={{ background: '#FFFFFF', border: '1px solid #E2E8F0', borderRadius: '12px', padding: '18px 20px', overflowX: 'auto' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '14px' }}>
                 <div>
                   <div style={{ fontSize: '11px', fontWeight: 700, color: '#EA580C', textTransform: 'uppercase' }}>
@@ -693,7 +814,7 @@ export default function DeveloperAdminMonitorPage() {
                     const widthPct = Math.max(6, Math.round((h.requests / maxHttpReqs) * 100));
                     return (
                       <div key={`${h.method}-${h.handler}`} style={{ fontSize: '12px' }}>
-                        <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '3px' }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '3px', gap: '8px' }}>
                           <span style={{ fontFamily: 'monospace', fontWeight: 700, color: '#1E293B' }}>
                             <span
                               style={{
@@ -710,7 +831,7 @@ export default function DeveloperAdminMonitorPage() {
                             </span>
                             {h.handler}
                           </span>
-                          <span style={{ fontFamily: 'monospace', color: '#475569' }}>
+                          <span style={{ fontFamily: 'monospace', color: '#475569', whiteSpace: 'nowrap' }}>
                             <strong>{h.requests}</strong> reqs • {h.avg_latency_ms} ms
                             {h.errors > 0 && (
                               <span style={{ color: '#DC2626', marginLeft: '6px' }}>({h.errors} err)</span>
@@ -735,16 +856,11 @@ export default function DeveloperAdminMonitorPage() {
             </div>
 
             {/* Panel B: Specialist Agent Prometheus Counters & Histograms */}
-            <div style={{ background: '#FFFFFF', border: '1px solid #E2E8F0', borderRadius: '12px', padding: '18px 20px' }}>
-              <div style={{ marginBottom: '14px' }}>
-                <div style={{ fontSize: '11px', fontWeight: 700, color: '#EA580C', textTransform: 'uppercase' }}>
-                  agent_calls_total • agent_duration_seconds • agent_evaluation_score
-                </div>
-                <div style={{ fontSize: '15px', fontWeight: 700, color: '#0F172A' }}>
-                  Specialist Agent Execution & Quality Gauges
-                </div>
-              </div>
-
+            <ScrollableTablePanel
+              title="Specialist Agent Execution & Quality Gauges"
+              subtitle="agent_calls_total • agent_duration_seconds • agent_evaluation_score"
+              minTableWidth={520}
+            >
               {(promSnap.agent_metrics || []).length === 0 ? (
                 <div style={{ padding: '24px', textAlign: 'center', color: '#64748B', fontSize: '13px' }}>
                   Run a company analysis to populate live in-memory agent Prometheus histograms.
@@ -753,27 +869,27 @@ export default function DeveloperAdminMonitorPage() {
                 <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '12px' }}>
                   <thead>
                     <tr style={{ background: '#F8FAFC', borderBottom: '1px solid #E2E8F0', textAlign: 'left' }}>
-                      <th style={{ padding: '8px 10px' }}>Agent</th>
-                      <th style={{ padding: '8px 10px', textAlign: 'right' }}>Calls</th>
-                      <th style={{ padding: '8px 10px', textAlign: 'right' }}>Avg Duration</th>
-                      <th style={{ padding: '8px 10px', textAlign: 'right' }}>Faithfulness</th>
-                      <th style={{ padding: '8px 10px', textAlign: 'right' }}>Quality</th>
+                      <th style={{ padding: '8px 12px' }}>Agent</th>
+                      <th style={{ padding: '8px 12px', textAlign: 'right' }}>Calls</th>
+                      <th style={{ padding: '8px 12px', textAlign: 'right' }}>Avg Duration</th>
+                      <th style={{ padding: '8px 12px', textAlign: 'right' }}>Faithfulness</th>
+                      <th style={{ padding: '8px 12px', textAlign: 'right' }}>Quality</th>
                     </tr>
                   </thead>
                   <tbody>
                     {(promSnap.agent_metrics || []).map((am) => (
                       <tr key={am.agent_name} style={{ borderBottom: '1px solid #F1F5F9' }}>
-                        <td style={{ padding: '8px 10px', fontFamily: 'monospace', fontWeight: 700 }}>
+                        <td style={{ padding: '8px 12px', fontFamily: 'monospace', fontWeight: 700 }}>
                           {am.agent_name}
                         </td>
-                        <td style={{ padding: '8px 10px', textAlign: 'right', fontFamily: 'monospace' }}>{am.calls}</td>
-                        <td style={{ padding: '8px 10px', textAlign: 'right', fontFamily: 'monospace' }}>
+                        <td style={{ padding: '8px 12px', textAlign: 'right', fontFamily: 'monospace' }}>{am.calls}</td>
+                        <td style={{ padding: '8px 12px', textAlign: 'right', fontFamily: 'monospace' }}>
                           {am.avg_duration_s}s
                         </td>
-                        <td style={{ padding: '8px 10px', textAlign: 'right', fontFamily: 'monospace', color: '#15803D' }}>
+                        <td style={{ padding: '8px 12px', textAlign: 'right', fontFamily: 'monospace', color: '#15803D' }}>
                           {am.faithfulness ?? '—'}
                         </td>
-                        <td style={{ padding: '8px 10px', textAlign: 'right', fontFamily: 'monospace', fontWeight: 700 }}>
+                        <td style={{ padding: '8px 12px', textAlign: 'right', fontFamily: 'monospace', fontWeight: 700 }}>
                           {am.quality_score ?? '—'}
                         </td>
                       </tr>
@@ -781,7 +897,7 @@ export default function DeveloperAdminMonitorPage() {
                   </tbody>
                 </table>
               )}
-            </div>
+            </ScrollableTablePanel>
           </div>
 
           {/* Interactive Prometheus Expression / Metric Family Explorer */}
@@ -810,7 +926,9 @@ export default function DeveloperAdminMonitorPage() {
                 onChange={(e) => setPromQuery(e.target.value)}
                 placeholder="Filter metrics (e.g. external_api, agent_, llm_, http_)..."
                 style={{
-                  minWidth: '320px',
+                  minWidth: '280px',
+                  flex: '1 1 280px',
+                  maxWidth: '420px',
                   padding: '9px 14px',
                   borderRadius: '8px',
                   border: '1px solid #CBD5E1',
@@ -820,7 +938,7 @@ export default function DeveloperAdminMonitorPage() {
               />
             </div>
 
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(420px, 1fr))', gap: '14px' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '14px' }}>
               {promFamilies.map((fam) => (
                 <div
                   key={fam.name}
@@ -839,9 +957,10 @@ export default function DeveloperAdminMonitorPage() {
                       display: 'flex',
                       justifyContent: 'space-between',
                       alignItems: 'center',
+                      gap: '8px',
                     }}
                   >
-                    <span style={{ fontFamily: 'monospace', fontWeight: 700, fontSize: '13px', color: '#38BDF8' }}>
+                    <span style={{ fontFamily: 'monospace', fontWeight: 700, fontSize: '13px', color: '#38BDF8', wordBreak: 'break-all' }}>
                       {fam.name}
                     </span>
                     <span
@@ -853,6 +972,7 @@ export default function DeveloperAdminMonitorPage() {
                         padding: '2px 7px',
                         borderRadius: '4px',
                         textTransform: 'uppercase',
+                        whiteSpace: 'nowrap',
                       }}
                     >
                       {fam.type}
@@ -861,7 +981,7 @@ export default function DeveloperAdminMonitorPage() {
                   <div style={{ padding: '8px 14px', fontSize: '11px', color: '#64748B', borderBottom: '1px solid #E2E8F0' }}>
                     {fam.help}
                   </div>
-                  <div style={{ maxHeight: '190px', overflowY: 'auto', padding: '8px 14px', fontFamily: 'monospace', fontSize: '11px' }}>
+                  <div style={{ maxHeight: '190px', overflowY: 'auto', overflowX: 'auto', padding: '8px 14px', fontFamily: 'monospace', fontSize: '11px' }}>
                     {fam.samples.map((s, idx) => {
                       const lblStr = Object.entries(s.labels || {})
                         .map(([k, v]) => `${k}="${v}"`)
@@ -910,7 +1030,7 @@ export default function DeveloperAdminMonitorPage() {
             }}
           >
             <div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
                 <span
                   style={{
                     background: lf.configured ? '#DCFCE7' : '#FEF3C7',
@@ -990,10 +1110,11 @@ export default function DeveloperAdminMonitorPage() {
           </div>
 
           {/* LLM Token & Latency Breakdown by Specialist Agent */}
-          <div style={{ background: '#FFFFFF', border: '1px solid #E2E8F0', borderRadius: '12px', overflow: 'hidden' }}>
-            <div style={{ padding: '14px 18px', borderBottom: '1px solid #E2E8F0', fontWeight: 700, fontSize: '14px' }}>
-              LLM Token Usage & Latency by Specialist Agent
-            </div>
+          <ScrollableTablePanel
+            title="LLM Token Usage & Latency by Specialist Agent"
+            subtitle="Slide right to inspect prompt tokens, completion tokens, total tokens, and generation latency"
+            minTableWidth={780}
+          >
             <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '13px' }}>
               <thead>
                 <tr style={{ background: '#F8FAFC', borderBottom: '1px solid #E2E8F0', textAlign: 'left' }}>
@@ -1026,13 +1147,14 @@ export default function DeveloperAdminMonitorPage() {
                 ))}
               </tbody>
             </table>
-          </div>
+          </ScrollableTablePanel>
 
           {/* Recent Guardrail & Evaluator Scores */}
-          <div style={{ background: '#FFFFFF', border: '1px solid #E2E8F0', borderRadius: '12px', overflow: 'hidden' }}>
-            <div style={{ padding: '14px 18px', borderBottom: '1px solid #E2E8F0', fontWeight: 700, fontSize: '14px' }}>
-              Recent Multi-Agent Faithfulness & Guardrail Evaluations (Mirrored to Langfuse)
-            </div>
+          <ScrollableTablePanel
+            title="Recent Multi-Agent Faithfulness & Guardrail Evaluations (Mirrored to Langfuse)"
+            subtitle="Slide right to inspect faithfulness, consistency, and intercepted hallucinations"
+            minTableWidth={860}
+          >
             <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '12px' }}>
               <thead>
                 <tr style={{ background: '#F8FAFC', borderBottom: '1px solid #E2E8F0', textAlign: 'left' }}>
@@ -1049,12 +1171,12 @@ export default function DeveloperAdminMonitorPage() {
               <tbody>
                 {(lf.recent_evaluations || []).map((ev) => (
                   <tr key={ev.id} style={{ borderBottom: '1px solid #F1F5F9' }}>
-                    <td style={{ padding: '10px 14px', fontFamily: 'monospace', color: '#475569' }}>
+                    <td style={{ padding: '10px 14px', fontFamily: 'monospace', color: '#475569', whiteSpace: 'nowrap' }}>
                       {String(ev.created_at).slice(0, 19)}
                     </td>
                     <td style={{ padding: '10px 14px', fontWeight: 700 }}>{ev.agent_name}</td>
                     <td style={{ padding: '10px 14px', fontFamily: 'monospace', fontWeight: 700 }}>{ev.ticker}</td>
-                    <td style={{ padding: '10px 14px' }}>
+                    <td style={{ padding: '10px 14px', whiteSpace: 'nowrap' }}>
                       <span
                         style={{
                           background: ev.grade === 'A' ? '#DCFCE7' : ev.grade === 'B' ? '#E0F2FE' : '#FEF3C7',
@@ -1083,7 +1205,7 @@ export default function DeveloperAdminMonitorPage() {
                 ))}
               </tbody>
             </table>
-          </div>
+          </ScrollableTablePanel>
         </div>
       )}
     </main>

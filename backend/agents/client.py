@@ -1,4 +1,5 @@
 import os
+import threading
 import time
 from typing import Optional, List, Dict, Any
 from dotenv import load_dotenv
@@ -15,6 +16,11 @@ from agents.metrics import (
 )
 
 load_dotenv()
+
+# Global concurrency & cooldown gate to prevent parallel 6-agent bursts from triggering Groq 429s
+_GROQ_CONCURRENCY_SEMAPHORE = threading.BoundedSemaphore(2)
+_GROQ_COOLDOWN_LOCK = threading.Lock()
+_GROQ_COOLDOWN_UNTIL = 0.0
 
 def log_token_usage_to_db(
     agent_name: str,
@@ -87,8 +93,12 @@ class UnifiedChatCompletion:
         if not input_guardrail["passed"]:
             logger.warning(f"[Input Guardrail | {agent_name}] Flagged input: {input_guardrail['warnings']}")
 
-        # 1. Primary: Groq Cloud (Qwen-27B)
-        if self.groq_client:
+        # 1. Primary: Groq Cloud (Qwen-27B) with concurrency pacing & instant Mistral failover on 429
+        global _GROQ_COOLDOWN_UNTIL
+        now_ts = time.time()
+        in_groq_cooldown = now_ts < _GROQ_COOLDOWN_UNTIL
+
+        if self.groq_client and not in_groq_cooldown:
             chosen_model = "qwen/qwen3.8-27b"
             call_kwargs = {
                 "model": chosen_model,
@@ -97,38 +107,50 @@ class UnifiedChatCompletion:
             }
             if tools:
                 call_kwargs["tools"] = tools
-            for attempt in range(4):
-                t0 = time.time()
-                try:
-                    response = self.groq_client.chat.completions.create(**call_kwargs)
-                    break
-                except Exception as e:
-                    err_msg = str(e)
-                    err_ms = round((time.time() - t0) * 1000, 2)
-                    is_429 = "429" in err_msg or "rate_limit" in err_msg
-                    record_external_api_call(
-                        provider="groq",
-                        endpoint="https://api.groq.com/openai/v1/chat/completions",
-                        operation=f"chat.completions ({agent_name})",
-                        ticker=clean_t,
-                        status_code=429 if is_429 else 500,
-                        success=False,
-                        duration_ms=err_ms,
-                        error_message=err_msg,
-                    )
-                    if is_429:
-                        wait_sec = 2.0 * (attempt + 1)
-                        logger.warning(f"Groq 429 rate limit hit. Waiting {wait_sec}s (attempt {attempt+1}/4)...")
-                        time.sleep(wait_sec)
-                    else:
-                        logger.warning(f"Groq API completion error: {e}. Attempting Mistral fallback.")
-                        break
 
-        # 2. Fallback: Mistral AI
+            max_attempts = 1 if self.mistral_key else 3
+            with _GROQ_CONCURRENCY_SEMAPHORE:
+                for attempt in range(max_attempts):
+                    if time.time() < _GROQ_COOLDOWN_UNTIL and self.mistral_key:
+                        break
+                    t0 = time.time()
+                    try:
+                        response = self.groq_client.chat.completions.create(**call_kwargs)
+                        break
+                    except Exception as e:
+                        err_msg = str(e)
+                        err_ms = round((time.time() - t0) * 1000, 2)
+                        is_429 = "429" in err_msg or "rate_limit" in err_msg.lower()
+                        if is_429:
+                            with _GROQ_COOLDOWN_LOCK:
+                                _GROQ_COOLDOWN_UNTIL = max(_GROQ_COOLDOWN_UNTIL, time.time() + 15.0)
+                            if self.mistral_key:
+                                logger.warning(
+                                    f"[Groq TPM Limit | {agent_name}] Switching immediately to Mistral failover (15s cooldown)."
+                                )
+                                break
+                            wait_sec = 2.5 * (attempt + 1)
+                            logger.warning(f"Groq 429 rate limit hit. Waiting {wait_sec}s (attempt {attempt+1}/{max_attempts})...")
+                            time.sleep(wait_sec)
+                        else:
+                            record_external_api_call(
+                                provider="groq",
+                                endpoint="https://api.groq.com/openai/v1/chat/completions",
+                                operation=f"chat.completions ({agent_name})",
+                                ticker=clean_t,
+                                status_code=500,
+                                success=False,
+                                duration_ms=err_ms,
+                                error_message=err_msg,
+                            )
+                            logger.warning(f"Groq API completion error: {e}. Attempting Mistral fallback.")
+                            break
+
+        # 2. Fallback: Mistral AI (seamless failover when Groq is in TPM cooldown)
         if response is None and self.mistral_key:
             from mistralai.client import Mistral
             m_client = Mistral(api_key=self.mistral_key)
-            chosen_model = model or "mistral-small-latest"
+            chosen_model = model if (model and "qwen" not in model.lower()) else "mistral-small-latest"
             m_kwargs = {"model": chosen_model, "messages": messages, **kwargs}
             if tools:
                 m_kwargs["tools"] = tools

@@ -15,6 +15,11 @@ from loguru import logger
 ACTIVE_SHOCK_MAX_DAYS = 30
 RECOVERY_LAG_MAX_DAYS = 180
 
+# Concurrency semaphore & 15-minute TTL cache to prevent Google News RSS 429 rate-limiting on burst queries
+_RSS_SEMAPHORE = asyncio.Semaphore(2)
+_RSS_CACHE: Dict[str, Tuple[float, List[Dict[str, Any]]]] = {}
+_RSS_CACHE_TTL_SEC = 900.0
+
 
 def classify_article_temporal_regime(
     pub_date_str: Optional[str],
@@ -130,57 +135,80 @@ async def fetch_rss_feed(
       agents analyze their long-term structural supply-chain effect rather than treating them as breaking news.
     """
     async def _query_rss(q_text: str) -> List[Dict[str, Any]]:
+        cache_key = f"{gl}:{hl}:{ceid}:{q_text}"
+        now_ts = time.time()
+        cached_hit = _RSS_CACHE.get(cache_key)
+        if cached_hit and (now_ts - cached_hit[0]) < _RSS_CACHE_TTL_SEC:
+            return list(cached_hit[1])
+
         encoded_q = quote_plus(q_text)
         url = f"https://news.google.com/rss/search?q={encoded_q}&hl={hl}&gl={gl}&ceid={ceid}"
         parsed_items: List[Dict[str, Any]] = []
-        t0 = time.time()
-        try:
-            resp = await client.get(url, headers=HEADERS, timeout=8.0)
-            record_external_api_call(
-                provider="google_news_rss",
-                endpoint="https://news.google.com/rss/search",
-                operation=f"fetch_rss_feed ({gl}/{hl})",
-                status_code=resp.status_code,
-                duration_ms=(time.time() - t0) * 1000,
-            )
-            if resp.status_code == 200:
-                root = ET.fromstring(resp.text)
-                for item in root.findall(".//item")[:max_items * 2]:
-                    title = clean_xml_text(item.findtext("title"))
-                    link = item.findtext("link") or ""
-                    pub_date = item.findtext("pubDate") or ""
-                    source_elem = item.find("source")
-                    source_name = source_elem.text if source_elem is not None else "Google News"
 
-                    # Split source from title if format is "Title - Source"
-                    if " - " in title and source_name == "Google News":
-                        parts = title.rsplit(" - ", 1)
-                        title = parts[0]
-                        source_name = parts[1]
+        async with _RSS_SEMAPHORE:
+            # Re-check cache after acquiring semaphore
+            cached_hit = _RSS_CACHE.get(cache_key)
+            if cached_hit and (time.time() - cached_hit[0]) < _RSS_CACHE_TTL_SEC:
+                return list(cached_hit[1])
 
-                    temporal_meta = classify_article_temporal_regime(pub_date)
-                    parsed_items.append({
-                        "title": title,
-                        "url": link,
-                        "source": source_name,
-                        "published_at": pub_date,
-                        "age_days": temporal_meta["age_days"],
-                        "temporal_regime": temporal_meta["temporal_regime"],
-                        "is_live_contradiction_eligible": temporal_meta["is_live_contradiction_eligible"],
-                        "temporal_guidance": temporal_meta["temporal_guidance"],
-                        "language": hl,
-                        "country": gl
-                    })
-        except Exception as e:
-            logger.warning(f"Failed to fetch RSS for query '{q_text}' ({gl}/{hl}): {e}")
+            for attempt in range(2):
+                t0 = time.time()
+                try:
+                    if attempt > 0:
+                        await asyncio.sleep(1.2 * attempt)
+                    else:
+                        await asyncio.sleep(0.25)  # Gentle pacing between burst RSS calls
+                    resp = await client.get(url, headers=HEADERS, timeout=8.0)
+                    if resp.status_code == 429 and attempt == 0:
+                        continue
+                    record_external_api_call(
+                        provider="google_news_rss",
+                        endpoint="https://news.google.com/rss/search",
+                        operation=f"fetch_rss_feed ({gl}/{hl})",
+                        status_code=resp.status_code,
+                        duration_ms=(time.time() - t0) * 1000,
+                    )
+                    if resp.status_code == 200:
+                        root = ET.fromstring(resp.text)
+                        for item in root.findall(".//item")[:max_items * 2]:
+                            title = clean_xml_text(item.findtext("title"))
+                            link = item.findtext("link") or ""
+                            pub_date = item.findtext("pubDate") or ""
+                            source_elem = item.find("source")
+                            source_name = source_elem.text if source_elem is not None else "Google News"
+
+                            # Split source from title if format is "Title - Source"
+                            if " - " in title and source_name == "Google News":
+                                parts = title.rsplit(" - ", 1)
+                                title = parts[0]
+                                source_name = parts[1]
+
+                            temporal_meta = classify_article_temporal_regime(pub_date)
+                            parsed_items.append({
+                                "title": title,
+                                "url": link,
+                                "source": source_name,
+                                "published_at": pub_date,
+                                "age_days": temporal_meta["age_days"],
+                                "temporal_regime": temporal_meta["temporal_regime"],
+                                "is_live_contradiction_eligible": temporal_meta["is_live_contradiction_eligible"],
+                                "temporal_guidance": temporal_meta["temporal_guidance"],
+                                "language": hl,
+                                "country": gl
+                            })
+                        _RSS_CACHE[cache_key] = (time.time(), parsed_items)
+                    break
+                except Exception as e:
+                    logger.warning(f"Failed to fetch RSS for query '{q_text}' ({gl}/{hl}): {e}")
+                    break
         return parsed_items
 
     # 1. Primary recency-scoped query for active/recent operational events
     scoped_query = f"{query_str} when:{recency_window}" if recency_window and "when:" not in query_str else query_str
     articles = await _query_rss(scoped_query)
 
-    # 2. If recency window yields fewer than max_items and historical structural context is allowed, merge archive hits
-    if len(articles) < max_items and include_historical_fallback and scoped_query != query_str:
+    # 2. Only fall back to un-windowed archive if 0 recent articles were found (cuts RSS calls in half)
+    if len(articles) == 0 and include_historical_fallback and scoped_query != query_str:
         archive_articles = await _query_rss(query_str)
         seen_urls = {a["url"] for a in articles}
         for arch in archive_articles:
