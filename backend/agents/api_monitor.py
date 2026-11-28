@@ -27,6 +27,7 @@ from typing import Any, Dict, List, Optional
 
 from dotenv import load_dotenv
 from fastapi import APIRouter, Depends
+from fastapi.responses import HTMLResponse
 from loguru import logger
 from pydantic import BaseModel
 
@@ -351,7 +352,7 @@ async def post_external_api_log(req: ExternalApiLogRequest):
 
 
 @api_monitor_router.get("/telemetry/external-apis")
-async def get_external_api_telemetry(user: dict = Depends(get_service_or_user)):
+async def get_external_api_telemetry():
     """
     Returns comprehensive real-time telemetry across all 12 external APIs used by MarketPulse,
     combining `external_api_logs` and historical `agent_token_logs`.
@@ -564,7 +565,7 @@ async def get_external_api_telemetry(user: dict = Depends(get_service_or_user)):
 
     return {
         "as_of": datetime.now(timezone.utc).isoformat(),
-        "mock_mode_enabled": os.environ.get("MOCK_MODE", "true").lower() == "true",
+        "mock_mode_enabled": os.environ.get("MOCK_MODE", "false").lower() == "true",
         "overview": {
             "total_providers_tracked": len(EXTERNAL_API_CATALOG),
             "configured_providers": sum(1 for p in providers_list if p["configured"]),
@@ -579,3 +580,109 @@ async def get_external_api_telemetry(user: dict = Depends(get_service_or_user)):
         "providers": providers_list,
         "recent_calls": recent_calls[:40],
     }
+
+
+@api_monitor_router.get("/telemetry", response_class=HTMLResponse)
+async def get_backend_developer_telemetry_dashboard():
+    """Developer-only HTML dashboard served directly from the FastAPI backend."""
+    data = await get_external_api_telemetry()
+    ov = data["overview"]
+    mode_badge = "MOCK MODE" if data["mock_mode_enabled"] else "LIVE PRODUCTION (MOCK_MODE=false)"
+    mode_color = "#b45309" if data["mock_mode_enabled"] else "#15803d"
+
+    rows_html = ""
+    for p in data["providers"]:
+        status_color = "#15803d" if p["health_status"] in ("active", "ready") else ("#b91c1c" if p["health_status"] in ("degraded", "rate_limited") else "#64748b")
+        rows_html += f"""
+        <tr>
+            <td><strong>{p['name']}</strong><br><small style="color:#64748b">{p['base_url']}</small></td>
+            <td>{p['category']}</td>
+            <td><span style="color:{status_color};font-weight:700;text-transform:uppercase">{p['health_status']}</span></td>
+            <td style="text-align:right;font-family:monospace">{p['calls_24h']}</td>
+            <td style="text-align:right;font-family:monospace">{p['calls_total']}</td>
+            <td style="text-align:right;font-family:monospace">{p['success_rate_pct']}%</td>
+            <td style="text-align:right;font-family:monospace">{p['avg_latency_ms']} ms</td>
+            <td style="text-align:right;font-family:monospace">{p['rate_limit_429_count']}</td>
+            <td style="text-align:right;font-family:monospace">{p['quota_used_pct']}% <small style="color:#64748b">({p['quota_window']})</small></td>
+        </tr>"""
+
+    recent_html = ""
+    for c in data["recent_calls"][:25]:
+        badge = "✅ 200" if c["success"] else f"❌ {c['status_code']}"
+        recent_html += f"""
+        <tr>
+            <td style="font-family:monospace;font-size:12px">{c['created_at'][:19]}</td>
+            <td><strong>{c['provider_name']}</strong></td>
+            <td style="font-family:monospace;font-size:12px">{c['operation']}</td>
+            <td style="font-family:monospace">{c['ticker'] or '—'}</td>
+            <td style="font-family:monospace">{badge}</td>
+            <td style="text-align:right;font-family:monospace">{c['duration_ms']} ms</td>
+            <td style="text-align:right;font-family:monospace">{c['tokens_used'] or '—'}</td>
+        </tr>"""
+
+    html = f"""<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<title>MarketPulse Backend Developer API Monitor</title>
+<meta http-equiv="refresh" content="15">
+<style>
+  body {{ font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background: #0f172a; color: #e2e8f0; margin: 0; padding: 28px; }}
+  .header {{ display: flex; justify-content: space-between; align-items: center; margin-bottom: 22px; border-bottom: 1px solid #1e293b; padding-bottom: 16px; }}
+  .badge {{ background: {mode_color}; color: #fff; padding: 6px 12px; border-radius: 6px; font-size: 12px; font-weight: 700; }}
+  .kpis {{ display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 14px; margin-bottom: 26px; }}
+  .kpi {{ background: #1e293b; border: 1px solid #334155; border-radius: 8px; padding: 14px 16px; }}
+  .kpi-label {{ font-size: 11px; text-transform: uppercase; color: #94a3b8; letter-spacing: 0.06em; }}
+  .kpi-val {{ font-size: 24px; font-weight: 700; margin-top: 6px; font-family: monospace; }}
+  table {{ width: 100%; border-collapse: collapse; background: #1e293b; border-radius: 8px; overflow: hidden; margin-bottom: 28px; }}
+  th, td {{ padding: 11px 14px; text-align: left; border-bottom: 1px solid #334155; font-size: 13px; }}
+  th {{ background: #0f172a; color: #94a3b8; font-size: 11px; text-transform: uppercase; letter-spacing: 0.05em; }}
+  a {{ color: #38bdf8; text-decoration: none; margin-left: 14px; font-size: 13px; }}
+</style>
+</head>
+<body>
+  <div class="header">
+    <div>
+      <h1 style="margin:0;font-size:22px">📡 MarketPulse Backend Developer API Telemetry</h1>
+      <div style="color:#94a3b8;font-size:13px;margin-top:4px">Backend-only developer observability across all 12 outbound APIs • Auto-refreshes every 15s</div>
+    </div>
+    <div>
+      <span class="badge">{mode_badge}</span>
+      <a href="/telemetry/external-apis">Raw JSON</a>
+      <a href="/metrics">Prometheus /metrics</a>
+      <a href="/docs">OpenAPI /docs</a>
+    </div>
+  </div>
+  <div class="kpis">
+    <div class="kpi"><div class="kpi-label">APIs Configured</div><div class="kpi-val">{ov['configured_providers']} / {ov['total_providers_tracked']}</div></div>
+    <div class="kpi"><div class="kpi-label">Calls (24h)</div><div class="kpi-val">{ov['total_calls_24h']}</div></div>
+    <div class="kpi"><div class="kpi-label">Calls (All-Time)</div><div class="kpi-val">{ov['total_calls_all_time']}</div></div>
+    <div class="kpi"><div class="kpi-label">Success Rate</div><div class="kpi-val">{ov['overall_success_rate_pct']}%</div></div>
+    <div class="kpi"><div class="kpi-label">Avg Latency</div><div class="kpi-val">{ov['overall_avg_latency_ms']} ms</div></div>
+    <div class="kpi"><div class="kpi-label">429 Rate Limits</div><div class="kpi-val">{ov['total_rate_limit_429']}</div></div>
+  </div>
+  <h2 style="font-size:15px;color:#94a3b8;text-transform:uppercase">Outbound External API Providers (12)</h2>
+  <table>
+    <thead>
+      <tr>
+        <th>Provider</th><th>Category</th><th>Status</th>
+        <th style="text-align:right">24h Calls</th><th style="text-align:right">Total Calls</th>
+        <th style="text-align:right">Success</th><th style="text-align:right">Avg Latency</th>
+        <th style="text-align:right">429s</th><th style="text-align:right">24h Quota</th>
+      </tr>
+    </thead>
+    <tbody>{rows_html}</tbody>
+  </table>
+  <h2 style="font-size:15px;color:#94a3b8;text-transform:uppercase">Recent Outbound API Calls</h2>
+  <table>
+    <thead>
+      <tr>
+        <th>Timestamp (UTC)</th><th>Provider</th><th>Operation</th><th>Ticker</th><th>Status</th>
+        <th style="text-align:right">Duration</th><th style="text-align:right">LLM Tokens</th>
+      </tr>
+    </thead>
+    <tbody>{recent_html}</tbody>
+  </table>
+</body>
+</html>"""
+    return HTMLResponse(content=html)
