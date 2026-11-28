@@ -2,8 +2,6 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '../context/AuthContext';
-import Header from '../components/Header';
-import Sidebar from '../components/Sidebar';
 
 const CATEGORY_COLORS = {
   'LLM Inference': { bg: '#EEF2FF', text: '#3730A3', border: '#C7D2FE' },
@@ -64,73 +62,61 @@ export default function DeveloperAdminMonitorPage() {
 
   if (authLoading) {
     return (
-      <div className="app-shell">
-        <Header />
-        <div className="main-grid">
-          <Sidebar />
-          <main style={{ padding: '32px' }}>Checking Developer Admin session...</main>
-        </div>
-      </div>
+      <main style={{ padding: '32px' }}>Checking Developer Admin session...</main>
     );
   }
 
   if (!user || !user.is_admin) {
     return (
-      <div className="app-shell">
-        <Header />
-        <div className="main-grid">
-          <Sidebar />
-          <main style={{ padding: '48px 32px', maxWidth: '680px' }}>
-            <div
-              style={{
-                background: '#FFFFFF',
-                border: '1px solid #FECACA',
-                borderRadius: '12px',
-                padding: '28px',
-              }}
-            >
-              <div
-                style={{
-                  display: 'inline-block',
-                  background: '#FEE2E2',
-                  color: '#991B1B',
-                  fontSize: '11px',
-                  fontWeight: 700,
-                  padding: '4px 10px',
-                  borderRadius: '999px',
-                  marginBottom: '12px',
-                  letterSpacing: '0.06em',
-                }}
-              >
-                403 RESTRICTED • DEVELOPER ADMIN ONLY
-              </div>
-              <h1 style={{ margin: '0 0 8px', fontSize: '22px', color: '#0F172A' }}>
-                Developer Production Monitoring Console
-              </h1>
-              <p style={{ margin: '0 0 16px', color: '#475569', fontSize: '14px', lineHeight: 1.6 }}>
-                This dashboard is restricted to MarketPulse developers and system administrators. Sign in with the
-                Developer Admin account (<code>admin@marketpulse.ai</code>) to inspect live External API traffic,
-                Prometheus time-series metrics, and Langfuse v4 LLM traces.
-              </p>
-              <a
-                href="/login"
-                style={{
-                  display: 'inline-block',
-                  background: '#0F172A',
-                  color: '#FFFFFF',
-                  padding: '10px 18px',
-                  borderRadius: '8px',
-                  fontSize: '13px',
-                  fontWeight: 600,
-                  textDecoration: 'none',
-                }}
-              >
-                Sign in as Developer Admin →
-              </a>
-            </div>
-          </main>
+      <main style={{ padding: '48px 32px', maxWidth: '680px', margin: '0 auto' }}>
+        <div
+          style={{
+            background: '#FFFFFF',
+            border: '1px solid #FECACA',
+            borderRadius: '12px',
+            padding: '28px',
+          }}
+        >
+          <div
+            style={{
+              display: 'inline-block',
+              background: '#FEE2E2',
+              color: '#991B1B',
+              fontSize: '11px',
+              fontWeight: 700,
+              padding: '4px 10px',
+              borderRadius: '999px',
+              marginBottom: '12px',
+              letterSpacing: '0.06em',
+            }}
+          >
+            403 RESTRICTED • DEVELOPER ADMIN ONLY
+          </div>
+          <h1 style={{ margin: '0 0 8px', fontSize: '22px', color: '#0F172A' }}>
+            Developer Production Monitoring Console
+          </h1>
+          <p style={{ margin: '0 0 16px', color: '#475569', fontSize: '14px', lineHeight: 1.6 }}>
+            This dashboard is restricted to MarketPulse developers and system administrators. Sign in with the
+            Developer Admin account (<code>admin@marketpulse.ai</code>) to inspect live External API traffic,
+            Prometheus time-series metrics, and Langfuse v4 LLM traces.
+          </p>
+          <a
+            href="/login"
+            style={{
+              display: 'inline-block',
+              background: '#0F172A',
+              color: '#FFFFFF',
+              padding: '10px 18px',
+              borderRadius: '8px',
+              fontSize: '13px',
+              fontWeight: 600,
+              textDecoration: 'none',
+            }}
+          >
+            Sign in as Developer Admin →
+          </a>
         </div>
-      </div>
+      </main>
     );
   }
 
@@ -148,11 +134,7 @@ export default function DeveloperAdminMonitorPage() {
       : providers.filter((p) => p.category === categoryFilter);
 
   return (
-    <div className="app-shell">
-      <Header />
-      <div className="main-grid">
-        <Sidebar />
-        <main style={{ padding: '28px 32px', maxWidth: '1420px', width: '100%' }}>
+    <main style={{ padding: '28px 32px', maxWidth: '1420px', width: '100%', margin: '0 auto' }}>
           {/* Top Banner & Quick External Monitor Links */}
           <div
             style={{
@@ -881,8 +863,6 @@ export default function DeveloperAdminMonitorPage() {
               </div>
             </div>
           )}
-        </main>
-      </div>
-    </div>
+    </main>
   );
 }
