@@ -128,6 +128,8 @@ export default function AnalysisPage() {
     const [dataMode, setDataMode] = useState('live')
     const [pageLoading, setPageLoading] = useState(true)
     const [fetchError, setFetchError] = useState(false)
+    const [proRequired, setProRequired] = useState(false)
+    const [proDetail, setProDetail] = useState(null)
     const [activeTab, setActiveTab] = useState('overview')
     const [inWatchlist, setInWatchlist] = useState(false)
     const [watchlistLoading, setWatchlistLoading] = useState(false)
@@ -193,12 +195,18 @@ export default function AnalysisPage() {
             router.push('/login')
             return
         }
+        const isProUser = Boolean(user.is_admin || user.plan_code === 'pro')
+        if (!isProUser) {
+            setProRequired(true)
+            setPageLoading(false)
+            return
+        }
         const key = `${user.id || user.email}:${ticker}`
         if (lastFetchedTickerRef.current === key) return
         lastFetchedTickerRef.current = key
         FetchAnalysis()
         checkWatchlist()
-    }, [user?.id, user?.email, loading, ticker])
+    }, [user?.id, user?.email, user?.plan_code, user?.is_admin, loading, ticker])
 
     async function checkWatchlist() {
         try {
@@ -263,10 +271,11 @@ export default function AnalysisPage() {
             const res = await fetch(url, { method: 'POST', headers, credentials: 'include' });
             if (res.status === 402 || res.status === 403) {
                 const errJson = await res.json().catch(() => ({}));
+                setProDetail(errJson.detail || null);
+                setProRequired(true);
                 if (typeof window !== 'undefined') {
                     window.dispatchEvent(new CustomEvent('open-upgrade-modal', { detail: errJson.detail }));
                 }
-                setFetchError(true);
                 return;
             }
             if (!res.ok) {
@@ -342,6 +351,63 @@ export default function AnalysisPage() {
                 <div className={styles.skeletonProgress}>
                     <div className={styles.progressSpinner} />
                     <span>Synthesizing multi-agent intelligence for {ticker} (News · Sentiment · Fundamentals · Technical · Equity · Risk)...</span>
+                </div>
+            </main>
+        )
+    }
+
+    // Pro Package Gate: shown when user is on the Starter Free plan so zero backend LLM tokens are consumed
+    if (proRequired) {
+        const msg =
+            (typeof proDetail === 'object' && proDetail?.message) ||
+            `'Agentic Company Analysis (${ticker?.toUpperCase()})' is a Pro Package capability. Upgrade to the Pro Package ($19/mo) to unlock live 6-agent AI consensus research, SEC 10-K footprint discovery, and Contradiction Radar.`;
+        return (
+            <main className={styles.page}>
+                <div style={{
+                    maxWidth: '580px',
+                    margin: '48px auto',
+                    padding: '36px 28px',
+                    background: 'var(--surface)',
+                    border: '1.5px solid color-mix(in srgb, var(--brand) 45%, var(--rule))',
+                    borderRadius: 'var(--r-panel)',
+                    boxShadow: 'var(--shadow-panel)',
+                    textAlign: 'center'
+                }}>
+                    <div style={{
+                        display: 'inline-block',
+                        padding: '4px 12px',
+                        borderRadius: 'var(--r-chip)',
+                        background: 'var(--brand-tint)',
+                        color: 'var(--brand-ink)',
+                        fontSize: 'var(--fs-xs)',
+                        fontWeight: 800,
+                        letterSpacing: '0.06em',
+                        marginBottom: '14px'
+                    }}>
+                        PRO PACKAGE CAPABILITY
+                    </div>
+                    <h2 style={{ fontSize: 'var(--fs-xl)', fontWeight: 700, color: 'var(--ink)', margin: '0 0 10px' }}>
+                        Unlock 6-Agent AI Analysis for {ticker?.toUpperCase()}
+                    </h2>
+                    <p style={{ fontSize: 'var(--fs-sm)', color: 'var(--ink-2)', lineHeight: 1.6, margin: '0 0 24px' }}>
+                        {msg}
+                    </p>
+                    <div style={{ display: 'flex', justifyContent: 'center', gap: '12px', flexWrap: 'wrap' }}>
+                        <Link
+                            href="/billing"
+                            className={styles.primary}
+                            style={{ textDecoration: 'none' }}
+                        >
+                            Upgrade to Pro Package ($19/mo) →
+                        </Link>
+                        <Link
+                            href="/analysis"
+                            className={styles.ghost}
+                            style={{ textDecoration: 'none' }}
+                        >
+                            Back to Analysis Hub
+                        </Link>
+                    </div>
                 </div>
             </main>
         )

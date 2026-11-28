@@ -71,16 +71,19 @@ def get_service_or_user(
     authorization: Optional[str] = Header(None),
     x_service_key: Optional[str] = Header(None)
 ) -> dict:
-    if x_service_key and INTERNAL_SERVICE_KEY:
-        try:
-            if hmac.compare_digest(x_service_key.encode("utf-8"), INTERNAL_SERVICE_KEY.encode("utf-8")):
-                return {"sub": "internal-service", "role": "service"}
-        except Exception:
-            pass
+    # 1. Always decode the user's Bearer token first when present so user identity & tier checks work
+    #    even when the Next.js proxy attaches X-Service-Key on every request.
     if authorization:
         parts = authorization.split()
         if len(parts) == 2 and parts[0].lower() == "bearer":
             payload = decode_token(parts[1])
             if "sub" in payload:
                 return payload
+    # 2. Fall back to internal service identity only for background/server-only calls without a user JWT
+    if x_service_key and INTERNAL_SERVICE_KEY:
+        try:
+            if hmac.compare_digest(x_service_key.encode("utf-8"), INTERNAL_SERVICE_KEY.encode("utf-8")):
+                return {"sub": "internal-service", "role": "service"}
+        except Exception:
+            pass
     raise HTTPException(status_code=401, detail="Unauthorized: valid bearer token or service key required")

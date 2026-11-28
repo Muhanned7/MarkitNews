@@ -258,8 +258,13 @@ def check_tokens_and_tier(
     Never exposes raw token counts in error messages—prompts the user to unlock/renew the Pro Package.
     """
     raw_sub = user.get("sub")
-    if not raw_sub or raw_sub == "internal-service" or user.get("role") == "admin" or user.get("is_admin") or is_admin_email(user.get("email")):
+    if user.get("role") == "admin" or user.get("is_admin") or is_admin_email(user.get("email")):
         return {"tier": "pro", "is_pro": True, "role": "admin", "is_admin": True}
+    if not raw_sub or not str(raw_sub).isdigit():
+        raise HTTPException(
+            status_code=401,
+            detail="Please sign in with an active Pro Package account to run AI agent inference.",
+        )
 
     uid = int(raw_sub)
     wallet = get_or_create_wallet(uid)

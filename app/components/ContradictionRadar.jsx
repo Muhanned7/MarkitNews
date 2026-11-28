@@ -1,5 +1,6 @@
 'use client'
 import { useState, useEffect, useCallback } from 'react'
+import { useAuth } from '../context/AuthContext'
 import { MOCK_CONTRADICTION_SCENARIOS } from '../../lib/mockContradictions'
 import styles from './ContradictionRadar.module.css'
 
@@ -10,7 +11,9 @@ export default function ContradictionRadar({
   liveData = null,
   defaultScenarioId = 'meridian-nickel',
 }) {
-  const [mode, setMode] = useState('live') // 'live' | 'demo'
+  const { user } = useAuth()
+  const isProUser = Boolean(user?.is_admin || user?.plan_code === 'pro')
+  const [mode, setMode] = useState(liveData || isProUser ? 'live' : 'demo') // 'live' | 'demo'
   const [activeTicker, setActiveTicker] = useState((ticker || 'AAPL').toUpperCase())
   const [customTickerInput, setCustomTickerInput] = useState('')
   const [watchlistTickers, setWatchlistTickers] = useState([])
@@ -55,10 +58,15 @@ export default function ContradictionRadar({
       setLoadingLive(false)
       return
     }
+    if (!isProUser) {
+      setMode('demo')
+      setLoadingLive(false)
+      return
+    }
     if (mode === 'live') {
       fetchLiveContradictions(activeTicker, false)
     }
-  }, [activeTicker, mode, liveData, fetchLiveContradictions])
+  }, [activeTicker, mode, liveData, isProUser, fetchLiveContradictions])
 
   useEffect(() => {
     if (ticker) return
@@ -124,10 +132,25 @@ export default function ContradictionRadar({
           <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap', alignItems: 'center' }}>
             <button
               type="button"
-              onClick={() => setMode('live')}
+              onClick={() => {
+                if (!isProUser) {
+                  if (typeof window !== 'undefined') {
+                    window.dispatchEvent(
+                      new CustomEvent('open-upgrade-modal', {
+                        detail: {
+                          message:
+                            'Live Contradiction Radar & Epistemic Arbiter inference is a Pro Package capability ($19/mo). Free accounts can explore the Illustrative Demos without consuming backend LLM tokens.',
+                        },
+                      })
+                    )
+                  }
+                  return
+                }
+                setMode('live')
+              }}
               className={`${styles.scenarioBtn} ${mode === 'live' ? styles.scenarioBtnActive : ''}`}
             >
-              ⚡ Live Agent Output
+              {isProUser ? '⚡ Live Agent Output' : '🔒 Live Agent Output (Pro)'}
             </button>
             <button
               type="button"

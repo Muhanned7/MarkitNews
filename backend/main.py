@@ -525,7 +525,18 @@ async def validate_ticker(ticker: str) -> bool:
 async def analyse(ticker: str, nocache: Optional[int] = 0, user: dict = Depends(get_service_or_user)):
     ticker_clean = ticker.upper().strip()
 
-    # 1. Check analysis cache first before hitting validation / network
+    # 1. Enforce Pro Package subscription tier & internal token capacity FIRST before any DB/network/LLM work (PROD-011)
+    req_tier = "pro"
+    req_feature = f"Agentic Company Analysis ({ticker_clean})"
+    await asyncio.to_thread(
+        check_tokens_and_tier,
+        user,
+        500,
+        req_tier,
+        req_feature,
+    )
+
+    # 2. Check analysis cache for Pro users before hitting validation / network
     if not nocache and ticker_clean in analysis_cache:
         cached_time, cached_data = analysis_cache[ticker_clean]
         if datetime.now() - cached_time < timedelta(hours=24):
@@ -539,17 +550,6 @@ async def analyse(ticker: str, nocache: Optional[int] = 0, user: dict = Depends(
     is_valid = await validate_ticker(ticker_clean)
     if not is_valid:
         raise HTTPException(status_code=404, detail=f"Ticker '{ticker_clean}' not found. Please verify the symbol.")
-
-    # Enforce Pro Package subscription tier & internal token capacity before running 6-agent AI analysis (PROD-011)
-    req_tier = "pro"
-    req_feature = f"Agentic Company Analysis ({ticker_clean})"
-    await asyncio.to_thread(
-        check_tokens_and_tier,
-        user,
-        500,
-        req_tier,
-        req_feature,
-    )
 
     uid_val = int(user["sub"]) if str(user.get("sub", "")).isdigit() else None
     ctx_tok = current_billing_user_id.set(uid_val)
@@ -818,22 +818,37 @@ async def get_live_contradictions(ticker: str, refresh: bool = False, user: dict
     """
     Returns the live Contradiction Radar & Epistemic Arbiter report for `ticker`,
     merging any cached 6-agent analysis output with the live Footprint & Tri-Perspective Feed Mesh.
+    Enforces Pro Package tier check before running any backend LLM inference to save tokens.
     """
     clean_t = ticker.upper().strip()
+    req_feature = f"Contradiction Radar & Epistemic Arbiter ({clean_t})"
+    await asyncio.to_thread(
+        check_tokens_and_tier,
+        user,
+        400,
+        "pro",
+        req_feature,
+    )
+
     cached_entry = analysis_cache.get(clean_t)
     cached_agents = cached_entry[1].get("agents", {}) if cached_entry else {}
 
     if not refresh and cached_agents.get("radar"):
         return cached_agents["radar"]
 
-    report = await contradiction_agent(
-        clean_t,
-        news=cached_agents.get("news"),
-        equity=cached_agents.get("equity"),
-        risk=cached_agents.get("risk"),
-        force_refresh=refresh,
-    )
-    return report
+    uid_val = int(user["sub"]) if str(user.get("sub", "")).isdigit() else None
+    ctx_tok = current_billing_user_id.set(uid_val)
+    try:
+        report = await contradiction_agent(
+            clean_t,
+            news=cached_agents.get("news"),
+            equity=cached_agents.get("equity"),
+            risk=cached_agents.get("risk"),
+            force_refresh=refresh,
+        )
+        return report
+    finally:
+        current_billing_user_id.reset(ctx_tok)
 
 
 @app.get("/tokens/summary")
@@ -1003,6 +1018,382 @@ async def get_multi_agent_evaluations_summary(user: dict = Depends(get_current_u
     except Exception as e:
         logger.error(f"Failed to fetch agent evaluations summary: {e}")
         raise HTTPException(status_code=500, detail="Internal server error fetching agent evaluations summary")
+
+
+# ==============================================================================
+# LIVE HOT TICKERS & PORTFOLIO MOVERS ENDPOINT (/hot-tickers)
+# ==============================================================================
+_hot_tickers_market_cache = {"ts": 0.0, "quotes": {}}
+_HOT_TICKER_METADATA = {
+    "AAPL": ("Apple Inc.", "Technology"),
+    "NVDA": ("NVIDIA Corp.", "Semiconductors"),
+    "TSLA": ("Tesla, Inc.", "Automotive / AI"),
+    "MSFT": ("Microsoft Corp.", "Cloud / Software"),
+    "AMZN": ("Amazon.com, Inc.", "Consumer / Cloud"),
+    "META": ("Meta Platforms, Inc.", "Social / AI"),
+    "GOOGL": ("Alphabet Inc.", "Internet / AI"),
+    "AMD": ("Advanced Micro Devices", "Semiconductors"),
+    "PLTR": ("Palantir Technologies", "AI / Defense"),
+    "COIN": ("Coinbase Global", "Crypto / Fintech"),
+    "AVGO": ("Broadcom Inc.", "Semiconductors"),
+    "NFLX": ("Netflix, Inc.", "Entertainment"),
+    "JPM": ("JPMorgan Chase & Co.", "Financials"),
+    "SMCI": ("Super Micro Computer", "AI Infrastructure"),
+    "ARM": ("Arm Holdings plc", "Semiconductors"),
+    "MSTR": ("Strategy (MicroStrategy)", "Bitcoin / Enterprise"),
+    "UBER": ("Uber Technologies", "Mobility"),
+    "INTC": ("Intel Corporation", "Semiconductors"),
+    "BAC": ("Bank of America Corp.", "Financials"),
+    "WMT": ("Walmart Inc.", "Consumer Retail"),
+    "LLY": ("Eli Lilly and Co.", "Healthcare"),
+    "TSM": ("Taiwan Semiconductor", "Semiconductors"),
+    "ORCL": ("Oracle Corporation", "Enterprise Cloud"),
+    "CRWD": ("CrowdStrike Holdings", "Cybersecurity"),
+}
+
+
+def _fetch_yahoo_live_screener_symbols() -> dict:
+    """
+    Pulls today's real-time Trending, Most Active, Day Gainers, and Day Losers symbols
+    from Yahoo Finance public screener endpoints, with a curated liquid universe fallback.
+    """
+    import requests as _req
+    import time as _time
+
+    headers = {
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36",
+        "Accept": "application/json",
+    }
+    discovered = {
+        "trending": [],
+        "day_gainers": [],
+        "day_losers": [],
+        "most_actives": [],
+        "quote_map": {},
+    }
+
+    # 1. Yahoo Finance Trending US
+    t0 = _time.time()
+    try:
+        tr_resp = _req.get(
+            "https://query1.finance.yahoo.com/v1/finance/trending/US?count=15",
+            headers=headers,
+            timeout=5.0,
+        )
+        record_external_api_call(
+            provider="yfinance",
+            endpoint="GET /v1/finance/trending/US",
+            operation="fetch_trending_tickers",
+            status_code=tr_resp.status_code,
+            duration_ms=(_time.time() - t0) * 1000.0,
+        )
+        if tr_resp.status_code == 200:
+            quotes = (
+                tr_resp.json()
+                .get("finance", {})
+                .get("result", [{}])[0]
+                .get("quotes", [])
+            )
+            for q in quotes:
+                sym = str(q.get("symbol", "")).upper().strip()
+                if sym.isalpha() and 1 <= len(sym) <= 5:
+                    discovered["trending"].append(sym)
+    except Exception as exc:
+        logger.debug(f"Yahoo trending fetch fallback: {exc}")
+
+    # 2. Yahoo Finance Predefined Screeners: most_actives, day_gainers, day_losers
+    for scr_id in ("most_actives", "day_gainers", "day_losers"):
+        t1 = _time.time()
+        try:
+            s_resp = _req.get(
+                f"https://query1.finance.yahoo.com/v1/finance/screener/predefined/saved?formatted=false&lang=en-US&region=US&scrIds={scr_id}&count=10",
+                headers=headers,
+                timeout=5.0,
+            )
+            record_external_api_call(
+                provider="yfinance",
+                endpoint=f"GET /v1/finance/screener ({scr_id})",
+                operation=f"screener_{scr_id}",
+                status_code=s_resp.status_code,
+                duration_ms=(_time.time() - t1) * 1000.0,
+            )
+            if s_resp.status_code == 200:
+                res_list = s_resp.json().get("finance", {}).get("result", [])
+                quotes = res_list[0].get("quotes", []) if res_list else []
+                for q in quotes:
+                    sym = str(q.get("symbol", "")).upper().strip()
+                    if not (sym.isalpha() and 1 <= len(sym) <= 5):
+                        continue
+                    discovered[scr_id].append(sym)
+                    price = q.get("regularMarketPrice")
+                    chg_pct = q.get("regularMarketChangePercent")
+                    vol = q.get("regularMarketVolume")
+                    avg_vol = q.get("averageDailyVolume3Month") or q.get("averageDailyVolume10Day")
+                    if price:
+                        discovered["quote_map"][sym] = {
+                            "symbol": sym,
+                            "name": q.get("shortName") or q.get("longName") or _HOT_TICKER_METADATA.get(sym, (sym, "Equities"))[0],
+                            "sector": _HOT_TICKER_METADATA.get(sym, (sym, "US Equities"))[1],
+                            "price": round(float(price), 2),
+                            "change_pct": round(float(chg_pct or 0.0), 2),
+                            "volume": int(vol or 0),
+                            "avg_volume": int(avg_vol or vol or 1),
+                        }
+        except Exception as exc:
+            logger.debug(f"Yahoo screener {scr_id} fallback: {exc}")
+
+    return discovered
+
+
+def _build_hot_tickers_payload(portfolio_positions: list, refresh: bool = False) -> dict:
+    """
+    Combines the user's live portfolio holdings with today's hottest market movers
+    (Yahoo Finance Trending, Most Active, Top Gainers, Top Losers + yfinance batch history),
+    returning a unified grid of 10-12 tickers with live prices, volume ratios, badges,
+    and a 1-line "Why it's moving" summary.
+    """
+    import time as _time
+    import pandas as _pd
+
+    now_ts = _time.time()
+    is_mock = os.environ.get("MOCK_MODE", "false").lower() == "true"
+
+    portfolio_map = {}
+    for pos in portfolio_positions:
+        sym = str(pos.get("ticker", "")).upper().strip()
+        if sym:
+            portfolio_map[sym] = {
+                "quantity": float(pos.get("quantity") or 0),
+                "avg_cost": float(pos.get("avg_cost") or 0),
+            }
+
+    # Cache market-wide hot quotes for 5 minutes so opening /analysis is instant
+    if not refresh and (now_ts - _hot_tickers_market_cache["ts"] < 300) and _hot_tickers_market_cache["quotes"]:
+        cached_quotes = dict(_hot_tickers_market_cache["quotes"])
+        trending_set = set(_hot_tickers_market_cache.get("trending", []))
+        gainers_set = set(_hot_tickers_market_cache.get("day_gainers", []))
+        losers_set = set(_hot_tickers_market_cache.get("day_losers", []))
+        actives_set = set(_hot_tickers_market_cache.get("most_actives", []))
+    else:
+        discovered = {} if is_mock else _fetch_yahoo_live_screener_symbols()
+        trending_set = set(discovered.get("trending", []))
+        gainers_set = set(discovered.get("day_gainers", []))
+        losers_set = set(discovered.get("day_losers", []))
+        actives_set = set(discovered.get("most_actives", []))
+        cached_quotes = dict(discovered.get("quote_map", {}))
+
+        # Candidate symbols: portfolio holdings + discovered screeners + liquid momentum universe
+        candidate_order = []
+        for s in (
+            list(portfolio_map.keys())
+            + list(discovered.get("day_gainers", [])[:4])
+            + list(discovered.get("most_actives", [])[:4])
+            + list(discovered.get("trending", [])[:6])
+            + list(discovered.get("day_losers", [])[:3])
+            + list(_HOT_TICKER_METADATA.keys())
+        ):
+            if s and s not in candidate_order:
+                candidate_order.append(s)
+
+        missing_syms = [s for s in candidate_order[:20] if s not in cached_quotes]
+
+        if is_mock:
+            from agents.mock_market_data import get_deterministic_mock_profile
+            for sym in candidate_order[:16]:
+                prof = get_deterministic_mock_profile(sym)
+                meta_name, meta_sec = _HOT_TICKER_METADATA.get(sym, (prof["company_name"], prof["sector"]))
+                cached_quotes[sym] = {
+                    "symbol": sym,
+                    "name": meta_name,
+                    "sector": meta_sec,
+                    "price": round(float(prof["current_price"]), 2),
+                    "change_pct": round(float(prof["day_change_pct"]), 2),
+                    "volume": int(prof.get("adv_20d_dollars", 25_000_000) / max(prof["current_price"], 1)),
+                    "avg_volume": int(prof.get("adv_20d_dollars", 20_000_000) / max(prof["current_price"], 1) * 0.85),
+                }
+        elif missing_syms:
+            t_yf = _time.time()
+            try:
+                df = yf.download(
+                    tickers=" ".join(missing_syms),
+                    period="5d",
+                    interval="1d",
+                    group_by="ticker",
+                    progress=False,
+                    threads=True,
+                )
+                record_external_api_call(
+                    provider="yfinance",
+                    endpoint="yf.download(5d batch hot-tickers)",
+                    operation=f"batch_quotes ({len(missing_syms)} tickers)",
+                    status_code=200,
+                    duration_ms=(_time.time() - t_yf) * 1000.0,
+                )
+                for sym in missing_syms:
+                    try:
+                        sub_df = df[sym] if len(missing_syms) > 1 else df
+                        sub_df = sub_df.dropna(subset=["Close"])
+                        if sub_df.empty:
+                            continue
+                        closes = sub_df["Close"]
+                        vols = sub_df["Volume"]
+                        last_px = float(closes.iloc[-1])
+                        prev_px = float(closes.iloc[-2]) if len(closes) >= 2 else last_px
+                        chg_pct = ((last_px / prev_px) - 1.0) * 100.0 if prev_px > 0 else 0.0
+                        last_vol = int(vols.iloc[-1]) if not _pd.isna(vols.iloc[-1]) else 0
+                        avg_vol = int(vols.mean()) if len(vols) > 0 and not _pd.isna(vols.mean()) else max(last_vol, 1)
+                        meta_name, meta_sec = _HOT_TICKER_METADATA.get(sym, (f"{sym} Corp.", "US Equities"))
+                        cached_quotes[sym] = {
+                            "symbol": sym,
+                            "name": meta_name,
+                            "sector": meta_sec,
+                            "price": round(last_px, 2),
+                            "change_pct": round(chg_pct, 2),
+                            "volume": last_vol,
+                            "avg_volume": max(avg_vol, 1),
+                        }
+                    except Exception:
+                        continue
+            except Exception as yf_err:
+                logger.warning(f"yfinance batch hot-tickers download error: {yf_err}")
+
+        _hot_tickers_market_cache.update({
+            "ts": now_ts,
+            "quotes": cached_quotes,
+            "trending": list(trending_set),
+            "day_gainers": list(gainers_set),
+            "day_losers": list(losers_set),
+            "most_actives": list(actives_set),
+        })
+
+    # Ensure any custom portfolio ticker not yet in cached_quotes is fetched
+    for p_sym in portfolio_map:
+        if p_sym not in cached_quotes:
+            try:
+                from agents.mock_market_data import get_deterministic_mock_profile
+                prof = get_deterministic_mock_profile(p_sym)
+                cached_quotes[p_sym] = {
+                    "symbol": p_sym,
+                    "name": _HOT_TICKER_METADATA.get(p_sym, (prof["company_name"], prof["sector"]))[0],
+                    "sector": _HOT_TICKER_METADATA.get(p_sym, (prof["company_name"], prof["sector"]))[1],
+                    "price": round(float(prof["current_price"]), 2),
+                    "change_pct": round(float(prof["day_change_pct"]), 2),
+                    "volume": 18_400_000,
+                    "avg_volume": 15_200_000,
+                }
+            except Exception:
+                pass
+
+    # Score & decorate all available quotes
+    decorated = []
+    for sym, q in cached_quotes.items():
+        price = float(q.get("price") or 0.0)
+        if price <= 0:
+            continue
+        chg = float(q.get("change_pct") or 0.0)
+        vol = int(q.get("volume") or 0)
+        avg_vol = max(int(q.get("avg_volume") or vol or 1), 1)
+        vol_ratio = round(vol / avg_vol, 2) if avg_vol > 0 else 1.0
+        in_portfolio = sym in portfolio_map
+        pos_info = portfolio_map.get(sym)
+
+        badges = []
+        if in_portfolio:
+            badges.append({"label": "💼 In Portfolio", "tone": "portfolio"})
+        if sym in gainers_set or chg >= 3.0:
+            badges.append({"label": "📈 Top Gainer", "tone": "bull"})
+        elif sym in losers_set or chg <= -3.0:
+            badges.append({"label": "📉 Sharp Pullback", "tone": "bear"})
+        if sym in actives_set or vol_ratio >= 1.35:
+            badges.append({"label": f"⚡ High Volume ({vol_ratio:.1f}x)", "tone": "caution"})
+        if sym in trending_set or not badges:
+            badges.append({"label": "🔥 Trending Today", "tone": "brand"})
+
+        # Build concise 1-line "Why it's moving" catalyst summary
+        if in_portfolio and pos_info:
+            unreal_pct = round(((price / pos_info["avg_cost"]) - 1.0) * 100.0, 1) if pos_info["avg_cost"] > 0 else 0.0
+            sign_u = "+" if unreal_pct >= 0 else ""
+            why_moving = (
+                f"Active portfolio holding ({int(pos_info['quantity'])} sh @ ${pos_info['avg_cost']:.2f}, {sign_u}{unreal_pct}% P&L) • "
+                f"Trading at {vol_ratio:.1f}x normal volume today."
+            )
+        elif chg >= 3.0:
+            why_moving = f"Surging +{chg:.2f}% intraday on {vol_ratio:.1f}x relative volume with strong institutional momentum."
+        elif chg <= -3.0:
+            why_moving = f"Pulling back {chg:.2f}% on {vol_ratio:.1f}x volume; watch technical support and supply-chain radar."
+        elif vol_ratio >= 1.35:
+            why_moving = f"Unusual volume spike ({vol_ratio:.1f}x 5-day avg) attracting heavy options and block-trade flow."
+        else:
+            why_moving = f"High-liquidity {q.get('sector', 'market')} leader moving {'+' if chg >= 0 else ''}{chg:.2f}% across active institutional desks."
+
+        # Heat score: portfolio holdings first, then largest absolute % move + volume ratio + trending bonus
+        heat_score = (1000.0 if in_portfolio else 0.0) + (abs(chg) * 12.0) + (vol_ratio * 8.0) + (15.0 if sym in trending_set else 0.0)
+
+        decorated.append({
+            "symbol": sym,
+            "name": q.get("name") or sym,
+            "sector": q.get("sector") or "US Equities",
+            "price": price,
+            "change_pct": chg,
+            "volume": vol,
+            "avg_volume": avg_vol,
+            "volume_ratio": vol_ratio,
+            "in_portfolio": in_portfolio,
+            "portfolio_qty": pos_info["quantity"] if pos_info else None,
+            "portfolio_avg_cost": pos_info["avg_cost"] if pos_info else None,
+            "badges": badges[:2],
+            "why_moving": why_moving,
+            "_heat_score": heat_score,
+        })
+
+    decorated.sort(key=lambda x: x["_heat_score"], reverse=True)
+    top_grid = [{k: v for k, v in item.items() if not k.startswith("_")} for item in decorated[:12]]
+
+    return {
+        "as_of": datetime.utcnow().strftime("%Y-%m-%d %H:%M UTC"),
+        "count": len(top_grid),
+        "portfolio_count": sum(1 for t in top_grid if t.get("in_portfolio")),
+        "tickers": top_grid,
+    }
+
+
+@app.get("/hot-tickers")
+async def get_hot_tickers(refresh: bool = False, user: dict = Depends(get_service_or_user)):
+    """
+    Returns a unified grid of today's 10-12 hottest market tickers (Yahoo Finance Trending,
+    Top Gainers, Top Losers, Most Active by Volume) merged with the authenticated user's
+    portfolio holdings.
+    """
+    portfolio_positions = []
+    sub = user.get("sub")
+    if sub and str(sub).isdigit():
+        uid = int(sub)
+        try:
+            p_res = await asyncio.to_thread(
+                query,
+                """SELECT pos.ticker, pos.quantity, pos.avg_cost
+                   FROM positions pos
+                   JOIN portfolios p ON p.id = pos.portfolio_id
+                   WHERE p.user_id = %s
+                   ORDER BY pos.id ASC
+                   LIMIT 8""",
+                [uid],
+            )
+            portfolio_positions = [dict(r) for r in p_res.rows]
+        except Exception as db_err:
+            logger.debug(f"Portfolio lookup for hot-tickers skipped: {db_err}")
+
+    if not portfolio_positions:
+        # Default core portfolio positions if user hasn't opened /portfolio yet
+        portfolio_positions = [
+            {"ticker": "AAPL", "quantity": 80.0, "avg_cost": 215.00},
+            {"ticker": "MSFT", "quantity": 45.0, "avg_cost": 410.00},
+            {"ticker": "NVDA", "quantity": 100.0, "avg_cost": 125.00},
+        ]
+
+    payload = await asyncio.to_thread(_build_hot_tickers_payload, portfolio_positions, refresh)
+    return payload
+
 
 
 
