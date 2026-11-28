@@ -109,6 +109,16 @@ export default function Sidebar() {
                 >
                     <span aria-hidden="true">👤</span> Profile
                 </Link>
+                {user?.is_admin && (
+                    <Link
+                        href="/telemetry"
+                        className={styles.navItem}
+                        aria-current={pathname === '/telemetry' ? 'page' : undefined}
+                        onClick={closeDrawer}
+                    >
+                        <span aria-hidden="true">🛠️</span> Dev Monitor
+                    </Link>
+                )}
             </div>
 
             <div className={styles.sideGroup}>

@@ -21,13 +21,35 @@ def hash_password(password: str) -> str:
 def verify_password(plain: str, hashed: str) -> bool:
     return pwd_context.verify(plain, hashed)
 
-def create_token(user_id: int, email: str) -> str:
+def is_admin_email(email: Optional[str]) -> bool:
+    if not email:
+        return False
+    em = email.strip().lower()
+    raw_list = os.environ.get("ADMIN_EMAILS", "admin@marketpulse.ai,dev@marketpulse.ai")
+    allowed = {x.strip().lower() for x in raw_list.split(",") if x.strip()}
+    return em in allowed
+
+
+def create_token(user_id: int, email: str, role: Optional[str] = None) -> str:
+    resolved_role = role or ("admin" if is_admin_email(email) else "user")
     payload = {
         "sub": str(user_id),
         "email": email,
+        "role": resolved_role,
+        "is_admin": resolved_role == "admin",
         "exp": datetime.utcnow() + timedelta(days=ACCESS_TOKEN_EXPIRE_DAYS)
     }
     return jwt.encode(payload, SECRET_KEY, algorithm=ALGORITHM)
+
+
+def require_admin_or_service(
+    authorization: Optional[str] = Header(None),
+    x_service_key: Optional[str] = Header(None)
+) -> dict:
+    user = get_service_or_user(authorization=authorization, x_service_key=x_service_key)
+    if user.get("role") in ("admin", "service") or user.get("is_admin") or is_admin_email(user.get("email")):
+        return user
+    raise HTTPException(status_code=403, detail="Forbidden: developer admin account required")
 
 def decode_token(token: str) -> dict:
     try:

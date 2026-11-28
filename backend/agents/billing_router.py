@@ -28,7 +28,7 @@ from loguru import logger
 from pydantic import BaseModel
 
 from agents.db import query
-from auth import get_current_user
+from auth import get_current_user, is_admin_email
 
 billing_router = APIRouter(prefix="/billing", tags=["Billing & Pro Package"])
 
@@ -258,8 +258,8 @@ def check_tokens_and_tier(
     Never exposes raw token counts in error messages—prompts the user to unlock/renew the Pro Package.
     """
     raw_sub = user.get("sub")
-    if not raw_sub or raw_sub == "internal-service":
-        return {"tier": "pro", "is_pro": True}
+    if not raw_sub or raw_sub == "internal-service" or user.get("role") == "admin" or user.get("is_admin") or is_admin_email(user.get("email")):
+        return {"tier": "pro", "is_pro": True, "role": "admin", "is_admin": True}
 
     uid = int(raw_sub)
     wallet = get_or_create_wallet(uid)
@@ -470,8 +470,14 @@ async def get_user_membership_status(user: dict = Depends(get_current_user)):
     and payment receipt history (never exposes raw token numbers).
     """
     uid = int(user["sub"])
+    is_admin = bool(user.get("role") == "admin" or user.get("is_admin") or is_admin_email(user.get("email")))
     wallet = await asyncio.to_thread(get_or_create_wallet, uid)
+    if is_admin and wallet.get("tier") != "pro":
+        wallet["tier"] = "pro"
+        wallet["token_balance"] = max(int(wallet.get("token_balance", 0)), 5_000_000)
     membership = sanitize_public_membership(wallet)
+    membership["role"] = "admin" if is_admin else "user"
+    membership["is_admin"] = is_admin
 
     transactions: List[Dict[str, Any]] = []
     try:

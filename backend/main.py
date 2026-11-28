@@ -5,7 +5,7 @@ from pydantic import BaseModel
 from typing import Optional, List, Union
 import asyncio
 import json
-from auth import hash_password, verify_password, create_token, get_current_user, get_service_or_user
+from auth import hash_password, verify_password, create_token, get_current_user, get_service_or_user, is_admin_email, require_admin_or_service
 from agents.db import query
 import os
 import re
@@ -75,6 +75,50 @@ app.include_router(billing_router)
 app.include_router(api_monitor_router)
 
 
+def ensure_developer_admin_account() -> None:
+    """
+    Idempotently ensures the Developer Admin table column (`users.role`) and default
+    developer admin account (`ADMIN_EMAIL` / `ADMIN_PASSWORD`) exist in PostgreSQL
+    with an active Pro Package wallet for production monitoring.
+    """
+    admin_email = os.environ.get("ADMIN_EMAIL", "admin@marketpulse.ai").strip()
+    admin_password = os.environ.get("ADMIN_PASSWORD", "AdminPulse2026!").strip()
+    try:
+        query("ALTER TABLE users ADD COLUMN IF NOT EXISTS role VARCHAR(32) NOT NULL DEFAULT 'user'")
+        existing = query("SELECT id, email, role FROM users WHERE LOWER(email) = LOWER(%s)", [admin_email])
+        if existing.rows:
+            admin_id = existing.rows[0]["id"]
+            if existing.rows[0].get("role") != "admin":
+                query("UPDATE users SET role = 'admin' WHERE id = %s", [admin_id])
+        else:
+            hashed_pw = hash_password(admin_password)
+            ins = query(
+                "INSERT INTO users (email, password_hash, role) VALUES (%s, %s, 'admin') RETURNING id",
+                [admin_email, hashed_pw],
+            )
+            admin_id = ins.rows[0]["id"] if ins.rows else None
+
+        if admin_id is not None:
+            w = get_or_create_wallet(int(admin_id))
+            if w.get("tier") != "pro" or int(w.get("token_balance", 0)) < 1_000_000:
+                query(
+                    """UPDATE user_wallets
+                       SET tier = 'pro',
+                           token_balance = GREATEST(token_balance, 5000000),
+                           monthly_allowance = 5000000
+                       WHERE user_id = %s""",
+                    [int(admin_id)],
+                )
+        logger.info(f"[Admin Bootstrap] Developer Admin account ready: {admin_email}")
+    except Exception as exc:
+        logger.debug(f"[Admin Bootstrap] Skipped DB admin bootstrap: {exc}")
+
+
+@app.on_event("startup")
+async def _on_startup_bootstrap_admin():
+    await asyncio.to_thread(ensure_developer_admin_account)
+
+
 class RegisterRequest(BaseModel):
     email: str
     password: str
@@ -104,9 +148,16 @@ async def register(body: RegisterRequest):
             [email, hashed]
         )
         user = result.rows[0]
+        role = "admin" if is_admin_email(user["email"]) else "user"
         wallet = await asyncio.to_thread(get_or_create_wallet, user["id"])
-        token = create_token(user["id"], user["email"])
-        return {"token": token, "email": user["email"], "membership": sanitize_public_membership(wallet)}
+        token = create_token(user["id"], user["email"], role=role)
+        return {
+            "token": token,
+            "email": user["email"],
+            "role": role,
+            "is_admin": role == "admin",
+            "membership": sanitize_public_membership(wallet),
+        }
     except Exception as e:
         err_str = str(e).lower()
         if "unique" in err_str or "duplicate" in err_str:
@@ -122,7 +173,7 @@ async def login(body: LoginRequest):
     
     result = await asyncio.to_thread(
         query,
-        "SELECT * FROM users WHERE email = %s",
+        "SELECT * FROM users WHERE LOWER(email) = LOWER(%s)",
         [email]
     )
     if not result.rows:
@@ -132,12 +183,21 @@ async def login(body: LoginRequest):
     if not verify_password(body.password, user["password_hash"]):
         raise HTTPException(status_code=401, detail="Invalid credentials")
     
-    token = create_token(user["id"], user["email"])
-    return {"token": token, "email": user["email"]}
+    db_role = user.get("role")
+    role = "admin" if (db_role == "admin" or is_admin_email(user["email"])) else "user"
+    token = create_token(user["id"], user["email"], role=role)
+    return {
+        "token": token,
+        "email": user["email"],
+        "user_id": user["id"],
+        "role": role,
+        "is_admin": role == "admin",
+    }
 
 @app.get("/auth/me")
 async def me(user=Depends(get_current_user)):
-    return user
+    role = "admin" if (user.get("role") == "admin" or user.get("is_admin") or is_admin_email(user.get("email"))) else "user"
+    return {**user, "role": role, "is_admin": role == "admin"}
 
 
 class WatchlistAddRequest(BaseModel):

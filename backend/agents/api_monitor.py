@@ -35,7 +35,7 @@ load_dotenv(Path(__file__).resolve().parent.parent / ".env")
 
 from agents.db import query
 from agents.metrics import external_api_calls_total, external_api_latency_seconds
-from auth import get_service_or_user
+from auth import get_service_or_user, require_admin_or_service
 
 api_monitor_router = APIRouter(tags=["External API Telemetry"])
 
@@ -352,10 +352,11 @@ async def post_external_api_log(req: ExternalApiLogRequest):
 
 
 @api_monitor_router.get("/telemetry/external-apis")
-async def get_external_api_telemetry():
+async def get_external_api_telemetry(user: dict = Depends(require_admin_or_service)):
     """
     Returns comprehensive real-time telemetry across all 12 external APIs used by MarketPulse,
-    combining `external_api_logs` and historical `agent_token_logs`.
+    combining `external_api_logs`, historical `agent_token_logs`, Langfuse status, and Prometheus endpoints.
+    Restricted to Developer Admin accounts (`require_admin_or_service`).
     """
     ensure_external_api_logs_table()
 
@@ -563,6 +564,111 @@ async def get_external_api_telemetry():
     overall_avg_latency = round(weighted_latency_sum / total_calls_all, 1) if total_calls_all > 0 else 0.0
     overall_success_rate = round((total_success_all / total_calls_all) * 100.0, 1) if total_calls_all > 0 else 100.0
 
+    # Langfuse & AI Agent Evaluation observability summary for Developer Admin console
+    lf_pub = os.environ.get("LANGFUSE_PUBLIC_KEY", "").strip()
+    lf_sec = os.environ.get("LANGFUSE_SECRET_KEY", "").strip()
+    lf_host = (
+        os.environ.get("LANGFUSE_BASE_URL")
+        or os.environ.get("LANGFUSE_HOST")
+        or "https://cloud.langfuse.com"
+    ).strip()
+    lf_env = os.environ.get("LANGFUSE_TRACING_ENVIRONMENT", "production").strip()
+
+    agent_eval_summary: Dict[str, Any] = {}
+    footprint_eval_summary: Dict[str, Any] = {}
+    recent_agent_evals: List[Dict[str, Any]] = []
+    llm_by_agent: List[Dict[str, Any]] = []
+
+    try:
+        ae_res = query(
+            """SELECT
+                COUNT(*) AS total_evaluations,
+                ROUND(AVG(faithfulness_score)::numeric, 2) AS avg_faithfulness,
+                ROUND(AVG(consistency_score)::numeric, 2) AS avg_consistency,
+                ROUND(AVG(completeness_score)::numeric, 2) AS avg_completeness,
+                ROUND(AVG(overall_quality_score)::numeric, 2) AS avg_overall_quality,
+                COALESCE(SUM(hallucinations_detected), 0) AS total_hallucinations_intercepted,
+                ROUND((COUNT(*) FILTER (WHERE guardrails_passed = true) * 100.0 / GREATEST(COUNT(*), 1))::numeric, 1) AS guardrails_pass_pct
+               FROM agent_evaluations"""
+        )
+        if ae_res.rows:
+            agent_eval_summary = dict(ae_res.rows[0])
+
+        fe_res = query(
+            """SELECT
+                COUNT(*) AS total_evaluations,
+                ROUND(AVG(faithfulness_score)::numeric, 2) AS avg_faithfulness,
+                ROUND(AVG(citation_grounding_score)::numeric, 2) AS avg_citation_grounding,
+                ROUND(AVG(overall_quality_score)::numeric, 2) AS avg_overall_quality,
+                COALESCE(SUM(hallucinations_detected), 0) AS total_hallucinations_intercepted
+               FROM footprint_evaluations"""
+        )
+        if fe_res.rows:
+            footprint_eval_summary = dict(fe_res.rows[0])
+
+        rec_ev = query(
+            """SELECT id, agent_name, ticker, faithfulness_score, consistency_score,
+                      completeness_score, overall_quality_score, grade,
+                      guardrails_passed, hallucinations_detected, created_at
+               FROM agent_evaluations
+               ORDER BY id DESC
+               LIMIT 15"""
+        )
+        recent_agent_evals = [
+            {
+                **dict(r),
+                "faithfulness_score": float(r.get("faithfulness_score") or 0.0),
+                "consistency_score": float(r.get("consistency_score") or 0.0),
+                "completeness_score": float(r.get("completeness_score") or 0.0),
+                "overall_quality_score": float(r.get("overall_quality_score") or 0.0),
+                "created_at": str(r.get("created_at")),
+            }
+            for r in rec_ev.rows
+        ]
+
+        ag_tok = query(
+            """SELECT
+                agent_name,
+                COUNT(*) AS calls,
+                COALESCE(SUM(prompt_tokens), 0) AS prompt_tokens,
+                COALESCE(SUM(completion_tokens), 0) AS completion_tokens,
+                COALESCE(SUM(total_tokens), 0) AS total_tokens,
+                ROUND(AVG(duration_ms)::numeric, 1) AS avg_latency_ms
+               FROM agent_token_logs
+               GROUP BY agent_name
+               ORDER BY total_tokens DESC"""
+        )
+        llm_by_agent = [
+            {
+                "agent_name": r["agent_name"],
+                "calls": int(r["calls"] or 0),
+                "prompt_tokens": int(r["prompt_tokens"] or 0),
+                "completion_tokens": int(r["completion_tokens"] or 0),
+                "total_tokens": int(r["total_tokens"] or 0),
+                "avg_latency_ms": float(r["avg_latency_ms"] or 0.0),
+            }
+            for r in ag_tok.rows
+        ]
+    except Exception as eval_exc:
+        logger.debug(f"Admin Langfuse/eval summary query skipped: {eval_exc}")
+
+    # Also read last 15 local Langfuse mirror traces from `backend/logs/langfuse_traces.jsonl`
+    local_traces: List[Dict[str, Any]] = []
+    trace_file = Path(__file__).resolve().parent.parent / "logs" / "langfuse_traces.jsonl"
+    if trace_file.exists():
+        try:
+            lines = trace_file.read_text(encoding="utf-8", errors="ignore").splitlines()[-15:]
+            for ln in reversed(lines):
+                if ln.strip():
+                    local_traces.append(json.loads(ln))
+        except Exception:
+            pass
+
+    backend_public_url = os.environ.get(
+        "BACKEND_PUBLIC_URL",
+        "https://finnwinn-api-258199278374.us-east4.run.app",
+    ).rstrip("/")
+
     return {
         "as_of": datetime.now(timezone.utc).isoformat(),
         "mock_mode_enabled": os.environ.get("MOCK_MODE", "false").lower() == "true",
@@ -577,6 +683,43 @@ async def get_external_api_telemetry():
             "overall_avg_latency_ms": overall_avg_latency,
             "total_llm_tokens_24h": total_tokens_24h,
         },
+        "prometheus": {
+            "enabled": os.environ.get("EXPOSE_METRICS", "true").lower() == "true",
+            "production_metrics_url": f"{backend_public_url}/metrics",
+            "production_docs_url": f"{backend_public_url}/docs",
+            "production_telemetry_html_url": f"{backend_public_url}/telemetry",
+            "local_metrics_url": "http://localhost:8000/metrics",
+            "exported_metrics": [
+                "external_api_calls_total{provider,operation,status_code}",
+                "external_api_latency_seconds{provider,operation}",
+                "agent_calls_total{agent_name,ticker}",
+                "agent_latency_seconds{agent_name}",
+                "agent_faithfulness_score{agent_name,ticker}",
+                "agent_evaluation_score{agent_name,ticker,grade}",
+                "agent_hallucinations_detected_total{agent_name,ticker}",
+                "llm_prompt_tokens_total{agent_name,model}",
+                "llm_completion_tokens_total{agent_name,model}",
+                "llm_total_tokens_total{agent_name,model}",
+                "active_analyses",
+                "cache_hits_total{ticker}",
+            ],
+        },
+        "langfuse": {
+            "configured": bool(lf_pub and lf_sec),
+            "host": lf_host,
+            "dashboard_url": lf_host,
+            "traces_url": f"{lf_host}/traces",
+            "datasets_url": f"{lf_host}/datasets",
+            "scores_url": f"{lf_host}/scores",
+            "environment": lf_env,
+            "public_key_prefix": f"{lf_pub[:12]}..." if lf_pub else None,
+            "sdk_version": "Langfuse Python SDK v4 (OpenTelemetry)",
+            "agent_evaluations": agent_eval_summary,
+            "footprint_evaluations": footprint_eval_summary,
+            "recent_evaluations": recent_agent_evals,
+            "llm_by_agent": llm_by_agent,
+            "recent_traces": local_traces,
+        },
         "providers": providers_list,
         "recent_calls": recent_calls[:40],
     }
@@ -585,7 +728,7 @@ async def get_external_api_telemetry():
 @api_monitor_router.get("/telemetry", response_class=HTMLResponse)
 async def get_backend_developer_telemetry_dashboard():
     """Developer-only HTML dashboard served directly from the FastAPI backend."""
-    data = await get_external_api_telemetry()
+    data = await get_external_api_telemetry(user={"sub": "internal-service", "role": "admin", "is_admin": True})
     ov = data["overview"]
     mode_badge = "MOCK MODE" if data["mock_mode_enabled"] else "LIVE PRODUCTION (MOCK_MODE=false)"
     mode_color = "#b45309" if data["mock_mode_enabled"] else "#15803d"

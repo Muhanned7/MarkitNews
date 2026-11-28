@@ -29,6 +29,8 @@ export function AuthProvider({ children }) {
         const sessionUser = {
           id: data.id,
           email: data.email,
+          role: data.role || 'user',
+          is_admin: Boolean(data.is_admin || data.role === 'admin'),
           plan_code: data.plan_code || 'free',
           plan_name: data.plan_name || 'Starter Free',
           has_agentic_access: Boolean(data.has_agentic_access),

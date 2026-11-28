@@ -25,21 +25,29 @@ export async function GET(request) {
     const membership = wallet.membership || {};
     let email = wallet.email || null;
     let userId = wallet.user_id || null;
+    let role = membership.role || 'user';
+    let isAdmin = Boolean(membership.is_admin);
     try {
       const payloadB64 = token.split('.')[1];
       const decoded = JSON.parse(Buffer.from(payloadB64, 'base64url').toString('utf8'));
       email = email || decoded.email || null;
       userId = userId || (decoded.sub ? Number(decoded.sub) : null);
+      if (decoded.role === 'admin' || decoded.is_admin) {
+        role = 'admin';
+        isAdmin = true;
+      }
     } catch {}
 
     return Response.json({
       authenticated: true,
       id: userId,
       email,
+      role,
+      is_admin: isAdmin,
       plan_code: membership.tier || wallet.plan_code || 'free',
       plan_name: membership.plan_name || wallet.plan_name || 'Starter Free',
-      is_pro: Boolean(membership.is_pro),
-      has_agentic_access: Boolean(membership.is_pro || membership.permissions?.agentic_company_analysis),
+      is_pro: Boolean(membership.is_pro || isAdmin),
+      has_agentic_access: Boolean(membership.is_pro || membership.permissions?.agentic_company_analysis || isAdmin),
       capabilities: membership.capabilities || [],
     });
   } catch (err) {
