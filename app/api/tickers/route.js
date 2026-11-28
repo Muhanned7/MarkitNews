@@ -34,7 +34,9 @@ export async function GET(request) {
 
         let dbTickers = [];
         try {
-            const res = await fetch(`${BACKEND_URL}/tickers`);
+            const res = await fetch(`${BACKEND_URL}/tickers`, {
+                headers: INTERNAL_SERVICE_KEY ? { 'X-Service-Key': INTERNAL_SERVICE_KEY } : {},
+            });
             if (res.ok) {
                 const data = await res.json();
                 dbTickers = data.tickers || [];

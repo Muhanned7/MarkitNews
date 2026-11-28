@@ -47,7 +47,11 @@ const FALLBACK_PACKAGES = {
 
 export async function GET() {
     try {
-        const res = await fetch(`${BACKEND_URL}/billing/packages`, { cache: 'no-store' });
+        const serviceKey = process.env.INTERNAL_SERVICE_KEY || '';
+        const res = await fetch(`${BACKEND_URL}/billing/packages`, {
+            headers: serviceKey ? { 'X-Service-Key': serviceKey } : {},
+            cache: 'no-store',
+        });
         if (res.ok) {
             const data = await res.json();
             return Response.json(data);

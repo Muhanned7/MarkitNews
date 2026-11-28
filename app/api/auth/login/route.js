@@ -1,4 +1,4 @@
-import { buildAuthCookieHeader } from '@/lib/serverAuth';
+import { buildAuthCookieHeader, getFrontendServiceHeaders } from '@/lib/serverAuth';
 
 const BACKEND_URL = process.env.BACKEND_URL || process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:8000';
 
@@ -7,7 +7,7 @@ export async function POST(request) {
         const body = await request.json();
         const res = await fetch(`${BACKEND_URL}/auth/login`, {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
+            headers: getFrontendServiceHeaders(),
             body: JSON.stringify(body)
         });
         const data = await res.json();

@@ -1,9 +1,11 @@
-from fastapi import FastAPI, Depends, HTTPException
+from fastapi import FastAPI, Depends, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
 from dotenv import load_dotenv
 from pydantic import BaseModel
 from typing import Optional, List, Union
 import asyncio
+import hmac
 import json
 from auth import hash_password, verify_password, create_token, get_current_user, get_service_or_user, is_admin_email, require_admin_or_service
 from agents.db import query
@@ -34,25 +36,61 @@ from ingestion.adapters.geo_feed_adapter import fetch_tri_perspective_mesh
 #client = Mistral(api_key=os.environ["MISTRAL_API_KEY"])
 
 
-app = FastAPI(title="MarketPulse Backend")
+_expose_public_docs = os.environ.get("EXPOSE_BACKEND_DOCS", "false").strip().lower() == "true"
+app = FastAPI(
+    title="MarketPulse Backend",
+    docs_url="/docs" if _expose_public_docs else None,
+    redoc_url="/redoc" if _expose_public_docs else None,
+    openapi_url="/openapi.json" if _expose_public_docs else None,
+)
 
 # Logging setup
 logger.remove()
 logger.add(sys.stdout, format="{time:YYYY-MM-DD HH:mm:ss} | {level} | {message}", level="INFO")
 logger.add("logs/app.log", rotation="10 MB", retention="7 days", level="INFO")
 
-# Prometheus metrics
+# Prometheus metrics collected in-process for the Developer Admin UI (no public /metrics exposure by default)
 _instrumentator = Instrumentator().instrument(app)
-# /metrics leaks internals on a public URL; set EXPOSE_METRICS=false in production.
-if os.environ.get("EXPOSE_METRICS", "true").strip().lower() == "true":
+if os.environ.get("EXPOSE_METRICS", "false").strip().lower() == "true":
     _instrumentator.expose(app)
 
+FRONTEND_ORIGIN = os.environ.get("FRONTEND_URL", "https://finnwinn-web-258199278374.us-east4.run.app").rstrip("/")
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:3000"],
+    allow_origins=[FRONTEND_ORIGIN, "http://localhost:3000"],
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+
+@app.middleware("http")
+async def restrict_to_frontend_proxy(request: Request, call_next):
+    """
+    Enforces that all traffic to the backend API comes strictly from the Next.js frontend proxy
+    (authenticated via `X-Service-Key`). Direct browser or external requests to the backend
+    URL are rejected with 403 Forbidden.
+    """
+    expected_key = (os.environ.get("INTERNAL_SERVICE_KEY") or "").strip()
+    enforce_gate = os.environ.get("ENFORCE_FRONTEND_ONLY", "true").strip().lower() == "true"
+    if expected_key and enforce_gate:
+        provided_key = (request.headers.get("x-service-key") or "").strip()
+        is_valid = False
+        if provided_key:
+            try:
+                is_valid = hmac.compare_digest(
+                    provided_key.encode("utf-8"),
+                    expected_key.encode("utf-8"),
+                )
+            except Exception:
+                is_valid = False
+        if not is_valid:
+            return JSONResponse(
+                status_code=403,
+                content={
+                    "detail": "Direct access to the backend API is disabled. All requests must pass through the MarketPulse web application."
+                },
+            )
+    return await call_next(request)
 
 from agents.portfolio_router import portfolio_router
 from agents.risk_router import risk_router

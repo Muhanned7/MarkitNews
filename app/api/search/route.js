@@ -10,7 +10,10 @@ const INTERNAL_SERVICE_KEY = process.env.INTERNAL_SERVICE_KEY
 function reportExternalApiCall(payload) {
   fetch(`${BACKEND_URL}/telemetry/external-apis/log`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: {
+      'Content-Type': 'application/json',
+      ...(INTERNAL_SERVICE_KEY ? { 'X-Service-Key': INTERNAL_SERVICE_KEY } : {})
+    },
     body: JSON.stringify(payload)
   }).catch(() => {})
 }

@@ -36,6 +36,231 @@ load_dotenv(Path(__file__).resolve().parent.parent / ".env")
 from agents.db import query
 from agents.metrics import external_api_calls_total, external_api_latency_seconds
 from auth import get_service_or_user, require_admin_or_service
+from prometheus_client import REGISTRY
+
+
+def collect_live_prometheus_snapshot() -> Dict[str, Any]:
+    """
+    Reads live time-series counters, gauges, and histograms directly from the in-process
+    Prometheus REGISTRY (`prometheus_client`) so the Developer Admin console can render
+    a rich visual Prometheus dashboard without exposing `/metrics` on the public backend URL.
+    """
+    families: List[Dict[str, Any]] = []
+    http_by_handler: Dict[str, Dict[str, Any]] = {}
+    agent_metrics: Dict[str, Dict[str, Any]] = {}
+    external_api_prom: Dict[str, Dict[str, Any]] = {}
+    active_analyses_val = 0.0
+    cache_hits_total_val = 0.0
+
+    try:
+        for metric in REGISTRY.collect():
+            m_name = metric.name
+            m_type = metric.type
+            m_doc = metric.documentation
+
+            if m_name.startswith(("python_gc_", "process_")):
+                continue
+
+            samples_out = []
+            for s in metric.samples:
+                if s.name.endswith("_created"):
+                    continue
+                val = float(s.value or 0.0)
+                labels = dict(s.labels or {})
+                samples_out.append({
+                    "sample_name": s.name,
+                    "labels": labels,
+                    "value": round(val, 4),
+                })
+
+                # 1. FastAPI HTTP instrumentator metrics
+                if s.name in ("http_requests_total", "http_request_duration_seconds_count"):
+                    handler = labels.get("handler") or labels.get("path") or "unknown"
+                    status = labels.get("status") or labels.get("status_code") or "2xx"
+                    method = labels.get("method") or "GET"
+                    key = f"{method} {handler}"
+                    h_entry = http_by_handler.setdefault(
+                        key,
+                        {"handler": handler, "method": method, "requests": 0, "errors": 0, "total_duration_s": 0.0},
+                    )
+                    if s.name == "http_requests_total":
+                        h_entry["requests"] += int(val)
+                        if str(status).startswith(("4", "5")):
+                            h_entry["errors"] += int(val)
+                elif s.name == "http_request_duration_seconds_sum":
+                    handler = labels.get("handler") or labels.get("path") or "unknown"
+                    method = labels.get("method") or "GET"
+                    key = f"{method} {handler}"
+                    h_entry = http_by_handler.setdefault(
+                        key,
+                        {"handler": handler, "method": method, "requests": 0, "errors": 0, "total_duration_s": 0.0},
+                    )
+                    h_entry["total_duration_s"] += val
+
+                # 2. Specialist Agent Prometheus metrics
+                elif s.name == "agent_calls_total":
+                    ag = (labels.get("agent_name") or "agent").lower()
+                    a_entry = agent_metrics.setdefault(
+                        ag,
+                        {
+                            "agent_name": ag,
+                            "calls": 0,
+                            "errors": 0,
+                            "duration_sum_s": 0.0,
+                            "duration_count": 0,
+                            "faithfulness": None,
+                            "quality_score": None,
+                            "hallucinations": 0,
+                        },
+                    )
+                    a_entry["calls"] += int(val)
+                elif s.name == "mistral_errors_total":
+                    ag = (labels.get("agent_name") or "agent").lower()
+                    a_entry = agent_metrics.setdefault(
+                        ag,
+                        {
+                            "agent_name": ag,
+                            "calls": 0,
+                            "errors": 0,
+                            "duration_sum_s": 0.0,
+                            "duration_count": 0,
+                            "faithfulness": None,
+                            "quality_score": None,
+                            "hallucinations": 0,
+                        },
+                    )
+                    a_entry["errors"] += int(val)
+                elif s.name == "agent_duration_seconds_sum":
+                    ag = (labels.get("agent_name") or "agent").lower()
+                    a_entry = agent_metrics.setdefault(
+                        ag,
+                        {
+                            "agent_name": ag,
+                            "calls": 0,
+                            "errors": 0,
+                            "duration_sum_s": 0.0,
+                            "duration_count": 0,
+                            "faithfulness": None,
+                            "quality_score": None,
+                            "hallucinations": 0,
+                        },
+                    )
+                    a_entry["duration_sum_s"] += val
+                elif s.name == "agent_duration_seconds_count":
+                    ag = (labels.get("agent_name") or "agent").lower()
+                    a_entry = agent_metrics.setdefault(
+                        ag,
+                        {
+                            "agent_name": ag,
+                            "calls": 0,
+                            "errors": 0,
+                            "duration_sum_s": 0.0,
+                            "duration_count": 0,
+                            "faithfulness": None,
+                            "quality_score": None,
+                            "hallucinations": 0,
+                        },
+                    )
+                    a_entry["duration_count"] += int(val)
+                elif s.name == "agent_faithfulness_score":
+                    ag = (labels.get("agent_name") or "agent").lower()
+                    a_entry = agent_metrics.setdefault(
+                        ag,
+                        {
+                            "agent_name": ag,
+                            "calls": 0,
+                            "errors": 0,
+                            "duration_sum_s": 0.0,
+                            "duration_count": 0,
+                            "faithfulness": None,
+                            "quality_score": None,
+                            "hallucinations": 0,
+                        },
+                    )
+                    a_entry["faithfulness"] = round(val, 2)
+                elif s.name == "agent_evaluation_score":
+                    ag = (labels.get("agent_name") or "agent").lower()
+                    a_entry = agent_metrics.setdefault(
+                        ag,
+                        {
+                            "agent_name": ag,
+                            "calls": 0,
+                            "errors": 0,
+                            "duration_sum_s": 0.0,
+                            "duration_count": 0,
+                            "faithfulness": None,
+                            "quality_score": None,
+                            "hallucinations": 0,
+                        },
+                    )
+                    a_entry["quality_score"] = round(val, 2)
+                elif s.name == "agent_hallucinations_detected_total":
+                    ag = (labels.get("agent_name") or "agent").lower()
+                    a_entry = agent_metrics.setdefault(
+                        ag,
+                        {
+                            "agent_name": ag,
+                            "calls": 0,
+                            "errors": 0,
+                            "duration_sum_s": 0.0,
+                            "duration_count": 0,
+                            "faithfulness": None,
+                            "quality_score": None,
+                            "hallucinations": 0,
+                        },
+                    )
+                    a_entry["hallucinations"] += int(val)
+
+                # 3. External API Prometheus counters
+                elif s.name == "external_api_calls_total":
+                    prov = labels.get("provider") or "unknown"
+                    p_entry = external_api_prom.setdefault(prov, {"provider": prov, "calls": 0, "duration_sum_s": 0.0})
+                    p_entry["calls"] += int(val)
+                elif s.name == "external_api_latency_seconds_sum":
+                    prov = labels.get("provider") or "unknown"
+                    p_entry = external_api_prom.setdefault(prov, {"provider": prov, "calls": 0, "duration_sum_s": 0.0})
+                    p_entry["duration_sum_s"] += val
+                elif s.name == "active_analyses":
+                    active_analyses_val = val
+                elif s.name == "cache_hits_total":
+                    cache_hits_total_val += val
+
+            if samples_out:
+                families.append({
+                    "name": m_name,
+                    "type": m_type,
+                    "help": m_doc,
+                    "samples": samples_out[:25],
+                })
+    except Exception as exc:
+        logger.debug(f"Prometheus in-memory snapshot error: {exc}")
+
+    http_handlers_list = []
+    for key, item in sorted(http_by_handler.items(), key=lambda kv: kv[1]["requests"], reverse=True):
+        reqs = max(item["requests"], 1)
+        avg_ms = round((item["total_duration_s"] / reqs) * 1000.0, 1) if item["total_duration_s"] > 0 else 0.0
+        http_handlers_list.append({
+            **item,
+            "avg_latency_ms": avg_ms,
+        })
+
+    agent_metrics_list = []
+    for ag, item in sorted(agent_metrics.items(), key=lambda kv: kv[1]["calls"], reverse=True):
+        cnt = max(item["duration_count"] or item["calls"], 1)
+        avg_s = round(item["duration_sum_s"] / cnt, 2) if item["duration_sum_s"] > 0 else 0.0
+        agent_metrics_list.append({
+            **item,
+            "avg_duration_s": avg_s,
+        })
+
+    return {
+        "active_analyses": int(active_analyses_val),
+        "cache_hits_total": int(cache_hits_total_val),
+        "http_handlers": http_handlers_list[:20],
+        "agent_metrics": agent_metrics_list,
+        "external_api_counters": list(external_api_prom.values()),
+        "families": families,
+    }
 
 api_monitor_router = APIRouter(tags=["External API Telemetry"])
 
@@ -664,10 +889,7 @@ async def get_external_api_telemetry(user: dict = Depends(require_admin_or_servi
         except Exception:
             pass
 
-    backend_public_url = os.environ.get(
-        "BACKEND_PUBLIC_URL",
-        "https://finnwinn-api-258199278374.us-east4.run.app",
-    ).rstrip("/")
+    prom_snapshot = collect_live_prometheus_snapshot()
 
     return {
         "as_of": datetime.now(timezone.utc).isoformat(),
@@ -684,22 +906,22 @@ async def get_external_api_telemetry(user: dict = Depends(require_admin_or_servi
             "total_llm_tokens_24h": total_tokens_24h,
         },
         "prometheus": {
-            "enabled": os.environ.get("EXPOSE_METRICS", "true").lower() == "true",
-            "production_metrics_url": f"{backend_public_url}/metrics",
-            "production_docs_url": f"{backend_public_url}/docs",
-            "production_telemetry_html_url": f"{backend_public_url}/telemetry",
-            "local_metrics_url": "http://localhost:8000/metrics",
+            "enabled": True,
+            "backend_locked_to_frontend": os.environ.get("ENFORCE_FRONTEND_ONLY", "true").lower() == "true",
+            "live_snapshot": prom_snapshot,
             "exported_metrics": [
                 "external_api_calls_total{provider,operation,status_code}",
                 "external_api_latency_seconds{provider,operation}",
                 "agent_calls_total{agent_name,ticker}",
-                "agent_latency_seconds{agent_name}",
+                "agent_duration_seconds{agent_name}",
                 "agent_faithfulness_score{agent_name,ticker}",
                 "agent_evaluation_score{agent_name,ticker,grade}",
                 "agent_hallucinations_detected_total{agent_name,ticker}",
-                "llm_prompt_tokens_total{agent_name,model}",
-                "llm_completion_tokens_total{agent_name,model}",
-                "llm_total_tokens_total{agent_name,model}",
+                "llm_prompt_tokens_total{agent_name,model,ticker}",
+                "llm_completion_tokens_total{agent_name,model,ticker}",
+                "llm_total_tokens_total{agent_name,model,ticker}",
+                "http_requests_total{handler,method,status}",
+                "http_request_duration_seconds{handler,method}",
                 "active_analyses",
                 "cache_hits_total{ticker}",
             ],
@@ -723,109 +945,3 @@ async def get_external_api_telemetry(user: dict = Depends(require_admin_or_servi
         "providers": providers_list,
         "recent_calls": recent_calls[:40],
     }
-
-
-@api_monitor_router.get("/telemetry", response_class=HTMLResponse)
-async def get_backend_developer_telemetry_dashboard():
-    """Developer-only HTML dashboard served directly from the FastAPI backend."""
-    data = await get_external_api_telemetry(user={"sub": "internal-service", "role": "admin", "is_admin": True})
-    ov = data["overview"]
-    mode_badge = "MOCK MODE" if data["mock_mode_enabled"] else "LIVE PRODUCTION (MOCK_MODE=false)"
-    mode_color = "#b45309" if data["mock_mode_enabled"] else "#15803d"
-
-    rows_html = ""
-    for p in data["providers"]:
-        status_color = "#15803d" if p["health_status"] in ("active", "ready") else ("#b91c1c" if p["health_status"] in ("degraded", "rate_limited") else "#64748b")
-        rows_html += f"""
-        <tr>
-            <td><strong>{p['name']}</strong><br><small style="color:#64748b">{p['base_url']}</small></td>
-            <td>{p['category']}</td>
-            <td><span style="color:{status_color};font-weight:700;text-transform:uppercase">{p['health_status']}</span></td>
-            <td style="text-align:right;font-family:monospace">{p['calls_24h']}</td>
-            <td style="text-align:right;font-family:monospace">{p['calls_total']}</td>
-            <td style="text-align:right;font-family:monospace">{p['success_rate_pct']}%</td>
-            <td style="text-align:right;font-family:monospace">{p['avg_latency_ms']} ms</td>
-            <td style="text-align:right;font-family:monospace">{p['rate_limit_429_count']}</td>
-            <td style="text-align:right;font-family:monospace">{p['quota_used_pct']}% <small style="color:#64748b">({p['quota_window']})</small></td>
-        </tr>"""
-
-    recent_html = ""
-    for c in data["recent_calls"][:25]:
-        badge = "✅ 200" if c["success"] else f"❌ {c['status_code']}"
-        recent_html += f"""
-        <tr>
-            <td style="font-family:monospace;font-size:12px">{c['created_at'][:19]}</td>
-            <td><strong>{c['provider_name']}</strong></td>
-            <td style="font-family:monospace;font-size:12px">{c['operation']}</td>
-            <td style="font-family:monospace">{c['ticker'] or '—'}</td>
-            <td style="font-family:monospace">{badge}</td>
-            <td style="text-align:right;font-family:monospace">{c['duration_ms']} ms</td>
-            <td style="text-align:right;font-family:monospace">{c['tokens_used'] or '—'}</td>
-        </tr>"""
-
-    html = f"""<!DOCTYPE html>
-<html lang="en">
-<head>
-<meta charset="utf-8" />
-<title>MarketPulse Backend Developer API Monitor</title>
-<meta http-equiv="refresh" content="15">
-<style>
-  body {{ font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background: #0f172a; color: #e2e8f0; margin: 0; padding: 28px; }}
-  .header {{ display: flex; justify-content: space-between; align-items: center; margin-bottom: 22px; border-bottom: 1px solid #1e293b; padding-bottom: 16px; }}
-  .badge {{ background: {mode_color}; color: #fff; padding: 6px 12px; border-radius: 6px; font-size: 12px; font-weight: 700; }}
-  .kpis {{ display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 14px; margin-bottom: 26px; }}
-  .kpi {{ background: #1e293b; border: 1px solid #334155; border-radius: 8px; padding: 14px 16px; }}
-  .kpi-label {{ font-size: 11px; text-transform: uppercase; color: #94a3b8; letter-spacing: 0.06em; }}
-  .kpi-val {{ font-size: 24px; font-weight: 700; margin-top: 6px; font-family: monospace; }}
-  table {{ width: 100%; border-collapse: collapse; background: #1e293b; border-radius: 8px; overflow: hidden; margin-bottom: 28px; }}
-  th, td {{ padding: 11px 14px; text-align: left; border-bottom: 1px solid #334155; font-size: 13px; }}
-  th {{ background: #0f172a; color: #94a3b8; font-size: 11px; text-transform: uppercase; letter-spacing: 0.05em; }}
-  a {{ color: #38bdf8; text-decoration: none; margin-left: 14px; font-size: 13px; }}
-</style>
-</head>
-<body>
-  <div class="header">
-    <div>
-      <h1 style="margin:0;font-size:22px">📡 MarketPulse Backend Developer API Telemetry</h1>
-      <div style="color:#94a3b8;font-size:13px;margin-top:4px">Backend-only developer observability across all 12 outbound APIs • Auto-refreshes every 15s</div>
-    </div>
-    <div>
-      <span class="badge">{mode_badge}</span>
-      <a href="/telemetry/external-apis">Raw JSON</a>
-      <a href="/metrics">Prometheus /metrics</a>
-      <a href="/docs">OpenAPI /docs</a>
-    </div>
-  </div>
-  <div class="kpis">
-    <div class="kpi"><div class="kpi-label">APIs Configured</div><div class="kpi-val">{ov['configured_providers']} / {ov['total_providers_tracked']}</div></div>
-    <div class="kpi"><div class="kpi-label">Calls (24h)</div><div class="kpi-val">{ov['total_calls_24h']}</div></div>
-    <div class="kpi"><div class="kpi-label">Calls (All-Time)</div><div class="kpi-val">{ov['total_calls_all_time']}</div></div>
-    <div class="kpi"><div class="kpi-label">Success Rate</div><div class="kpi-val">{ov['overall_success_rate_pct']}%</div></div>
-    <div class="kpi"><div class="kpi-label">Avg Latency</div><div class="kpi-val">{ov['overall_avg_latency_ms']} ms</div></div>
-    <div class="kpi"><div class="kpi-label">429 Rate Limits</div><div class="kpi-val">{ov['total_rate_limit_429']}</div></div>
-  </div>
-  <h2 style="font-size:15px;color:#94a3b8;text-transform:uppercase">Outbound External API Providers (12)</h2>
-  <table>
-    <thead>
-      <tr>
-        <th>Provider</th><th>Category</th><th>Status</th>
-        <th style="text-align:right">24h Calls</th><th style="text-align:right">Total Calls</th>
-        <th style="text-align:right">Success</th><th style="text-align:right">Avg Latency</th>
-        <th style="text-align:right">429s</th><th style="text-align:right">24h Quota</th>
-      </tr>
-    </thead>
-    <tbody>{rows_html}</tbody>
-  </table>
-  <h2 style="font-size:15px;color:#94a3b8;text-transform:uppercase">Recent Outbound API Calls</h2>
-  <table>
-    <thead>
-      <tr>
-        <th>Timestamp (UTC)</th><th>Provider</th><th>Operation</th><th>Ticker</th><th>Status</th>
-        <th style="text-align:right">Duration</th><th style="text-align:right">LLM Tokens</th>
-      </tr>
-    </thead>
-    <tbody>{recent_html}</tbody>
-  </table>
-</body>
-</html>"""
-    return HTMLResponse(content=html)
