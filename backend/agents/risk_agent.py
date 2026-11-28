@@ -4,7 +4,7 @@ import os
 import yfinance as yf
 import numpy as np
 import random
-from agents.client import client
+from agents.client import client, parse_llm_json
 from agents.metrics import agent_calls, agent_latency, mistral_errors
 from agents.guardrails import guardrail_risk_agent
 from agents.evaluator import evaluate_agent_output
@@ -135,6 +135,8 @@ async def risk_agent(ticker: str) -> dict:
         response = await asyncio.to_thread(
             client.chat.complete,
             model="mistral-small-latest",
+            agent_name="risk_agent",
+            ticker=ticker,
             messages=[
                 {
                     "role": "system",
@@ -167,8 +169,7 @@ async def risk_agent(ticker: str) -> dict:
                 }
             ]
         )
-        raw = response.choices[0].message.content.replace("```json", "").replace("```", "").strip()
-        parsed = json.loads(raw)
+        parsed = parse_llm_json(response.choices[0].message.content)
         clean_res, stats = guardrail_risk_agent(parsed, raw_data, ticker=ticker)
         clean_res["_evaluation"] = evaluate_agent_output("risk", ticker, clean_res, stats)
         return clean_res

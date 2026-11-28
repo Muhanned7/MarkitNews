@@ -21,7 +21,7 @@ from typing import Any, Dict, List, Optional
 
 from loguru import logger
 
-from agents.client import client
+from agents.client import client, parse_llm_json
 from agents.evaluator import evaluate_agent_output
 from agents.metrics import agent_calls, agent_latency
 from ingestion.adapters.geo_feed_adapter import fetch_tri_perspective_mesh
@@ -129,8 +129,8 @@ def _build_deterministic_arbiter_from_mesh(
                 "publishedAt": w_top.get("published_at") or "Live Wire",
                 "temporal_regime": w_regime,
                 "age_days": w_age,
-                "stance": f"Macro / Street Consensus ({(news.get('overall_sentiment') if news else 'neutral').upper()})",
-                "stanceColor": "#ef4444" if (news and news.get("overall_sentiment") == "bearish") else "#3b82f6",
+                "stance": f"Macro / Street Consensus ({str((news or {}).get('overall_sentiment') or 'neutral').upper()})",
+                "stanceColor": "#ef4444" if ((news or {}).get("overall_sentiment") == "bearish") else "#3b82f6",
                 "biasProfile": "Focuses on headline earnings momentum, valuation multiples, and macro sector sentiment.",
                 "claims": w_claims[:3],
             },
@@ -180,7 +180,7 @@ def _build_deterministic_arbiter_from_mesh(
         "epistemicVerdict": {
             "consensusFacts": [
                 f"SEC 10-K & Wikipedia footprint verification confirmed {len(local_hubs)} physical hubs and {len(supplier_list)} Tier-1 suppliers for {t_up}.",
-                f"Primary Western wire sentiment is {(news.get('overall_sentiment') if news else 'neutral').upper()} with equity consensus {(equity.get('recommendation') if equity else 'hold').upper()}.",
+                f"Primary Western wire sentiment is {str((news or {}).get('overall_sentiment') or 'neutral').upper()} with equity consensus {str((equity or {}).get('recommendation') or 'hold').upper()}.",
                 "All retrieved regional and supplier articles are classified by Temporal Regime (ACTIVE_SHOCK <=30d, RECOVERY_LAG 31-180d, HISTORICAL_STRUCTURAL >180d).",
             ],
             "spinAnalysis": (
@@ -321,12 +321,7 @@ Return ONLY raw JSON (no markdown) with these exact keys:
                         {"role": "user", "content": json.dumps(prompt_payload, default=str)},
                     ],
                 )
-                raw_txt = resp.choices[0].message.content.replace("```json", "").replace("```", "").strip()
-                first_brace = raw_txt.find("{")
-                last_brace = raw_txt.rfind("}")
-                if first_brace != -1 and last_brace != -1:
-                    raw_txt = raw_txt[first_brace : last_brace + 1]
-                parsed = json.loads(raw_txt)
+                parsed = parse_llm_json(resp.choices[0].message.content, fallback={})
 
                 if parsed.get("eventTitle"):
                     base_report["eventTitle"] = parsed["eventTitle"]

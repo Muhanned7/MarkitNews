@@ -4,7 +4,7 @@ import requests
 import random
 from mistralai.client import Mistral
 import os
-from agents.client import client
+from agents.client import client, parse_llm_json
 from agents.metrics import agent_calls, agent_latency, mistral_errors
 from agents.guardrails import guardrail_sentiment_agent
 from agents.evaluator import evaluate_agent_output
@@ -90,6 +90,8 @@ async def sentiment_agent(ticker: str, news_data: dict, consensus: str = None) -
         response = await asyncio.to_thread(
             client.chat.complete,
             model="mistral-small-latest",
+            agent_name="sentiment_agent",
+            ticker=ticker,
             messages=[
                 {
                     "role": "system",
@@ -116,8 +118,7 @@ async def sentiment_agent(ticker: str, news_data: dict, consensus: str = None) -
                 }
             ]
         )
-        raw = response.choices[0].message.content.replace("```json", "").replace("```", "").strip()
-        parsed = json.loads(raw)
+        parsed = parse_llm_json(response.choices[0].message.content)
         clean_res, stats = guardrail_sentiment_agent(parsed)
         clean_res["_evaluation"] = evaluate_agent_output("sentiment", ticker, clean_res, stats)
         return clean_res
