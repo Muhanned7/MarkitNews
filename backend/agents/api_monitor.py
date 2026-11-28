@@ -273,6 +273,52 @@ def record_external_api_call(
         logger.debug(f"External API DB log skipped for {prov}: {e}")
 
 
+def log_external_api_call(
+    provider: str,
+    endpoint: str,
+    operation: Optional[str] = None,
+    method: str = "GET",
+    status_code: int = 200,
+    latency_ms: float = 0.0,
+    duration_ms: float = 0.0,
+    caller: Optional[str] = None,
+    ticker: Optional[str] = None,
+    query_summary: Optional[str] = None,
+    tokens_used: int = 0,
+    success: Optional[bool] = None,
+    error_message: Optional[str] = None,
+    metadata: Optional[Dict[str, Any]] = None,
+) -> None:
+    """Compatibility wrapper forwarding flexible keyword arguments to record_external_api_call."""
+    prov_norm = (provider or "unknown").lower().strip().replace(" ", "_")
+    if prov_norm == "newsapi":
+        prov_norm = "newsapi"
+    elif "google" in prov_norm:
+        prov_norm = "google_news_rss"
+    elif "sec" in prov_norm:
+        prov_norm = "sec_edgar"
+    elif "hugging" in prov_norm:
+        prov_norm = "huggingface"
+    op_str = operation or caller or f"{method} {endpoint}"
+    meta = dict(metadata or {})
+    if query_summary:
+        meta["query_summary"] = query_summary
+    if caller:
+        meta["caller"] = caller
+    record_external_api_call(
+        provider=prov_norm,
+        endpoint=endpoint,
+        operation=op_str,
+        ticker=ticker,
+        status_code=status_code,
+        success=success,
+        duration_ms=latency_ms or duration_ms,
+        tokens_used=tokens_used,
+        error_message=error_message,
+        metadata=meta,
+    )
+
+
 class ExternalApiLogRequest(BaseModel):
     provider: str
     endpoint: str
