@@ -7,6 +7,14 @@ export const maxDuration = 60 // seconds
 const BACKEND_URL = process.env.BACKEND_URL || process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:8000'
 const INTERNAL_SERVICE_KEY = process.env.INTERNAL_SERVICE_KEY
 
+function reportExternalApiCall(payload) {
+  fetch(`${BACKEND_URL}/telemetry/external-apis/log`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload)
+  }).catch(() => {})
+}
+
 // In-memory cache with 10-minute TTL to protect API quotas
 const cache = new Map()
 
@@ -64,6 +72,7 @@ function decodeXmlEntities(str = '') {
 }
 
 async function fetchGoogleNewsRss(searchQuery, maxItems = 12) {
+  const t0 = Date.now()
   try {
     const q = `${searchQuery} when:14d`
     const url = `https://news.google.com/rss/search?q=${encodeURIComponent(q)}&hl=en-US&gl=US&ceid=US:en`
@@ -73,6 +82,14 @@ async function fetchGoogleNewsRss(searchQuery, maxItems = 12) {
         'Accept': 'application/rss+xml, application/xml, text/xml'
       },
       signal: AbortSignal.timeout(8000)
+    })
+    reportExternalApiCall({
+      provider: 'google_news_rss',
+      endpoint: 'https://news.google.com/rss/search',
+      operation: `search_rss (${searchQuery.slice(0, 32)})`,
+      status_code: res.status,
+      success: res.ok,
+      duration_ms: Date.now() - t0
     })
     if (!res.ok) return []
     const xml = await res.text()
@@ -178,11 +195,20 @@ export async function POST(request) {
   try {
     const apiKey = process.env.NEWSAPI_KEY
     if (apiKey) {
+      const t0 = Date.now()
       const fromDate = new Date(Date.now() - 14 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]
       const res = await fetch(
         `https://newsapi.org/v2/everything?q=${encodeURIComponent(effectiveQuery)}&from=${fromDate}&language=en&pageSize=24&sortBy=publishedAt&apiKey=${apiKey}`,
         { signal: AbortSignal.timeout(8000) }
       )
+      reportExternalApiCall({
+        provider: 'newsapi',
+        endpoint: 'https://newsapi.org/v2/everything',
+        operation: `search_everything (${effectiveQuery.slice(0, 32)})`,
+        status_code: res.status,
+        success: res.ok,
+        duration_ms: Date.now() - t0
+      })
       if (res.ok) {
         const data = await res.json()
         if (data.status === 'ok' && Array.isArray(data.articles)) {

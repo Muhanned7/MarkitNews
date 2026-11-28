@@ -1393,7 +1393,7 @@ export default function AnalysisPage() {
                 <section className={styles.panel} id="p-radar">
                     <div className={styles.box}>
                         <h3 className={styles.boxTitle}>Cross-Agent Tri-Perspective Radar</h3>
-                        <ContradictionRadar />
+                        <ContradictionRadar ticker={ticker} liveData={agents?.radar} />
                     </div>
                 </section>
             )}

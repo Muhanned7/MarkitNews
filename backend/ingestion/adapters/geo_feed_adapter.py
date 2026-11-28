@@ -3,8 +3,10 @@ import xml.etree.ElementTree as ET
 from urllib.parse import quote_plus
 from typing import List, Dict, Any, Optional, Tuple
 import httpx
+import time
 from datetime import datetime, timezone
 from email.utils import parsedate_to_datetime
+from agents.api_monitor import record_external_api_call
 from ingestion.models import CompanyFootprint, PhysicalHub
 from ingestion.footprint_agent import research_company_footprint, generate_perspective_queries
 from loguru import logger
@@ -131,8 +133,16 @@ async def fetch_rss_feed(
         encoded_q = quote_plus(q_text)
         url = f"https://news.google.com/rss/search?q={encoded_q}&hl={hl}&gl={gl}&ceid={ceid}"
         parsed_items: List[Dict[str, Any]] = []
+        t0 = time.time()
         try:
             resp = await client.get(url, headers=HEADERS, timeout=8.0)
+            record_external_api_call(
+                provider="google_news_rss",
+                endpoint="https://news.google.com/rss/search",
+                operation=f"fetch_rss_feed ({gl}/{hl})",
+                status_code=resp.status_code,
+                duration_ms=(time.time() - t0) * 1000,
+            )
             if resp.status_code == 200:
                 root = ET.fromstring(resp.text)
                 for item in root.findall(".//item")[:max_items * 2]:

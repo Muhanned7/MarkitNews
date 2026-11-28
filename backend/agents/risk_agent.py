@@ -8,10 +8,13 @@ from agents.client import client
 from agents.metrics import agent_calls, agent_latency, mistral_errors
 from agents.guardrails import guardrail_risk_agent
 from agents.evaluator import evaluate_agent_output
+from agents.api_monitor import log_external_api_call
 from loguru import logger
 import time
 
-MOCK_MODE = os.environ.get("MOCK_MODE", "true").lower() == "true"
+def _is_mock_mode() -> bool:
+    return os.environ.get("MOCK_MODE", "false").lower() == "true"
+
 async def risk_agent(ticker: str) -> dict:
     logger.info(f"Risk Agent requested for {ticker}")
     agent_calls.labels(agent_name='Risk', ticker=ticker).inc()
@@ -19,7 +22,7 @@ async def risk_agent(ticker: str) -> dict:
     start = time.time()
     try:
         logger.info(f"Running Risk agent for {ticker}")
-        if MOCK_MODE:
+        if _is_mock_mode():
             await asyncio.sleep(0.3)
             from agents.mock_market_data import get_deterministic_mock_profile
             prof = get_deterministic_mock_profile(ticker)
@@ -65,9 +68,21 @@ async def risk_agent(ticker: str) -> dict:
             clean_res["_evaluation"] = evaluate_agent_output("risk", ticker, clean_res, stats)
             return clean_res
         def fetch_risk_data():
+            t0 = time.time()
             stock = yf.Ticker(ticker)
-            info = stock.info
+            info = stock.info or {}
             hist = stock.history(period="1y")
+            log_external_api_call(
+                provider="yfinance",
+                endpoint="Ticker.history(1y) + info",
+                method="GET",
+                status_code=200 if not hist.empty else 404,
+                latency_ms=(time.time() - t0) * 1000.0,
+                caller="risk_agent",
+                ticker=ticker,
+                query_summary=f"{ticker} 1y OHLCV ({len(hist)} bars)",
+                success=(not hist.empty),
+            )
 
             if hist.empty:
                 return None

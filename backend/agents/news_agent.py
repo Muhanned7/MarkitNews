@@ -7,16 +7,19 @@ from agents.client import client
 from agents.metrics import agent_calls, agent_latency, mistral_errors
 from agents.guardrails import guardrail_news_agent
 from agents.evaluator import evaluate_agent_output
-from ingestion.adapters.geo_feed_adapter import classify_article_temporal_regime
+from agents.api_monitor import log_external_api_call
+from ingestion.adapters.geo_feed_adapter import classify_article_temporal_regime, fetch_rss_feed
 from loguru import logger
 import time
 
-MOCK_MODE = os.environ.get("MOCK_MODE", "true").lower() == "true"
+def _is_mock_mode() -> bool:
+    return os.environ.get("MOCK_MODE", "false").lower() == "true"
+
 async def research_agent(ticker: str) -> dict:
     logger.info(f"Research requested for {ticker}")
     try:
         logger.info(f"Running Research agents for {ticker}")
-        if MOCK_MODE:
+        if _is_mock_mode():
             await asyncio.sleep(0.4)
             return {
                 "company_name": f"{ticker.upper()} Corp",
@@ -73,7 +76,7 @@ async def news_agent(ticker: str) -> dict:
     try:
         logger.info(f"Running News agent for {ticker}")
         
-        if MOCK_MODE:
+        if _is_mock_mode():
             await asyncio.sleep(0.4)
             mock_res = {
                 "overall_sentiment": "bullish",
@@ -103,16 +106,61 @@ async def news_agent(ticker: str) -> dict:
         queries = research.get("search_queries", [ticker])
 
         def fetch_news(query):
-            resp = requests.get(
-                "https://newsapi.org/v2/everything",
-                params={
-                    "q": query,
-                    "pageSize": 5,
-                    "sortBy": "publishedAt",
-                    "apiKey": os.environ["NEWSAPI_KEY"]
+            api_key = os.environ.get("NEWSAPI_KEY", "").strip()
+            if api_key:
+                t0 = time.time()
+                try:
+                    resp = requests.get(
+                        "https://newsapi.org/v2/everything",
+                        params={
+                            "q": query,
+                            "pageSize": 5,
+                            "sortBy": "publishedAt",
+                            "apiKey": api_key
+                        },
+                        timeout=10
+                    )
+                    latency = (time.time() - t0) * 1000.0
+                    data = resp.json() if resp.status_code == 200 else {}
+                    arts = data.get("articles", []) or []
+                    log_external_api_call(
+                        provider="NewsAPI",
+                        endpoint="GET /v2/everything",
+                        method="GET",
+                        status_code=resp.status_code,
+                        latency_ms=latency,
+                        caller="news_agent",
+                        ticker=ticker,
+                        query_summary=f"q={query} ({len(arts)} articles)",
+                        success=(resp.status_code == 200 and len(arts) > 0),
+                    )
+                    if arts:
+                        return arts
+                except Exception as ex:
+                    log_external_api_call(
+                        provider="NewsAPI",
+                        endpoint="GET /v2/everything",
+                        method="GET",
+                        status_code=500,
+                        latency_ms=(time.time() - t0) * 1000.0,
+                        caller="news_agent",
+                        ticker=ticker,
+                        query_summary=f"q={query}",
+                        success=False,
+                        error_message=str(ex)[:200],
+                    )
+            # Fallback to live Google News RSS via geo_feed_adapter if NewsAPI quota is reached or missing
+            rss_items = fetch_rss_feed(query, region="US", lang="en-US", max_items=5, recency_window="90d")
+            return [
+                {
+                    "title": item.get("title", ""),
+                    "description": item.get("snippet", ""),
+                    "source": {"name": item.get("source", "Google News RSS")},
+                    "url": item.get("link", ""),
+                    "publishedAt": item.get("published_at", ""),
                 }
-            )
-            return resp.json().get("articles", [])
+                for item in rss_items
+            ]
 
         all_articles_nested = await asyncio.gather(
             *[asyncio.to_thread(fetch_news, q) for q in queries]

@@ -5,6 +5,7 @@ from dotenv import load_dotenv
 from groq import Groq
 from loguru import logger
 from agents.db import query
+from agents.api_monitor import record_external_api_call
 from agents.observability import check_agent_input_guardrails, record_llm_generation
 from agents.metrics import (
     llm_prompt_tokens_total,
@@ -97,12 +98,25 @@ class UnifiedChatCompletion:
             if tools:
                 call_kwargs["tools"] = tools
             for attempt in range(4):
+                t0 = time.time()
                 try:
                     response = self.groq_client.chat.completions.create(**call_kwargs)
                     break
                 except Exception as e:
                     err_msg = str(e)
-                    if "429" in err_msg or "rate_limit" in err_msg:
+                    err_ms = round((time.time() - t0) * 1000, 2)
+                    is_429 = "429" in err_msg or "rate_limit" in err_msg
+                    record_external_api_call(
+                        provider="groq",
+                        endpoint="https://api.groq.com/openai/v1/chat/completions",
+                        operation=f"chat.completions ({agent_name})",
+                        ticker=clean_t,
+                        status_code=429 if is_429 else 500,
+                        success=False,
+                        duration_ms=err_ms,
+                        error_message=err_msg,
+                    )
+                    if is_429:
                         wait_sec = 2.0 * (attempt + 1)
                         logger.warning(f"Groq 429 rate limit hit. Waiting {wait_sec}s (attempt {attempt+1}/4)...")
                         time.sleep(wait_sec)
@@ -142,7 +156,19 @@ class UnifiedChatCompletion:
         except Exception as pe:
             logger.warning(f"Prometheus token metric update error: {pe}")
 
-        # Update PostgreSQL Audit Table
+        # Update PostgreSQL Audit Table & Outbound External API Telemetry
+        prov_key = "groq" if ("qwen" in chosen_model.lower() or "llama" in chosen_model.lower()) else "mistral"
+        record_external_api_call(
+            provider=prov_key,
+            endpoint="https://api.groq.com/openai/v1/chat/completions" if prov_key == "groq" else "https://api.mistral.ai/v1/chat/completions",
+            operation=f"chat.complete ({agent_name})",
+            ticker=clean_t,
+            status_code=200,
+            success=True,
+            duration_ms=duration_ms,
+            tokens_used=total_tokens,
+            metadata={"model": chosen_model, "step_number": step_number},
+        )
         log_token_usage_to_db(
             agent_name=agent_name,
             ticker=clean_t,

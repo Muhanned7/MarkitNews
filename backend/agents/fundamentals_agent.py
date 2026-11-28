@@ -7,11 +7,14 @@ from agents.client import client
 from agents.metrics import agent_calls, agent_latency, mistral_errors
 from agents.guardrails import guardrail_fundamentals_agent
 from agents.evaluator import evaluate_agent_output
+from agents.api_monitor import log_external_api_call
 from loguru import logger
 import time
 
 
-MOCK_MODE = os.environ.get("MOCK_MODE", "true").lower() == "true"
+def _is_mock_mode() -> bool:
+    return os.environ.get("MOCK_MODE", "false").lower() == "true"
+
 async def fundamentals_agent(ticker: str) -> dict:
     logger.info(f"fundamentals agent requested for {ticker}")
     agent_calls.labels(agent_name='fundamentals', ticker=ticker).inc()
@@ -19,7 +22,7 @@ async def fundamentals_agent(ticker: str) -> dict:
     start = time.time()
     try:
         logger.info(f"Running fundamentals agents for {ticker}")
-        if MOCK_MODE:
+        if _is_mock_mode():
             await asyncio.sleep(0.3) 
             from agents.mock_market_data import get_deterministic_mock_profile
             prof = get_deterministic_mock_profile(ticker)
@@ -50,8 +53,35 @@ async def fundamentals_agent(ticker: str) -> dict:
             clean_res["_evaluation"] = evaluate_agent_output("fundamentals", ticker, clean_res, stats)
             return clean_res
         def fetch_fundamentals():
-            stock = yf.Ticker(ticker)
-            info = stock.info
+            t0 = time.time()
+            try:
+                stock = yf.Ticker(ticker)
+                info = stock.info or {}
+                log_external_api_call(
+                    provider="yfinance",
+                    endpoint="Ticker.info (Fundamentals)",
+                    method="GET",
+                    status_code=200 if info else 404,
+                    latency_ms=(time.time() - t0) * 1000.0,
+                    caller="fundamentals_agent",
+                    ticker=ticker,
+                    query_summary=f"{ticker} fundamental info",
+                    success=bool(info),
+                )
+            except Exception as ex:
+                log_external_api_call(
+                    provider="yfinance",
+                    endpoint="Ticker.info (Fundamentals)",
+                    method="GET",
+                    status_code=500,
+                    latency_ms=(time.time() - t0) * 1000.0,
+                    caller="fundamentals_agent",
+                    ticker=ticker,
+                    query_summary=f"{ticker} fundamental info",
+                    success=False,
+                    error_message=str(ex)[:200],
+                )
+                info = {}
             return {
                 "company_name": info.get("longName"),
                 "sector": info.get("sector"),

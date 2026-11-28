@@ -19,6 +19,7 @@ from agents.technical_agent import technical_agent
 from agents.fundamentals_agent import fundamentals_agent
 from agents.equity_reasearch_agent import equity_research_agent
 from agents.risk_agent import risk_agent
+from agents.contradiction_agent import contradiction_agent
 from agents.client import client
 from agents.guardrails import guardrail_equity_research
 from agents.evaluator import evaluate_agent_output
@@ -27,6 +28,7 @@ from loguru import logger
 from agents.metrics import active_analyses, cache_hits
 from datetime import datetime, timedelta
 import sys
+import yfinance as yf
 from ingestion.footprint_agent import research_company_footprint, generate_perspective_queries
 from ingestion.adapters.geo_feed_adapter import fetch_tri_perspective_mesh
 #client = Mistral(api_key=os.environ["MISTRAL_API_KEY"])
@@ -55,6 +57,7 @@ app.add_middleware(
 from agents.portfolio_router import portfolio_router
 from agents.risk_router import risk_router
 from agents.qra_router import qra_router
+from agents.api_monitor import api_monitor_router, record_external_api_call
 from agents.billing_router import (
     billing_router,
     check_tokens_and_tier,
@@ -69,6 +72,7 @@ app.include_router(risk_router)
 # Research/screener routes were unauthenticated; the Next.js proxies already send the service key.
 app.include_router(qra_router, dependencies=[Depends(get_service_or_user)])
 app.include_router(billing_router)
+app.include_router(api_monitor_router)
 
 
 class RegisterRequest(BaseModel):
@@ -301,7 +305,7 @@ async def synthesizer(ticker: str, news: dict, sentiment: dict, fundamentals: di
             "risk": risk
         }
 
-        if os.environ.get("MOCK_MODE", "true").lower() == "true":
+        if os.environ.get("MOCK_MODE", "false").lower() == "true":
             await asyncio.sleep(0.3)
             from agents.mock_market_data import get_deterministic_mock_profile
             prof = get_deterministic_mock_profile(ticker)
@@ -460,7 +464,7 @@ async def analyse(ticker: str, nocache: Optional[int] = 0, user: dict = Depends(
         # Single source of truth for consensus and street target price anchor
         authoritative_consensus = "buy"
         street_price_targets = {}
-        if os.environ.get("MOCK_MODE", "true").lower() == "true":
+        if os.environ.get("MOCK_MODE", "false").lower() == "true":
             from agents.mock_market_data import get_deterministic_mock_profile
             prof = get_deterministic_mock_profile(ticker_clean)
             authoritative_consensus = prof["recommendation"]
@@ -527,6 +531,13 @@ async def analyse(ticker: str, nocache: Optional[int] = 0, user: dict = Depends(
         equity = unwrap_agent(agent_results[3], "equity")
         risk = unwrap_agent(agent_results[4], "risk")
 
+        # Run Live Contradiction & Epistemic Arbiter Agent grounded on footprint, Tri-Perspective feeds, and agent outputs
+        try:
+            radar = await contradiction_agent(ticker_clean, news=news, equity=equity, risk=risk)
+        except Exception as rad_err:
+            logger.warning(f"Contradiction agent fallback for {ticker_clean}: {rad_err}")
+            radar = None
+
         # RSK-013: AI Model-Risk Governance & Kill-Switch enforcement
         from agents.risk_phase4 import get_degraded_agents_for_synthesis
         mr_state = await asyncio.to_thread(get_degraded_agents_for_synthesis)
@@ -573,7 +584,7 @@ async def analyse(ticker: str, nocache: Optional[int] = 0, user: dict = Depends(
                 report["key_catalysts"] = equity["growth_catalysts"]
             
         current_price = None
-        if os.environ.get("MOCK_MODE", "true").lower() == "true":
+        if os.environ.get("MOCK_MODE", "false").lower() == "true":
             from agents.mock_market_data import get_deterministic_mock_profile
             current_price = get_deterministic_mock_profile(ticker_clean)["current_price"]
         if not current_price and isinstance(technical, dict):
@@ -611,7 +622,7 @@ async def analyse(ticker: str, nocache: Optional[int] = 0, user: dict = Depends(
         
         result = {
             "ticker": ticker_clean,
-            "mode": "mock" if os.environ.get("MOCK_MODE", "true").lower() == "true" else "live",
+            "mode": "mock" if os.environ.get("MOCK_MODE", "false").lower() == "true" else "live",
             "model_risk_banner": model_risk_banner,
             "degraded_agents": degraded_agents,
             "report": report,
@@ -621,7 +632,8 @@ async def analyse(ticker: str, nocache: Optional[int] = 0, user: dict = Depends(
                 "fundamentals": fundamentals,
                 "technical": technical,
                 "equity": equity,
-                "risk": risk
+                "risk": risk,
+                "radar": radar
             }
         }
         
@@ -634,7 +646,7 @@ async def analyse(ticker: str, nocache: Optional[int] = 0, user: dict = Depends(
             
         # If running in MOCK_MODE (where Groq isn't called directly), deduct a realistic mock token usage (1,250 tokens)
         # so the user can test and watch their live token balance decrement during development
-        if uid_val is not None and os.environ.get("MOCK_MODE", "true").lower() == "true":
+        if uid_val is not None and os.environ.get("MOCK_MODE", "false").lower() == "true":
             await asyncio.to_thread(deduct_user_tokens, uid_val, 1250, "multi_agent_analysis", ticker_clean)
 
         if uid_val is not None:
@@ -701,6 +713,29 @@ async def preview_tri_perspective_feeds(ticker: str, limit: int = 3, user: dict 
     except Exception as e:
         logger.error(f"Failed to fetch live feeds for {ticker}: {e}")
         raise HTTPException(status_code=500, detail="Failed to fetch feeds. Check server logs.")
+
+
+@app.get("/contradictions/{ticker}")
+async def get_live_contradictions(ticker: str, refresh: bool = False, user: dict = Depends(get_service_or_user)):
+    """
+    Returns the live Contradiction Radar & Epistemic Arbiter report for `ticker`,
+    merging any cached 6-agent analysis output with the live Footprint & Tri-Perspective Feed Mesh.
+    """
+    clean_t = ticker.upper().strip()
+    cached_entry = analysis_cache.get(clean_t)
+    cached_agents = cached_entry[1].get("agents", {}) if cached_entry else {}
+
+    if not refresh and cached_agents.get("radar"):
+        return cached_agents["radar"]
+
+    report = await contradiction_agent(
+        clean_t,
+        news=cached_agents.get("news"),
+        equity=cached_agents.get("equity"),
+        risk=cached_agents.get("risk"),
+        force_refresh=refresh,
+    )
+    return report
 
 
 @app.get("/tokens/summary")

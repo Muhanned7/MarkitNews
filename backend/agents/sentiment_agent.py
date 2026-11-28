@@ -8,10 +8,13 @@ from agents.client import client
 from agents.metrics import agent_calls, agent_latency, mistral_errors
 from agents.guardrails import guardrail_sentiment_agent
 from agents.evaluator import evaluate_agent_output
+from agents.api_monitor import log_external_api_call
 from loguru import logger
 import time
 
-MOCK_MODE = os.environ.get("MOCK_MODE", "true").lower() == "true"
+def _is_mock_mode() -> bool:
+    return os.environ.get("MOCK_MODE", "false").lower() == "true"
+
 async def sentiment_agent(ticker: str, news_data: dict, consensus: str = None) -> dict:
     logger.info(f"Sentiment Agent requested for {ticker}")
     agent_calls.labels(agent_name='Sentiment', ticker=ticker).inc()
@@ -19,7 +22,7 @@ async def sentiment_agent(ticker: str, news_data: dict, consensus: str = None) -
     start = time.time()
     try:
         logger.info(f"Running sentiment agent for {ticker}")
-        if MOCK_MODE:
+        if _is_mock_mode():
             await asyncio.sleep(0.3)  # Simulate network latency
             
             # Seed based on ticker and current news sentiment to stay "consistent"
@@ -48,11 +51,39 @@ async def sentiment_agent(ticker: str, news_data: dict, consensus: str = None) -
             clean_res["_evaluation"] = evaluate_agent_output("sentiment", ticker, clean_res, stats)
             return clean_res
         def fetch_finviz():
-            resp = requests.get(
-                f"https://finviz.com/quote.ashx?t={ticker}",
-                headers={"User-Agent": "Mozilla/5.0"}
-            )
-            return resp.text
+            t0 = time.time()
+            try:
+                resp = requests.get(
+                    f"https://finviz.com/quote.ashx?t={ticker}",
+                    headers={"User-Agent": "Mozilla/5.0"},
+                    timeout=10
+                )
+                log_external_api_call(
+                    provider="Finviz",
+                    endpoint="GET /quote.ashx",
+                    method="GET",
+                    status_code=resp.status_code,
+                    latency_ms=(time.time() - t0) * 1000.0,
+                    caller="sentiment_agent",
+                    ticker=ticker,
+                    query_summary=f"t={ticker}",
+                    success=(resp.status_code == 200),
+                )
+                return resp.text
+            except Exception as ex:
+                log_external_api_call(
+                    provider="Finviz",
+                    endpoint="GET /quote.ashx",
+                    method="GET",
+                    status_code=500,
+                    latency_ms=(time.time() - t0) * 1000.0,
+                    caller="sentiment_agent",
+                    ticker=ticker,
+                    query_summary=f"t={ticker}",
+                    success=False,
+                    error_message=str(ex)[:200],
+                )
+                return ""
 
         finviz_html = await asyncio.to_thread(fetch_finviz)
 

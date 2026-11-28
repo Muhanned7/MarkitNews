@@ -7,18 +7,18 @@ from agents.client import client
 from agents.metrics import agent_calls, agent_latency, mistral_errors
 from agents.guardrails import guardrail_technical_agent
 from agents.evaluator import evaluate_agent_output
+from agents.api_monitor import log_external_api_call
 from loguru import logger
 import time
 
 
-MOCK_MODE = os.environ.get("MOCK_MODE", "true").lower() == "true"
 async def technical_agent(ticker: str) -> dict:
     logger.info(f"Technical Agent requested for {ticker}")
     agent_calls.labels(agent_name='Technical', ticker=ticker).inc()
 
     start = time.time()
     try:
-        if os.environ.get("MOCK_MODE", "true").lower() == "true":
+        if os.environ.get("MOCK_MODE", "false").lower() == "true":
             await asyncio.sleep(0.3)  # Simulate network latency
             from agents.mock_market_data import get_deterministic_mock_profile
             prof = get_deterministic_mock_profile(ticker)
@@ -53,8 +53,20 @@ async def technical_agent(ticker: str) -> dict:
             return clean_res
 
         def fetch_technicals():
+            t0 = time.time()
             stock = yf.Ticker(ticker)
             hist = stock.history(period="2y")
+            log_external_api_call(
+                provider="yfinance",
+                endpoint="Ticker.history(2y Technicals)",
+                method="GET",
+                status_code=200 if not hist.empty else 404,
+                latency_ms=(time.time() - t0) * 1000.0,
+                caller="technical_agent",
+                ticker=ticker,
+                query_summary=f"{ticker} 2y OHLCV ({len(hist)} bars)",
+                success=(not hist.empty),
+            )
             
             if hist.empty:
                 return None

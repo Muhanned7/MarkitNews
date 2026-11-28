@@ -7,6 +7,7 @@ from agents.client import client
 from agents.metrics import agent_calls, agent_latency, mistral_errors
 from agents.guardrails import guardrail_equity_agent
 from agents.evaluator import evaluate_agent_output
+from agents.api_monitor import log_external_api_call
 from loguru import logger
 import time
 
@@ -37,7 +38,6 @@ TICKER_SPECIFIC_CATALYSTS = {
     }
 }
 
-MOCK_MODE = os.environ.get("MOCK_MODE", "true").lower() == "true"
 async def equity_research_agent(ticker: str, consensus: str = None, street_targets: dict = None) -> dict:
 
     logger.info(f"equity research agent requested for {ticker}")
@@ -45,7 +45,7 @@ async def equity_research_agent(ticker: str, consensus: str = None, street_targe
     
     start = time.time()
     try:
-        if os.environ.get("MOCK_MODE", "true").lower() == "true":
+        if os.environ.get("MOCK_MODE", "false").lower() == "true":
             await asyncio.sleep(0.3)  # Simulate network latency
             from agents.mock_market_data import get_deterministic_mock_profile
             prof = get_deterministic_mock_profile(ticker)
@@ -85,8 +85,20 @@ async def equity_research_agent(ticker: str, consensus: str = None, street_targe
             return clean_res
 
         def fetch_equity_data():
+            t0 = time.time()
             stock = yf.Ticker(ticker)
-            info = stock.info
+            info = stock.info or {}
+            log_external_api_call(
+                provider="yfinance",
+                endpoint="Ticker.info + analyst_price_targets",
+                method="GET",
+                status_code=200 if info else 404,
+                latency_ms=(time.time() - t0) * 1000.0,
+                caller="equity_research_agent",
+                ticker=ticker,
+                query_summary=f"{ticker} analyst ratings & targets",
+                success=bool(info),
+            )
 
             # Analyst recommendations
             recommendations = stock.recommendations

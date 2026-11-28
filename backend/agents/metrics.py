@@ -96,3 +96,16 @@ agent_hallucinations_detected_total = Counter(
     'Total hallucinations caught and intercepted across all agents',
     ['agent_name', 'ticker']
 )
+
+# === OUTBOUND EXTERNAL API TELEMETRY METRICS ===
+external_api_calls_total = Counter(
+    'external_api_calls_total',
+    'Total outbound requests made by MarketPulse to external third-party APIs',
+    ['provider', 'operation', 'status_code']
+)
+
+external_api_latency_seconds = Histogram(
+    'external_api_latency_seconds',
+    'Latency in seconds of outbound calls to external third-party APIs',
+    ['provider', 'operation']
+)

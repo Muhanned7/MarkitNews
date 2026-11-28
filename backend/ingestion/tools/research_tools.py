@@ -4,9 +4,11 @@ import html as html_lib
 import re
 import urllib.parse
 import xml.etree.ElementTree as ET
+import time
 from typing import Dict, Any, List, Optional
 import httpx
 from loguru import logger
+from agents.api_monitor import record_external_api_call
 
 SEC_HEADERS = {
     "User-Agent": "MarketPulseResearch/1.0 (contact: research@marketpulse.local)",
@@ -80,7 +82,16 @@ async def fetch_sec_properties(ticker: str, cik: Optional[str] = None) -> Dict[s
         try:
             # 1. Fetch submission history
             sub_url = f"https://data.sec.gov/submissions/CIK{cik_10}.json"
+            t0 = time.time()
             resp = await client.get(sub_url, headers=SEC_HEADERS, timeout=8.0)
+            record_external_api_call(
+                provider="sec_edgar",
+                endpoint=sub_url,
+                operation="fetch_10k_submissions",
+                ticker=clean_t,
+                status_code=resp.status_code,
+                duration_ms=(time.time() - t0) * 1000,
+            )
             if resp.status_code != 200:
                 return {
                     "found": False,
@@ -219,7 +230,15 @@ async def fetch_wikipedia_facilities(company_name: str) -> Dict[str, Any]:
             # 2. Fetch plaintext extract
             title_encoded = urllib.parse.quote(title)
             extract_url = f"https://en.wikipedia.org/w/api.php?action=query&prop=extracts&explaintext=1&titles={title_encoded}&format=json"
+            t_wiki = time.time()
             e_resp = await client.get(extract_url, headers=WIKI_HEADERS, timeout=8.0)
+            record_external_api_call(
+                provider="wikipedia",
+                endpoint="https://en.wikipedia.org/w/api.php",
+                operation=f"fetch_wikipedia_facilities ({title})",
+                status_code=e_resp.status_code,
+                duration_ms=(time.time() - t_wiki) * 1000,
+            )
             if e_resp.status_code != 200:
                 return {"found": False, "source_type": "wikipedia", "source_url": wiki_url, "text": ""}
                 

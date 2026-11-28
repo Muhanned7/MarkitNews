@@ -1,0 +1,535 @@
+"""
+Outbound External API Telemetry Monitor (`backend/agents/api_monitor.py`)
+=========================================================================
+Tracks every outbound HTTP / SDK call that MarketPulse makes to external
+third-party APIs:
+  1. Groq Cloud (`qwen/qwen3.8-27b`)
+  2. Mistral AI (`mistral-small-latest`)
+  3. NewsAPI.org (`v2/everything`)
+  4. Google News RSS (`news.google.com/rss/search`)
+  5. Yahoo Finance (`yfinance`)
+  6. SEC EDGAR & Atom (`data.sec.gov` / `www.sec.gov`)
+  7. Wikipedia REST/Action API (`en.wikipedia.org/w/api.php`)
+  8. DuckDuckGo HTML Search (`html.duckduckgo.com`)
+  9. Hugging Face Inference API (`sentence-transformers/all-MiniLM-L6-v2`)
+  10. Finnhub API (`finnhub.io/api/v1/stock/profile2`)
+  11. Finviz (`finviz.com/quote.ashx`)
+  12. Pinecone Vector DB (`marketpulse` index)
+"""
+
+import json
+import os
+import threading
+from collections import deque
+from datetime import datetime, timezone
+from pathlib import Path
+from typing import Any, Dict, List, Optional
+
+from dotenv import load_dotenv
+from fastapi import APIRouter, Depends
+from loguru import logger
+from pydantic import BaseModel
+
+load_dotenv(Path(__file__).resolve().parent.parent / ".env")
+
+from agents.db import query
+from agents.metrics import external_api_calls_total, external_api_latency_seconds
+from auth import get_service_or_user
+
+api_monitor_router = APIRouter(tags=["External API Telemetry"])
+
+_schema_lock = threading.Lock()
+_schema_initialized = False
+_memory_ring: deque = deque(maxlen=250)
+
+EXTERNAL_API_CATALOG: Dict[str, Dict[str, Any]] = {
+    "groq": {
+        "provider": "groq",
+        "name": "Groq Cloud (Qwen 3.8 27B)",
+        "category": "LLM Inference",
+        "base_url": "https://api.groq.com/openai/v1/chat/completions",
+        "env_key": "GROQ_API_KEY",
+        "quota_limit": 14400,
+        "quota_window": "requests / day",
+        "used_by": "Primary LLM for 6 Specialist Agents, Synthesizer & Footprint Agent",
+    },
+    "mistral": {
+        "provider": "mistral",
+        "name": "Mistral AI (mistral-small-latest)",
+        "category": "LLM Inference",
+        "base_url": "https://api.mistral.ai/v1/chat/completions",
+        "env_key": "MISTRAL_API_KEY",
+        "quota_limit": 10000,
+        "quota_window": "requests / day",
+        "used_by": "Automatic Failover LLM when Groq hits 429 rate limits",
+    },
+    "newsapi": {
+        "provider": "newsapi",
+        "name": "NewsAPI.org",
+        "category": "News & Regulatory Filings",
+        "base_url": "https://newsapi.org/v2/everything",
+        "env_key": "NEWSAPI_KEY",
+        "quota_limit": 100,
+        "quota_window": "requests / day (Developer Plan)",
+        "used_by": "Home News Search (/api/search) & News Agent (news_agent.py)",
+    },
+    "google_news_rss": {
+        "provider": "google_news_rss",
+        "name": "Google News RSS Mesh",
+        "category": "News & Regulatory Filings",
+        "base_url": "https://news.google.com/rss/search",
+        "env_key": None,
+        "quota_limit": 5000,
+        "quota_window": "requests / day (Free RSS)",
+        "used_by": "Tri-Perspective Regional Hub Feeds, Search Fallback & MCP Web Search",
+    },
+    "yfinance": {
+        "provider": "yfinance",
+        "name": "Yahoo Finance (yfinance)",
+        "category": "Financial & Market Data",
+        "base_url": "https://query2.finance.yahoo.com",
+        "env_key": None,
+        "quota_limit": 2000,
+        "quota_window": "requests / day (Public API)",
+        "used_by": "Live Stock Prices, RSI/MACD/SMA, Fundamentals, Vol/Beta/VaR & Ticker Validation",
+    },
+    "sec_edgar": {
+        "provider": "sec_edgar",
+        "name": "SEC EDGAR (10-K & 8-K Atom)",
+        "category": "News & Regulatory Filings",
+        "base_url": "https://data.sec.gov/submissions",
+        "env_key": None,
+        "quota_limit": 86400,
+        "quota_window": "10 req/sec fair-access policy",
+        "used_by": "MCP fetch_sec_properties (10-K Item 2) & Real-Time 8-K Atom Feed",
+    },
+    "wikipedia": {
+        "provider": "wikipedia",
+        "name": "Wikipedia Action & Extract API",
+        "category": "News & Regulatory Filings",
+        "base_url": "https://en.wikipedia.org/w/api.php",
+        "env_key": None,
+        "quota_limit": 10000,
+        "quota_window": "requests / day (Free REST/Action API)",
+        "used_by": "MCP fetch_wikipedia_facilities & Source Revision Fingerprint Check",
+    },
+    "duckduckgo": {
+        "provider": "duckduckgo",
+        "name": "DuckDuckGo HTML Search",
+        "category": "News & Regulatory Filings",
+        "base_url": "https://html.duckduckgo.com/html/",
+        "env_key": None,
+        "quota_limit": 1000,
+        "quota_window": "requests / day",
+        "used_by": "Primary MCP search_web_sources supply-chain discovery",
+    },
+    "huggingface": {
+        "provider": "huggingface",
+        "name": "Hugging Face Inference API (MiniLM-L6-v2)",
+        "category": "Embeddings & Vector DB",
+        "base_url": "https://router.huggingface.co/hf-inference/models/sentence-transformers/all-MiniLM-L6-v2",
+        "env_key": "HUGGINGFACE_API_KEY",
+        "quota_limit": 1000,
+        "quota_window": "requests / day (Serverless Inference)",
+        "used_by": "Link C Guardrail Semantic Fallback & Article/Ticker Vector Embeddings",
+    },
+    "finnhub": {
+        "provider": "finnhub",
+        "name": "Finnhub Stock Profile API",
+        "category": "Financial & Market Data",
+        "base_url": "https://finnhub.io/api/v1/stock/profile2",
+        "env_key": "FINNHUB_API",
+        "quota_limit": 3600,
+        "quota_window": "60 req/min (Free Tier)",
+        "used_by": "Company metadata & sector lookup when adding new tickers (POST /api/tickers)",
+    },
+    "finviz": {
+        "provider": "finviz",
+        "name": "Finviz Quote & Analyst Scrape",
+        "category": "Financial & Market Data",
+        "base_url": "https://finviz.com/quote.ashx",
+        "env_key": None,
+        "quota_limit": 1000,
+        "quota_window": "requests / day",
+        "used_by": "Sentiment Agent analyst rating & institutional sentiment extraction",
+    },
+    "pinecone": {
+        "provider": "pinecone",
+        "name": "Pinecone Vector DB",
+        "category": "Embeddings & Vector DB",
+        "base_url": "https://api.pinecone.io",
+        "env_key": "PINECONE_API_KEY",
+        "quota_limit": 10000,
+        "quota_window": "operations / day (Starter Index)",
+        "used_by": "Semantic news search & similar-ticker vector retrieval (/api/search, /api/similar)",
+    },
+}
+
+
+def ensure_external_api_logs_table() -> None:
+    global _schema_initialized
+    if _schema_initialized:
+        return
+    with _schema_lock:
+        if _schema_initialized:
+            return
+        try:
+            query(
+                """
+                CREATE TABLE IF NOT EXISTS external_api_logs (
+                    id SERIAL PRIMARY KEY,
+                    provider VARCHAR(64) NOT NULL,
+                    endpoint VARCHAR(160) NOT NULL,
+                    operation VARCHAR(120) NOT NULL,
+                    ticker VARCHAR(32),
+                    status_code INTEGER NOT NULL DEFAULT 200,
+                    success BOOLEAN NOT NULL DEFAULT TRUE,
+                    duration_ms NUMERIC(10, 2) NOT NULL DEFAULT 0.0,
+                    tokens_used INTEGER NOT NULL DEFAULT 0,
+                    error_message TEXT,
+                    metadata JSONB DEFAULT '{}'::jsonb,
+                    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+                );
+                CREATE INDEX IF NOT EXISTS idx_ext_api_logs_created_at ON external_api_logs(created_at DESC);
+                CREATE INDEX IF NOT EXISTS idx_ext_api_logs_provider ON external_api_logs(provider);
+                """
+            )
+            _schema_initialized = True
+        except Exception as e:
+            logger.debug(f"Could not initialize external_api_logs table: {e}")
+
+
+def record_external_api_call(
+    provider: str,
+    endpoint: str,
+    operation: str,
+    ticker: Optional[str] = None,
+    status_code: int = 200,
+    success: Optional[bool] = None,
+    duration_ms: float = 0.0,
+    tokens_used: int = 0,
+    error_message: Optional[str] = None,
+    metadata: Optional[Dict[str, Any]] = None,
+) -> None:
+    """
+    Records an outbound external API call into Prometheus, in-memory ring buffer, and PostgreSQL.
+    Never raises an exception so it cannot disrupt caller execution.
+    """
+    prov = (provider or "unknown").lower().strip()
+    op = (operation or "request").strip()[:120]
+    ep = (endpoint or "").strip()[:160]
+    clean_t = ticker.upper().strip()[:32] if ticker else None
+    code = int(status_code or 200)
+    is_ok = (200 <= code < 400 and not error_message) if success is None else bool(success)
+    dur_ms = round(max(0.0, float(duration_ms or 0.0)), 2)
+    tok = int(tokens_used or 0)
+
+    # 1. Prometheus counter & latency histogram
+    try:
+        external_api_calls_total.labels(provider=prov, operation=op, status_code=str(code)).inc()
+        external_api_latency_seconds.labels(provider=prov, operation=op).observe(dur_ms / 1000.0)
+    except Exception:
+        pass
+
+    # 2. In-memory ring buffer fallback
+    now_iso = datetime.now(timezone.utc).isoformat()
+    entry = {
+        "id": len(_memory_ring) + 1,
+        "provider": prov,
+        "endpoint": ep,
+        "operation": op,
+        "ticker": clean_t,
+        "status_code": code,
+        "success": is_ok,
+        "duration_ms": dur_ms,
+        "tokens_used": tok,
+        "error_message": (error_message or "")[:300] if error_message else None,
+        "metadata": metadata or {},
+        "created_at": now_iso,
+    }
+    _memory_ring.appendleft(entry)
+
+    # 3. Persist to PostgreSQL
+    try:
+        ensure_external_api_logs_table()
+        query(
+            """INSERT INTO external_api_logs
+               (provider, endpoint, operation, ticker, status_code, success, duration_ms, tokens_used, error_message, metadata)
+               VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s::jsonb)""",
+            [
+                prov,
+                ep,
+                op,
+                clean_t,
+                code,
+                is_ok,
+                dur_ms,
+                tok,
+                (error_message or "")[:300] if error_message else None,
+                json.dumps(metadata or {}),
+            ],
+        )
+    except Exception as e:
+        logger.debug(f"External API DB log skipped for {prov}: {e}")
+
+
+class ExternalApiLogRequest(BaseModel):
+    provider: str
+    endpoint: str
+    operation: str
+    ticker: Optional[str] = None
+    status_code: Optional[int] = 200
+    success: Optional[bool] = None
+    duration_ms: Optional[float] = 0.0
+    tokens_used: Optional[int] = 0
+    error_message: Optional[str] = None
+    metadata: Optional[Dict[str, Any]] = None
+
+
+@api_monitor_router.post("/telemetry/external-apis/log")
+async def post_external_api_log(req: ExternalApiLogRequest):
+    """Receives outbound API call logs from Next.js server routes (/api/search, /api/tickers, embeddings, Pinecone)."""
+    record_external_api_call(
+        provider=req.provider,
+        endpoint=req.endpoint,
+        operation=req.operation,
+        ticker=req.ticker,
+        status_code=req.status_code or 200,
+        success=req.success,
+        duration_ms=req.duration_ms or 0.0,
+        tokens_used=req.tokens_used or 0,
+        error_message=req.error_message,
+        metadata=req.metadata,
+    )
+    return {"recorded": True}
+
+
+@api_monitor_router.get("/telemetry/external-apis")
+async def get_external_api_telemetry(user: dict = Depends(get_service_or_user)):
+    """
+    Returns comprehensive real-time telemetry across all 12 external APIs used by MarketPulse,
+    combining `external_api_logs` and historical `agent_token_logs`.
+    """
+    ensure_external_api_logs_table()
+
+    # Backfill / merge historical LLM calls from `agent_token_logs` so Groq/Mistral counts are immediately visible
+    by_provider_stats: Dict[str, Dict[str, Any]] = {}
+    recent_calls: List[Dict[str, Any]] = []
+
+    try:
+        agg_res = query(
+            """
+            SELECT
+                provider,
+                COUNT(*) AS calls_total,
+                COUNT(*) FILTER (WHERE created_at >= NOW() - INTERVAL '24 hours') AS calls_24h,
+                COUNT(*) FILTER (WHERE success = TRUE) AS success_count,
+                COUNT(*) FILTER (WHERE success = FALSE) AS error_count,
+                COUNT(*) FILTER (WHERE status_code = 429) AS rate_limit_429_count,
+                ROUND(AVG(duration_ms)::numeric, 1) AS avg_latency_ms,
+                ROUND(PERCENTILE_CONT(0.95) WITHIN GROUP (ORDER BY duration_ms)::numeric, 1) AS p95_latency_ms,
+                COALESCE(SUM(tokens_used) FILTER (WHERE created_at >= NOW() - INTERVAL '24 hours'), 0) AS tokens_24h,
+                COALESCE(SUM(tokens_used), 0) AS tokens_total,
+                MAX(created_at) AS last_called_at
+            FROM external_api_logs
+            GROUP BY provider
+            """
+        )
+        for row in agg_res.rows:
+            by_provider_stats[row["provider"]] = dict(row)
+
+        # Also pull LLM token logs from `agent_token_logs` if not yet mirrored in `external_api_logs`
+        llm_res = query(
+            """
+            SELECT
+                CASE WHEN LOWER(model) LIKE '%qwen%' OR LOWER(model) LIKE '%llama%' THEN 'groq' ELSE 'mistral' END AS provider,
+                COUNT(*) AS calls_total,
+                COUNT(*) FILTER (WHERE created_at >= NOW() - INTERVAL '24 hours') AS calls_24h,
+                ROUND(AVG(duration_ms)::numeric, 1) AS avg_latency_ms,
+                COALESCE(SUM(total_tokens) FILTER (WHERE created_at >= NOW() - INTERVAL '24 hours'), 0) AS tokens_24h,
+                COALESCE(SUM(total_tokens), 0) AS tokens_total,
+                MAX(created_at) AS last_called_at
+            FROM agent_token_logs
+            GROUP BY 1
+            """
+        )
+        for lrow in llm_res.rows:
+            p_key = lrow["provider"]
+            existing = by_provider_stats.get(p_key)
+            if not existing or int(lrow["calls_total"] or 0) > int(existing.get("calls_total") or 0):
+                by_provider_stats[p_key] = {
+                    "provider": p_key,
+                    "calls_total": int(lrow["calls_total"] or 0),
+                    "calls_24h": int(lrow["calls_24h"] or 0),
+                    "success_count": int(lrow["calls_total"] or 0),
+                    "error_count": existing.get("error_count", 0) if existing else 0,
+                    "rate_limit_429_count": existing.get("rate_limit_429_count", 0) if existing else 0,
+                    "avg_latency_ms": float(lrow["avg_latency_ms"] or 0.0),
+                    "p95_latency_ms": float(existing.get("p95_latency_ms") or lrow["avg_latency_ms"] or 0.0) if existing else float(lrow["avg_latency_ms"] or 0.0),
+                    "tokens_24h": int(lrow["tokens_24h"] or 0),
+                    "tokens_total": int(lrow["tokens_total"] or 0),
+                    "last_called_at": lrow["last_called_at"],
+                }
+
+        rec_res = query(
+            """
+            SELECT id, provider, endpoint, operation, ticker, status_code, success,
+                   duration_ms, tokens_used, error_message, created_at
+            FROM external_api_logs
+            ORDER BY id DESC
+            LIMIT 40
+            """
+        )
+        for r in rec_res.rows:
+            recent_calls.append({
+                "id": r["id"],
+                "provider": r["provider"],
+                "provider_name": EXTERNAL_API_CATALOG.get(r["provider"], {}).get("name", r["provider"]),
+                "endpoint": r["endpoint"],
+                "operation": r["operation"],
+                "ticker": r["ticker"],
+                "status_code": r["status_code"],
+                "success": bool(r["success"]),
+                "duration_ms": float(r["duration_ms"] or 0.0),
+                "tokens_used": int(r["tokens_used"] or 0),
+                "error_message": r["error_message"],
+                "created_at": str(r["created_at"]),
+            })
+
+        if len(recent_calls) < 15:
+            llm_rec = query(
+                """
+                SELECT id, agent_name, ticker, model, total_tokens, duration_ms, created_at
+                FROM agent_token_logs
+                ORDER BY id DESC
+                LIMIT 15
+                """
+            )
+            for lr in llm_rec.rows:
+                m_str = str(lr.get("model") or "")
+                p_key = "groq" if ("qwen" in m_str.lower() or "llama" in m_str.lower()) else "mistral"
+                recent_calls.append({
+                    "id": f"llm-{lr['id']}",
+                    "provider": p_key,
+                    "provider_name": EXTERNAL_API_CATALOG[p_key]["name"],
+                    "endpoint": EXTERNAL_API_CATALOG[p_key]["base_url"],
+                    "operation": f"chat.complete ({lr['agent_name']})",
+                    "ticker": lr["ticker"],
+                    "status_code": 200,
+                    "success": True,
+                    "duration_ms": float(lr["duration_ms"] or 0.0),
+                    "tokens_used": int(lr["total_tokens"] or 0),
+                    "error_message": None,
+                    "created_at": str(lr["created_at"]),
+                })
+    except Exception as e:
+        logger.warning(f"External API telemetry DB query fallback to memory: {e}")
+        recent_calls = list(_memory_ring)[:40]
+        for item in _memory_ring:
+            pk = item["provider"]
+            b = by_provider_stats.setdefault(
+                pk,
+                {
+                    "provider": pk,
+                    "calls_total": 0,
+                    "calls_24h": 0,
+                    "success_count": 0,
+                    "error_count": 0,
+                    "rate_limit_429_count": 0,
+                    "avg_latency_ms": 0.0,
+                    "p95_latency_ms": 0.0,
+                    "tokens_24h": 0,
+                    "tokens_total": 0,
+                    "last_called_at": item["created_at"],
+                },
+            )
+            b["calls_total"] += 1
+            b["calls_24h"] += 1
+            if item["success"]:
+                b["success_count"] += 1
+            else:
+                b["error_count"] += 1
+            if item["status_code"] == 429:
+                b["rate_limit_429_count"] += 1
+            b["avg_latency_ms"] = round(
+                ((b["avg_latency_ms"] * (b["calls_total"] - 1)) + float(item["duration_ms"])) / b["calls_total"], 1
+            )
+            b["p95_latency_ms"] = max(b["p95_latency_ms"], float(item["duration_ms"]))
+            b["tokens_24h"] += int(item["tokens_used"] or 0)
+            b["tokens_total"] += int(item["tokens_used"] or 0)
+
+    providers_list: List[Dict[str, Any]] = []
+    total_calls_24h = 0
+    total_calls_all = 0
+    total_success_all = 0
+    total_errors_all = 0
+    total_429_all = 0
+    total_tokens_24h = 0
+    weighted_latency_sum = 0.0
+
+    for key, meta in EXTERNAL_API_CATALOG.items():
+        st = by_provider_stats.get(key, {})
+        c_total = int(st.get("calls_total") or 0)
+        c_24h = int(st.get("calls_24h") or 0)
+        s_cnt = int(st.get("success_count") or 0)
+        e_cnt = int(st.get("error_count") or 0)
+        r429 = int(st.get("rate_limit_429_count") or 0)
+        avg_lat = float(st.get("avg_latency_ms") or 0.0)
+        p95_lat = float(st.get("p95_latency_ms") or avg_lat)
+        tok_24h = int(st.get("tokens_24h") or 0)
+        tok_total = int(st.get("tokens_total") or 0)
+
+        env_key = meta["env_key"]
+        is_configured = True if env_key is None else bool(os.environ.get(env_key, "").strip())
+        quota_limit = meta["quota_limit"]
+        quota_pct = round(min(100.0, (c_24h / quota_limit) * 100.0), 1) if quota_limit else 0.0
+        success_rate = round((s_cnt / c_total) * 100.0, 1) if c_total > 0 else 100.0
+
+        total_calls_24h += c_24h
+        total_calls_all += c_total
+        total_success_all += s_cnt
+        total_errors_all += e_cnt
+        total_429_all += r429
+        total_tokens_24h += tok_24h
+        weighted_latency_sum += avg_lat * c_total
+
+        providers_list.append({
+            **meta,
+            "configured": is_configured,
+            "calls_24h": c_24h,
+            "calls_total": c_total,
+            "success_count": s_cnt,
+            "error_count": e_cnt,
+            "rate_limit_429_count": r429,
+            "success_rate_pct": success_rate,
+            "avg_latency_ms": avg_lat,
+            "p95_latency_ms": p95_lat,
+            "tokens_24h": tok_24h,
+            "tokens_total": tok_total,
+            "quota_used_pct": quota_pct,
+            "last_called_at": str(st["last_called_at"]) if st.get("last_called_at") else None,
+            "health_status": (
+                "rate_limited" if r429 > 0 else ("degraded" if (c_total > 0 and success_rate < 80.0) else ("active" if c_total > 0 else ("ready" if is_configured else "unconfigured")))
+            ),
+        })
+
+    overall_avg_latency = round(weighted_latency_sum / total_calls_all, 1) if total_calls_all > 0 else 0.0
+    overall_success_rate = round((total_success_all / total_calls_all) * 100.0, 1) if total_calls_all > 0 else 100.0
+
+    return {
+        "as_of": datetime.now(timezone.utc).isoformat(),
+        "mock_mode_enabled": os.environ.get("MOCK_MODE", "true").lower() == "true",
+        "overview": {
+            "total_providers_tracked": len(EXTERNAL_API_CATALOG),
+            "configured_providers": sum(1 for p in providers_list if p["configured"]),
+            "total_calls_24h": total_calls_24h,
+            "total_calls_all_time": total_calls_all,
+            "overall_success_rate_pct": overall_success_rate,
+            "total_errors_all_time": total_errors_all,
+            "total_rate_limit_429": total_429_all,
+            "overall_avg_latency_ms": overall_avg_latency,
+            "total_llm_tokens_24h": total_tokens_24h,
+        },
+        "providers": providers_list,
+        "recent_calls": recent_calls[:40],
+    }

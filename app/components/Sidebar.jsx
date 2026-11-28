@@ -102,6 +102,14 @@ export default function Sidebar() {
                     <span aria-hidden="true">💳</span> Pro Package
                 </Link>
                 <Link
+                    href="/telemetry"
+                    className={styles.navItem}
+                    aria-current={pathname === '/telemetry' ? 'page' : undefined}
+                    onClick={closeDrawer}
+                >
+                    <span aria-hidden="true">📡</span> API Monitor
+                </Link>
+                <Link
                     href="/profile"
                     className={styles.navItem}
                     aria-current={pathname === '/profile' ? 'page' : undefined}
